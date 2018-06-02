@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
+	// "github.com/davecgh/go-spew/spew"
 	"github.com/nickwanninger/act/pkg/parser"
 	"io/ioutil"
 	"os"
@@ -43,22 +43,11 @@ func main() {
 	flag.Parse()
 	args := flag.Args()
 
-	rawFilename := ""
-
-	// if there were no args, print the usage
-	if len(args) == 0 {
-		rawFilename = "."
-	} else {
-		rawFilename = args[0]
-	}
-
-	filename, ferr := resolveFileName(rawFilename)
+	filename, ferr := resolveFileName(args[0])
 	if ferr != nil {
 		fmt.Println(ferr)
 		return
 	}
-
-	fmt.Println(filename)
 
 	data, err := ioutil.ReadFile(filename)
 
@@ -68,13 +57,7 @@ func main() {
 
 	src := string(data)
 
-	p := parser.New(src, filename)
-	perr := p.Run()
+	parser.NewLexer(filename, src)
 
-	if perr != nil {
-		fmt.Println(perr)
-		os.Exit(1)
-	}
-
-	fmt.Printf("\n\n\n\n\n%s", spew.Sdump(p))
+	// fmt.Printf("\n\n\n\n\n%s", spew.Sdump(p))
 }
