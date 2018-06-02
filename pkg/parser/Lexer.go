@@ -1,5 +1,8 @@
 package parser
 
+// Alot of this based off this video:
+// https://www.youtube.com/watch?v=HxaD_trXwRE
+
 import (
 	"fmt"
 	"strings"
