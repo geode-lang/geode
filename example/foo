@@ -1,0 +1,4 @@
+func inc(x) {
+	res <-  x + 1;
+	<- res;
+}
