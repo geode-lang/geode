@@ -1,0 +1,6 @@
+act inc x -> {
+	tmp <- x + 1
+	<- tmp
+}
+// main will print 1
+act main -> print(inc(0))

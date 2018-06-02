@@ -25,19 +25,20 @@ func SyntaxError(row int, col int, len int, sourcecode string, filename string) 
 	line := row + 1
 	lineSrc := strings.Split(sourcecode, "\n")[row]
 	valLen := col
-	underline := "╹"
-	if valLen >= 2 {
+	underline := "╹" // start out by assuming the token is of len 1 (point to just the token)
+	// if the token is longer, make the underline longer as well
+	if valLen > 1 {
 		underline = fmt.Sprintf("┗%s┛", strings.Repeat("━", valLen-2))
 	}
 
-	retval := ""
+	errorString := ""
 
-	retval += fmt.Sprintf("ERROR: Syntax Error in '%s':\n", filename)
-	retval += fmt.Sprintf("\tLine: %d\n", line)
-	retval += fmt.Sprintf("\tCol: %d\n", col)
-	retval += fmt.Sprintf("\t%s\n", chalk.Red(lineSrc))
-	retval += fmt.Sprintf("\t%s%s\n", strings.Repeat(" ", col), underline)
-	retval += fmt.Sprintf("\n")
+	errorString += fmt.Sprintf("ERROR: Syntax Error in '%s':\n", filename)
+	errorString += fmt.Sprintf("\tLine: %d\n", line)
+	errorString += fmt.Sprintf("\tCol: %d\n", col)
+	errorString += fmt.Sprintf("\t%s\n", chalk.Red(lineSrc))
+	errorString += fmt.Sprintf("\t%s%s\n", strings.Repeat(" ", col), underline)
+	errorString += fmt.Sprintf("\n")
 
-	return retval
+	return errorString
 }
