@@ -1,1 +1,6 @@
-act main -> printf("Hello, World")
+act main(num a, num b) -> {
+	return 2
+}
+act main2 -> {
+	return 2
+}

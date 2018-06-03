@@ -1,8 +1,5 @@
 package parser
 
-// Alot of this based off this video:
-// https://www.youtube.com/watch?v=HxaD_trXwRE
-
 import (
 	"fmt"
 	"github.com/timtadh/lexmachine"
@@ -10,8 +7,18 @@ import (
 	"os"
 )
 
+// TokenType - The type of token as a string
+type TokenType string
+
+// TokenRegexRelation - allows a relationship between a token type and a certain regex
+type TokenRegexRelation struct {
+	token TokenType
+	regex string
+}
+
 // Tokens is a list of all tokens
-var Tokens = [][]string{
+var Tokens = []TokenRegexRelation{
+	{"ERROR", ""},
 	{"CHAR", `'.'`},
 	{"STRING", `"(\\"|.)*?"`},
 	{"NUMBER", `[+-]?[0-9]*\.?[0-9]+`},
@@ -24,7 +31,7 @@ var Tokens = [][]string{
 	{"DEREFERENCE", `@`},
 	{"REFERENCE", `\*`},
 
-	{"ASSIGNMENT", `:=`},
+	{"ASSIGNMENT", `<-`},
 	{"EQUALITY", `=`},
 
 	{"RIGHT_PAREN", `\)`},
@@ -43,6 +50,10 @@ var Tokens = [][]string{
 	{"ELSE", ""},
 	{"RETURN", ""},
 
+	{"TYPE", ""},
+
+	{"COMMA", `,`},
+
 	{"IDENTIFIER", `[a-zA-Z_][a-zA-Z0-9_]*`},
 
 	{"COMMENT", `\/\/[^\n]*`},
@@ -55,23 +66,26 @@ var Tokens = [][]string{
 	{"GTE", `>=|≥`},
 }
 
-var keywordrmap = map[string]string{
+var keywordrmap = map[string]TokenType{
 	"return": "RETURN",
 	"if":     "IF",
 	"else":   "ELSE",
+
+	// We also determine type mapping in here as well
+	"num": "TYPE",
 }
 
-var tokmap map[string]int
+var tokmap map[TokenType]int
 
-var tokRegexMap map[string]string
+var tokRegexMap map[string]TokenType
 
 func init() {
-	tokmap = make(map[string]int)
-	tokRegexMap = make(map[string]string)
+	tokmap = make(map[TokenType]int)
+	tokRegexMap = make(map[string]TokenType)
 	for id, val := range Tokens {
-		tokmap[val[0]] = id
-		if val[1] != "" {
-			tokRegexMap[val[1]] = val[0]
+		tokmap[val.token] = id
+		if val.regex != "" {
+			tokRegexMap[val.regex] = val.token
 		}
 
 	}
@@ -79,15 +93,16 @@ func init() {
 
 // LexState - an internal rep of the lexer
 type LexState struct {
-	lexer *lexmachine.Lexer
+	lexer  *lexmachine.Lexer
+	Tokens chan Token
+	Done   bool
 }
 
 // Lex - takes a string and turns it into tokens
-func (s *LexState) Lex(text []byte) ([]Token, error) {
+func (s *LexState) Lex(text []byte) error {
 	scanner, err := s.lexer.Scanner(text)
-	toks := []Token{}
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for tk, err, eof := scanner.Next(); !eof; tk, err, eof = scanner.Next() {
 		if ui, is := err.(*machines.UnconsumedInput); ui != nil && is {
@@ -96,7 +111,7 @@ func (s *LexState) Lex(text []byte) ([]Token, error) {
 			fmt.Println(SyntaxError(e.FailLine, e.StartColumn, e.FailColumn-e.StartColumn-1, string(text), "Tokenize Failed"))
 			os.Exit(1)
 		} else if err != nil {
-			return nil, err
+			return err
 		} else {
 			// I don't like lexmachine's token, so I will convert it to my own
 			to := *tk.(*lexmachine.Token)
@@ -108,11 +123,15 @@ func (s *LexState) Lex(text []byte) ([]Token, error) {
 			t.Type = to.Type
 			t.Lexeme = to.Lexeme
 			t.Value = string(to.Value.(string))
-			toks = append(toks, t)
+			s.Tokens <- t
 		}
 	}
 
-	return toks, nil
+	close(s.Tokens)
+
+	s.Done = true
+
+	return nil
 }
 
 // NewLexer produces a new lexer and poluates it with the configuration
@@ -137,11 +156,17 @@ func NewLexer() *LexState {
 		lexer.Add([]byte(k), getToken(tokmap[v]))
 	}
 	s := &LexState{}
-
+	s.Tokens = make(chan Token)
 	s.lexer = lexer
 	return s
 }
 
-func GetTokenName(id int) string {
-	return Tokens[id][0]
+// GetTokenName takes an id (an index) and returns the token's representation
+func GetTokenName(id int) TokenType {
+	return Tokens[id].token
+}
+
+// GetTokenId -
+func GetTokenId(t TokenType) int {
+	return tokmap[t]
 }

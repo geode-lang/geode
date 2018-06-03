@@ -3,15 +3,27 @@ package main
 import (
 	"flag"
 	"fmt"
-	// "github.com/davecgh/go-spew/spew"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/nickwanninger/act/pkg/ast"
 	"github.com/nickwanninger/act/pkg/parser"
 	"io/ioutil"
 	"os"
 	"strings"
 )
 
-func usage() {
+var (
+	batch       = flag.Bool("b", false, "batch (non-interactive) mode")
+	optimized   = flag.Bool("opt", true, "add some optimization passes")
+	printTokens = flag.Bool("tok", false, "Print tokens")
+	printAst    = flag.Bool("ast", false, "print abstract syntax tree")
+	printLLVMIR = flag.Bool("s", false, "print LLVM generated code")
+)
+
+// Usage will print the usage of the program
+func Usage() {
 	fmt.Println("Usage: act [options] <file>")
+	fmt.Println("Options:")
+	flag.PrintDefaults()
 }
 
 // if the filename passed in is a folder, look in that folder for a main.act
@@ -37,11 +49,20 @@ func resolveFileName(filename string) (string, error) {
 }
 
 func main() {
-	// set the flag's usage function to my own.
-	flag.Usage = usage
 
+	spew.Config.Indent = "        "
+	spew.Config.SortKeys = true
+	flag.Usage = Usage
 	flag.Parse()
 	args := flag.Args()
+
+	lexer := parser.NewLexer()
+
+	if flag.NArg() == 0 {
+		fmt.Println("No .act files provided.")
+		Usage()
+		return
+	}
 
 	filename, ferr := resolveFileName(args[0])
 	if ferr != nil {
@@ -55,14 +76,18 @@ func main() {
 		fmt.Println(err)
 	}
 
-	lexer := parser.NewLexer()
+	go lexer.Lex(data)
 
-	tokens, lexerr := lexer.Lex(data)
-	if lexerr != nil {
-		fmt.Println(err)
+	nodes := ast.Parse(lexer.Tokens)
+
+	if *printAst {
+		nodes = ast.DumpTree(nodes)
 	}
 
-	for _, t := range tokens {
-		fmt.Printf("%13s - %q\n", parser.GetTokenName(t.Type), t.Value)
+	for true {
+		t := <-nodes
+		if t == nil {
+			break
+		}
 	}
 }

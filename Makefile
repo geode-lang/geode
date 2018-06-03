@@ -1,19 +1,19 @@
 all: build
 
 build: clean
-	go build act.go
+	go build -o actc main.go
 
 uninstall:
-	rm -f $(GOPATH)/bin/act
+	rm -f $(GOPATH)/bin/actc
 
 
 install: uninstall
-	go install github.com/nickwanninger/act
+	go install github.com/nickwanninger/actc
 
 
 example: build
-	./act example/example.act
+	./actc example/example.act
 
 
 clean:
-	rm -rf act
+	rm -rf actc
