@@ -7,15 +7,95 @@ import (
 )
 
 // TokenType gives information to what kind of token was parsed
-type TokenType int
+type TokenType string
 
 const (
-	tokenWhitespace TokenType = iota
-	tokenEOF
-	tokenError
-	tokenNumber
-	tokenString
+	tokenNONE         TokenType = "tokenNone"
+	tokenEOF          TokenType = "tokenEOF"
+	tokenError        TokenType = "tokenError"
+	tokenNumber       TokenType = "tokenNumber"
+	tokenString       TokenType = "tokenString"
+	tokenAssignment   TokenType = "tokenAssignment"
+	tokenEquality     TokenType = "tokenEquality"
+	tokenActArrow     TokenType = "tokenActArrow"
+	tokenTypeNotation TokenType = "tokenTypeNotation"
+	tokenLT           TokenType = "tokenLT"
+	tokenGT           TokenType = "tokenGT"
+	tokenLTE          TokenType = "tokenLTE"
+	tokenGTE          TokenType = "tokenGTE"
+	tokenAdd          TokenType = "tokenAdd"
+	tokenSub          TokenType = "tokenSub"
+	tokenMul          TokenType = "tokenMul"
+	tokenDiv          TokenType = "tokenDiv"
+	tokenExp          TokenType = "tokenExp"
+	tokenComma        TokenType = "tokenComma"
+	tokenIdentifier   TokenType = "tokenIdentifier"
+	tokenField        TokenType = "tokenField"
+	tokenRParen       TokenType = "tokenRParen"
+	tokenLParen       TokenType = "tokenLParen"
+	tokenRCurlyParen  TokenType = "tokenRCurlyParen"
+	tokenLCurlyParen  TokenType = "tokenLCurlyParen"
+	tokenRBracket     TokenType = "tokenRBracket"
+	tokenLBracket     TokenType = "tokenLBracket"
+	tokenBool         TokenType = "tokenBool"
+	tokenDot          TokenType = "tokenDot"
+	tokenKeyword      TokenType = "tokenKeyword"
+	tokenAct          TokenType = "tokenAct"
+	tokenIf           TokenType = "tokenIf"
+	tokenElse         TokenType = "tokenElse"
+	tokenNil          TokenType = "tokenNil"
 )
+
+var operators = map[string]TokenType{
+	// Dot operator (field)
+	".": tokenDot,
+	// Equality checking Operator
+	"=": tokenEquality,
+	// Type Notation operator (x: int) where x is an int
+	":": tokenTypeNotation,
+	// Add Operator
+	"+": tokenAdd,
+	// Subtract Operator
+	"-": tokenSub,
+	// Mutlily Operator
+	"*": tokenMul,
+	// Division Operators
+	"/": tokenDiv, // Divider
+	"÷": tokenDiv,
+	// Exponential Notation
+	"^": tokenExp,
+	// Less Thans
+	"<":  tokenLT,
+	"<=": tokenLTE,
+	"≤":  tokenLTE,
+	// Greater Thans
+	">":  tokenGT,
+	">=": tokenGTE,
+	"≥":  tokenGTE,
+	// The arrows
+	"→":  tokenActArrow,
+	"->": tokenActArrow,
+	"←":  tokenAssignment,
+	"<-": tokenAssignment,
+}
+
+var keywords = map[string]TokenType{
+
+	"act":  tokenAct,
+	"λ":    tokenAct,
+	"else": tokenElse,
+	"if":   tokenIf,
+	"nil":  tokenNil,
+}
+
+var groupers = map[rune]TokenType{
+	'(': tokenRParen,
+	')': tokenRParen,
+	'{': tokenRCurlyParen,
+	'}': tokenRCurlyParen,
+	'[': tokenRCurlyParen,
+	']': tokenRCurlyParen,
+}
 
 // Token is a single token, and can contain the source of the token, the type of the token, and where in the file the token exists
 type Token struct {
@@ -47,10 +127,7 @@ func (t Token) String() string {
 		return t.val
 	}
 
-	if len(t.val) > 30 {
-		return fmt.Sprintf("\"%.30s...\"", t.val)
-	}
-	return fmt.Sprintf("%q", t.val)
+	return fmt.Sprintf("%20s - (%s)", t.val, t.typ)
 }
 
 // SyntaxError prints a string that points an error in the source code
@@ -84,14 +161,11 @@ func SyntaxError(index int, length int, src string, filename string, message str
 	border := fmt.Sprintf("%s\n", strings.Repeat("·", len(lines[line])))
 
 	errorString := ""
-	errorString += fmt.Sprintf("ERROR: Syntax Error in %q:\n", filename)
-	errorString += fmt.Sprintf("%s\n", message)
+	errorString += fmt.Sprintf("Syntax Error in %q: %s\n", filename, message)
 	errorString += fmt.Sprintf("\tLine: %d\n", line)
 	errorString += fmt.Sprintf("\tCol: %d\n", col)
 	errorString += fmt.Sprintf("\tIndex: %d\n", index)
-
 	errorString += border
-
 	// Print the line before if we can
 	if line > 0 {
 		errorString += fmt.Sprintf("%s\n", lines[line-1])

@@ -1,1 +1,5 @@
-3.14 is a "number"
+act main -> {
+	hello: string <- "hello, world"
+	print(hello)
+	<- 0
+}
