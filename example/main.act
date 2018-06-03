@@ -1,1 +1,1 @@
-3.14 is a "number"
+act main -> printf("Hello, World")

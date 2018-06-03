@@ -55,9 +55,14 @@ func main() {
 		fmt.Println(err)
 	}
 
-	src := string(data)
+	lexer := parser.NewLexer()
 
-	parser.NewLexer(filename, src)
+	tokens, lexerr := lexer.Lex(data)
+	if lexerr != nil {
+		fmt.Println(err)
+	}
 
-	// fmt.Printf("\n\n\n\n\n%s", spew.Sdump(p))
+	for _, t := range tokens {
+		fmt.Printf("%13s - %q\n", parser.GetTokenName(t.Type), t.Value)
+	}
 }
