@@ -1,1 +1,1 @@
-false <- 1
+act main -> printf("Hello, World")
