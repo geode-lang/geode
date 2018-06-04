@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"github.com/timtadh/lexmachine"
 	"github.com/timtadh/lexmachine/machines"
 	"os"
@@ -106,9 +105,9 @@ func (s *LexState) Lex(text []byte) error {
 	}
 	for tk, err, eof := scanner.Next(); !eof; tk, err, eof = scanner.Next() {
 		if ui, is := err.(*machines.UnconsumedInput); ui != nil && is {
-			e := err.(*machines.UnconsumedInput)
-			scanner.TC = ui.FailTC
-			fmt.Println(SyntaxError(e.FailLine, e.StartColumn, e.FailColumn-e.StartColumn-1, string(text), "Tokenize Failed"))
+			// e := err.(*machines.UnconsumedInput)
+			// scanner.TC = ui.FailTC
+			// // fmt.Println(SyntaxError(e.FailLine, e.StartColumn, e.FailColumn-e.StartColumn-1, string(text), "Tokenize Failed"))
 			os.Exit(1)
 		} else if err != nil {
 			return err
@@ -123,6 +122,7 @@ func (s *LexState) Lex(text []byte) error {
 			t.Type = to.Type
 			t.Lexeme = to.Lexeme
 			t.Value = string(to.Value.(string))
+			t.SourceCode = &text
 			s.Tokens <- t
 		}
 	}
@@ -169,4 +169,9 @@ func GetTokenName(id int) TokenType {
 // GetTokenId -
 func GetTokenId(t TokenType) int {
 	return tokmap[t]
+}
+
+// TokenIs -
+func TokenIs(t Token, a TokenType) bool {
+	return t.Type == GetTokenId(a)
 }

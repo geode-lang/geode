@@ -40,7 +40,7 @@ func Parse(tokens <-chan parser.Token) <-chan Node {
 func (p *Parser) parse() {
 	for p.next(); p.token.Type > 0; {
 		topLevelNode := p.parseTopLevelStmt()
-
+		spew.Dump(p.token)
 		if topLevelNode != nil {
 			p.topLevelNodes <- topLevelNode
 		} else {
@@ -75,13 +75,15 @@ func (p *Parser) parseFnDefn() functionNode {
 
 	p.next()
 
-	if p.token.Type == parser.GetTokenId("LEFT_PAREN") {
+	if p.token.Is("LEFT_PAREN") {
+		p.next()
 		for {
-			p.next()
-			if p.token.Type == parser.GetTokenId("TYPE") {
+
+			if p.token.Is("TYPE") {
 				v := variableNode{}
 				v.typ = p.token.Value
-				if p.next().Type == parser.GetTokenId("IDENTIFIER") {
+				p.next()
+				if p.token.Is("IDENTIFIER") {
 					v.name = p.token.Value
 					fn.args = append(fn.args, v)
 				} else {
@@ -90,18 +92,24 @@ func (p *Parser) parseFnDefn() functionNode {
 			}
 			p.next()
 			// Break out case (not a comma, or a right paren)
-			if p.token.Type != parser.GetTokenId("COMMA") || p.token.Type == parser.GetTokenId("RIGHT_PAREN") {
+			if p.token.Is("RIGHT_PAREN") {
 				break
 			}
+			if p.token.Is("COMMA") {
+				p.next()
+				continue
+			}
+			Error(p.token, "")
 		}
-		p.next()
 	}
 
-	if p.token.Type != parser.GetTokenId("ACTARROW") {
+	if p.token.Is("ACTARROW") {
 		Error(p.token, "Syntax Error, function %s missing '->'\n", fn.name)
 	}
 
-	if p.next().Type == parser.GetTokenId("LEFT_CURLY") {
+	// Get the token after the act arrow (->)
+	p.next()
+	if p.token.Is("LEFT_CURLY") {
 		fn.body = p.parseBlockStmt()
 	}
 	return fn
@@ -111,7 +119,7 @@ func (p *Parser) parseBlockStmt() blockNode {
 	blk := blockNode{}
 	for {
 		p.next()
-		if p.token.Type == parser.GetTokenId("RIGHT_CURLY") {
+		if p.token.Is("RIGHT_CURLY") {
 			break
 		}
 	}
@@ -125,7 +133,9 @@ func (p *Parser) parseBlockStmt() blockNode {
 func Error(t parser.Token, format string, args ...interface{}) {
 
 	fmt.Fprintf(os.Stderr, "\033[31;1m")
-	fmt.Fprintf(os.Stderr, "Token Error: %s\n", fmt.Sprintf(format, args...))
+	fmt.Fprintf(os.Stderr, "Token Error\n")
+	fmt.Fprintf(os.Stderr, parser.SyntaxError(t, fmt.Sprintf(format, args...)))
+	fmt.Fprintf(os.Stderr, "The token in question's data:\n")
 	spew.Fdump(os.Stderr, t)
 	fmt.Fprintf(os.Stderr, "\033[0m\n")
 
@@ -144,7 +154,7 @@ func DumpTree(in <-chan Node) <-chan Node {
 				return
 			}
 			fmt.Println("")
-			fmt.Println("================ Node ================")
+			fmt.Println("================ Root Node Parsed ================")
 			fmt.Println("")
 			spew.Dump(n)
 			out <- n

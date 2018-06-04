@@ -7,16 +7,18 @@ import (
 )
 
 // SyntaxError prints a string that points an error in the source code
-func SyntaxError(line int, col int, length int, src string, message string) string {
-	col--
-	line--
+func SyntaxError(tok Token, message string) string {
+	col := tok.StartCol - 1
+	line := tok.StartRow - 1
+	length := tok.EndCol - tok.StartCol
+	src := string(*tok.SourceCode)
 
 	lines := strings.Split(src, "\n")
 	if len(lines) < line-1 {
 		return ""
 	}
 
-	underline := "╹" // start out by assuming the token is of len 1 (point to just the token)
+	underline := "╹" // start out by assuming the token is of len 1 (point toqjust the token)
 
 	// if the token is longer, make the underline longer as well
 	if length > 1 {
