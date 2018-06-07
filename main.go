@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/nickwanninger/act/pkg/ast"
+	// "github.com/nickwanninger/act/pkg/ast"
 	"github.com/nickwanninger/act/pkg/parser"
 	"io/ioutil"
 	"os"
@@ -78,16 +78,18 @@ func main() {
 
 	go lexer.Lex(data)
 
-	nodes := ast.Parse(lexer.Tokens)
+	// nodes := ast.Parse(lexer.Tokens)
 
-	if *printAst {
-		nodes = ast.DumpTree(nodes)
-	}
+	// if *printAst {
+	// 	nodes = ast.DumpTree(nodes)
+	// }
 
 	for true {
-		t := <-nodes
-		if t == nil {
+		t, ok := <-lexer.Tokens
+		if !ok {
 			break
 		}
+
+		fmt.Println(t)
 	}
 }

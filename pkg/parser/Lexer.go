@@ -1,6 +1,8 @@
 package parser
 
 import (
+	// "fmt"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/timtadh/lexmachine"
 	"github.com/timtadh/lexmachine/machines"
 	"os"
@@ -18,9 +20,11 @@ type TokenRegexRelation struct {
 // Tokens is a list of all tokens
 var Tokens = []TokenRegexRelation{
 	{"ERROR", ""},
+
 	{"CHAR", `'.'`},
-	{"STRING", `"(\\"|.)*?"`},
+	{"STRING", `"([^\"]|(\\.))*"`},
 	{"NUMBER", `[+-]?[0-9]*\.?[0-9]+`},
+
 	{"MUL", `\*`},
 	{"PLUS", `\+`},
 	{"MINUS", `-`},
@@ -30,7 +34,7 @@ var Tokens = []TokenRegexRelation{
 	{"DEREFERENCE", `@`},
 	{"REFERENCE", `\*`},
 
-	{"ASSIGNMENT", `<-`},
+	{"ASSIGNMENT", `:=`},
 	{"EQUALITY", `=`},
 
 	{"RIGHT_PAREN", `\)`},
@@ -42,12 +46,13 @@ var Tokens = []TokenRegexRelation{
 	{"RIGHT_BRACE", `\[`},
 	{"LEFT_BRACE", `\]`},
 
-	{"ACT_DEFN", `act\s`},
-	{"ACTARROW", `->`},
+	{"RIGHTARROW", `->`},
+	{"LEFTARROW", `<-`},
 	// The main parser won't work correctly and will just look these up later
 	{"IF", ""},
 	{"ELSE", ""},
 	{"RETURN", ""},
+	{"FUNCDEFN", ""},
 
 	{"TYPE", ""},
 
@@ -69,9 +74,14 @@ var keywordrmap = map[string]TokenType{
 	"return": "RETURN",
 	"if":     "IF",
 	"else":   "ELSE",
+	"act":    "FUNCDEFN",
 
 	// We also determine type mapping in here as well
-	"num": "TYPE",
+	"int":    "TYPE",
+	"long":   "TYPE",
+	"float":  "TYPE",
+	"string": "TYPE",
+	"char":   "TYPE",
 }
 
 var tokmap map[TokenType]int
@@ -105,7 +115,8 @@ func (s *LexState) Lex(text []byte) error {
 	}
 	for tk, err, eof := scanner.Next(); !eof; tk, err, eof = scanner.Next() {
 		if ui, is := err.(*machines.UnconsumedInput); ui != nil && is {
-			// e := err.(*machines.UnconsumedInput)
+			e := err.(*machines.UnconsumedInput)
+			spew.Dump(e)
 			// scanner.TC = ui.FailTC
 			// // fmt.Println(SyntaxError(e.FailLine, e.StartColumn, e.FailColumn-e.StartColumn-1, string(text), "Tokenize Failed"))
 			os.Exit(1)
@@ -122,7 +133,7 @@ func (s *LexState) Lex(text []byte) error {
 			t.Type = to.Type
 			t.Lexeme = to.Lexeme
 			t.Value = string(to.Value.(string))
-			t.SourceCode = &text
+			// t.SourceCode = &text
 			s.Tokens <- t
 		}
 	}

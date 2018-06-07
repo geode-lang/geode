@@ -58,7 +58,7 @@ func (p *Parser) next() parser.Token {
 
 func (p *Parser) parseTopLevelStmt() Node {
 	switch p.token.Type {
-	case parser.GetTokenId("ACT_DEFN"):
+	case parser.GetTokenId("FUNCDEFN"):
 		return p.parseFnDefn()
 	}
 
@@ -103,7 +103,7 @@ func (p *Parser) parseFnDefn() functionNode {
 		}
 	}
 
-	if p.token.Is("ACTARROW") {
+	if p.token.Is("TYPE") {
 		Error(p.token, "Syntax Error, function %s missing '->'\n", fn.name)
 	}
 

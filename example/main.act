@@ -1,7 +1,3 @@
-act inc(num x) -> {
-	return x + 1
-}
-
-act main(num a, num b) -> {
-	return 2
+act main() string {
+	return "hello" + "world"
 }
