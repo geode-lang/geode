@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	optimizeLevel = flag.Int("o", 3, "add some optimization passes")
+	outFile       = flag.String("o", "a.out", "The output filename")
+	optimizeLevel = flag.Int("opt", 3, "add some optimization passes")
 	printTokens   = flag.Bool("tok", false, "Print tokens as they are parsed (for debugging)")
 	printAst      = flag.Bool("ast", false, "print abstract syntax tree (for debugging)")
 	printASTJson  = flag.Bool("json", false, "If true, the ast will be dumped to the console as json instead of raw")
@@ -49,7 +50,6 @@ func resolveFileName(filename string) (string, error) {
 }
 
 func main() {
-
 	spew.Config.Indent = "  "
 	spew.Config.SortKeys = true
 	flag.Usage = Usage
@@ -84,7 +84,13 @@ func main() {
 	// Run the lexer concurrently
 	go lexer.Lex(data)
 
-	nodes := ast.Parse(lexer.Tokens)
+	tokens := lexer.Tokens
+
+	if *printTokens {
+		tokens = parser.DumpTokens(lexer.Tokens)
+	}
+
+	nodes := ast.Parse(tokens)
 
 	if *printAst {
 		nodes = ast.DumpTree(nodes, *printASTJson)

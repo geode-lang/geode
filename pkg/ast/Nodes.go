@@ -1,10 +1,10 @@
 package ast
 
 import (
-	"github.com/nickwanninger/llvm"
+// "github.com/nickwanninger/llvm"
 )
 
-var foo llvm.Value
+// var foo llvm.Value
 
 // Node -
 type Node interface {

@@ -13,6 +13,7 @@ type Parser struct {
 	name               string              // the filename of the program
 	tokens             <-chan parser.Token // channel of tokens from the lexer
 	token              parser.Token        // current token, most recently recieved
+	nextToken          parser.Token        // next token in the list (allows lookahead)
 	topLevelNodes      chan Node
 	binaryOpPrecedence map[string]int // maps binary operators to the precidence determining the order of operations
 }
@@ -33,6 +34,8 @@ func Parse(tokens <-chan parser.Token) <-chan Node {
 		},
 	}
 
+	// prime the next token for use by reading from the token channel (easier than handling in .next())
+	p.nextToken = <-p.tokens
 	go p.parse()
 
 	return p.topLevelNodes
@@ -51,7 +54,14 @@ func (p *Parser) parse() {
 }
 
 func (p *Parser) next() parser.Token {
-	for p.token = <-p.tokens; p.token.Type == parser.TokWhitespace || p.token.Type == parser.TokComment; p.token = <-p.tokens {
+	for {
+		// Set token to the value of next token and get a new value for nextToken
+		p.token = p.nextToken
+		p.nextToken = <-p.tokens
+		// if that token is valid, break from the loop
+		if !(p.token.Type == parser.TokWhitespace || p.token.Type == parser.TokComment) {
+			break
+		}
 	}
 
 	return p.token
@@ -137,32 +147,6 @@ func (p *Parser) parseFnDefn() functionNode {
 	return fn
 }
 
-// func (p *Parser) parsePrimary() Node {
-
-// }
-
-func (p *Parser) parseIfStmt() ifNode {
-	// initialize the if statement
-	i := ifNode{}
-
-	// // Parse the predicate for the if-statement
-	// p.next()
-	// ifE := p.parseExpression()
-
-	// if ifE == nil {
-	// 	Error(p.token, "Syntax Error, expected")
-	// }
-
-	return i
-}
-
-// parse while statement
-func (p *Parser) parseWhileStmt() whileNode {
-	whl := whileNode{}
-
-	return whl
-}
-
 // parse any block statement
 func (p *Parser) parseBlockStmt() blockNode {
 	blk := blockNode{}
@@ -170,30 +154,6 @@ func (p *Parser) parseBlockStmt() blockNode {
 
 	for {
 		p.next()
-
-		if p.token.Is(parser.TokReturn) {
-			// fmt.Println("RETURN")
-		}
-
-		if p.token.Is(parser.TokType) {
-			// parse possible variable definition
-		}
-
-		if p.token.Is(parser.TokIf) {
-			// Parse if statement
-		}
-
-		if p.token.Is(parser.TokFor) {
-			// Parse for statement
-		}
-
-		if p.token.Is(parser.TokIdent) {
-			// blk.nodes = append(blk.nodes, p.parseIdentifierExpr())
-		}
-
-		if p.token.Is(parser.TokWhile) {
-			blk.Nodes = append(blk.Nodes, p.parseWhileStmt())
-		}
 
 		// If the block is over.
 		if p.token.Is(parser.TokRightCurly) {
@@ -236,6 +196,15 @@ func DumpTree(in <-chan Node, useJSON bool) <-chan Node {
 				close(out)
 				return
 			}
+			// var network bytes.Buffer        // Stand-in for a network connection
+			// enc := gob.NewEncoder(&network) // Will write to network.
+
+			// err := enc.Encode(n)
+			// if err != nil {
+			// 	fmt.Println("encode error:", err)
+			// }
+
+			// fmt.Printf("%x\n", sha1.Sum(network.Bytes()))
 
 			if useJSON {
 				// Attempt to parse the

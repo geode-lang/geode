@@ -28,8 +28,6 @@ deps:
 	vendor/github.com/nickwanninger/llvm/update_llvm.sh
 
 
-
-
 # Build for every system (64 bit)
 PLATFORMS := linux windows darwin plan9 netbsd openbsd freebsd
 $(PLATFORMS):

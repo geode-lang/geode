@@ -1,7 +1,7 @@
 package parser
 
 import (
-	// "fmt"
+	"fmt"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/timtadh/lexmachine"
 	"github.com/timtadh/lexmachine/machines"
@@ -72,64 +72,65 @@ func TokenIsOperator(t int) bool {
 	return t > TokOperatorStart && t < TokOperatorEnd
 }
 
-// TokenRegexRelation - allows a relationship between a token type and a certain regex
-type TokenRegexRelation struct {
+// TokenInfoRelation - allows a relationship between a token type and a certain regex
+type TokenInfoRelation struct {
 	token int
 	regex string
+	name  string
 }
 
 // Tokens is a list of all tokens
-var Tokens = []TokenRegexRelation{
-	{TokError, ""},
+var Tokens = []TokenInfoRelation{
+	{TokError, "", "error"},
 
-	{TokChar, `'.'`},
-	{TokString, `"([^\"]|(\\.))*"`},
-	{TokNumber, `[+-]?[0-9]*\.?[0-9]+`},
+	{TokChar, `'.'`, "char"},
+	{TokString, `"([^\"]|(\\.))*"`, "string"},
+	{TokNumber, `[+-]?[0-9]*\.?[0-9]+`, "number"},
 
-	{TokStar, `\*`},
-	{TokPlus, `\+`},
-	{TokMinus, `-`},
-	{TokDiv, `/`},
-	{TokExp, `\^`},
-	{TokSemiColon, `;`},
+	{TokStar, `\*`, "star"},
+	{TokPlus, `\+`, "plus"},
+	{TokMinus, `-`, "minus"},
+	{TokDiv, `/`, "divide"},
+	{TokExp, `\^`, "exp"},
+	{TokSemiColon, `;`, "semicolon"},
 
-	{TokDefereference, `@`},
-	{TokReference, `\*`},
+	// {TokDefereference, `@`, "defereference"},
+	// {TokReference, `\*`, "reference"},
 
-	{TokAssignment, `:=`},
-	{TokEquality, `=`},
+	{TokAssignment, `:=`, "assign"},
+	{TokEquality, `=`, "equality"},
 
-	{TokRightParen, `\)`},
-	{TokLeftParen, `\(`},
+	{TokRightParen, `\)`, "rightParen"},
+	{TokLeftParen, `\(`, "leftParen"},
 
-	{TokRightCurly, `}`},
-	{TokLeftCurly, `{`},
+	{TokRightCurly, `}`, "rightCurly"},
+	{TokLeftCurly, `{`, "leftCurly"},
 
-	{TokRightBrace, `\[`},
-	{TokLeftBrace, `\]`},
+	{TokRightBrace, `\[`, "rightBrace"},
+	{TokLeftBrace, `\]`, "leftBrace"},
 
-	{TokRightArrow, `->`},
-	{TokLeftArrow, `<-`},
+	{TokRightArrow, `->`, "rightArrow"},
+	{TokLeftArrow, `<-`, "leftArrow"},
 	// The main parser won't work correctly and will just look these up later
-	{TokIf, ""},
-	{TokElse, ""},
-	{TokReturn, ""},
-	{TokFuncDefn, ""},
+	{TokIf, "", "keywordIf"},
+	{TokElse, "", "keywordElse"},
+	{TokReturn, "", "keywordReturn"},
+	{TokFuncDefn, "", "keywordFunc"},
 
-	{TokType, ""},
+	{TokType, "", "type"},
 
-	{TokComma, `,`},
+	{TokComma, `,`, "comma"},
 
-	{TokIdent, `[a-zA-Z_][a-zA-Z0-9_]*`},
+	{TokIdent, `[a-zA-Z_][a-zA-Z0-9_]*`, "ident"},
 
-	{TokComment, `\/\/[^\n]*`},
-	{TokComment, `{-.*-}`},
-	{TokWhitespace, `\s+`},
+	{TokComment, `\/\/[^\n]*`, "lineComment"},
+	{TokComment, `{-.*-}`, "blockComment"},
+	{TokWhitespace, `\s+`, "whitespace"},
 
-	{TokLT, `<`},
-	{TokLTE, `<=|≤`},
-	{TokGT, `>`},
-	{TokGTE, `>=|≥`},
+	{TokLT, `<`, "lessThan"},
+	{TokLTE, `<=|≤`, "lessThanOrEqual"},
+	{TokGT, `>`, "greaterThan"},
+	{TokGTE, `>=|≥`, "greaterThanOrEqual"},
 }
 
 var keyWordMap = map[string]int{
@@ -138,7 +139,7 @@ var keyWordMap = map[string]int{
 	"else":   TokElse,
 	"for":    TokFor,
 	"while":  TokWhile,
-	"act":    TokFuncDefn,
+	"func":   TokFuncDefn,
 
 	// We also determine type mapping in here as well
 	"void":   TokType,
@@ -150,13 +151,16 @@ var keyWordMap = map[string]int{
 }
 
 var tokRegexMap map[string]int
+var tokNameMap map[int]string
 
 func init() {
 	tokRegexMap = make(map[string]int)
+	tokNameMap = make(map[int]string)
 	for _, val := range Tokens {
 		if val.regex != "" {
 			tokRegexMap[val.regex] = val.token
 		}
+		tokNameMap[val.token] = val.name
 	}
 }
 
@@ -169,6 +173,7 @@ type LexState struct {
 
 // Lex - takes a string and turns it into tokens
 func (s *LexState) Lex(text []byte) error {
+	srcString := string(text)
 	scanner, err := s.lexer.Scanner(text)
 	if err != nil {
 		return err
@@ -188,6 +193,7 @@ func (s *LexState) Lex(text []byte) error {
 			to := *tk.(*lexmachine.Token)
 
 			t := Token{}
+			t.SourceCode = &srcString
 			t.Pos = to.TC
 			t.StartCol = to.StartColumn
 			t.StartRow = to.StartLine
@@ -196,6 +202,7 @@ func (s *LexState) Lex(text []byte) error {
 			t.Type = to.Type
 			t.Lexeme = to.Lexeme
 			t.Value = string(to.Value.(string))
+			fmt.Println(t)
 			// t.SourceCode = &text
 			s.Tokens <- t
 		}
@@ -235,12 +242,32 @@ func NewLexer() *LexState {
 	return s
 }
 
-// GetTokenName takes an id (an index) and returns the token's representation
-func GetTokenName(id int) int {
-	return id
-}
-
 // GetTokenID -
 func GetTokenID(t int) int {
 	return t
+}
+
+// DumpTokens takes a channel of tokens and prints all tokens it recieves,
+// then pushes them back out a new channel it makes and returns
+func DumpTokens(in chan Token) chan Token {
+	out := make(chan Token)
+	go func() {
+		for {
+			// Read from the input channel of nodes.
+			n, stillOpen := <-in
+			// If the channel is closed, exit out of the printing phase
+			if !stillOpen {
+				close(out)
+				return
+			}
+			spew.Dump(n)
+			out <- n
+		}
+	}()
+	return out
+}
+
+// GetTokenName returns the real name of a token
+func GetTokenName(tok int) string {
+	return tokNameMap[tok]
 }
