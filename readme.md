@@ -1,8 +1,12 @@
 # Act language
 
 Building from source:
-
+Install the dependencies (and setup the llvm bindings). This can take some time
 ```
-make deps // install the dependencies (and setup the llvm bindings)
-make // build the app to ./actc
+make deps
+```
+
+build the app to ./actc
+```
+make
 ```
