@@ -1,8 +1,10 @@
 package ast
 
 import (
-// "github.com/nickwanninger/llvm"
+	"github.com/nickwanninger/llvm"
 )
+
+var foo llvm.Value
 
 // Node -
 type Node interface {
@@ -18,13 +20,14 @@ func (t nodeType) Kind() nodeType {
 
 const (
 	// literals
-	nodeNumber nodeType = iota
+	nodeInt nodeType = iota
+	nodeFloat
 
 	// expressions
 	nodeIf
 	nodeFor
-	nodeUnary // unary operator  (!, ...)
-	nodeBiary // binary operator (+, -, *, ...)
+	nodeUnary  // unary operator  (!, ...)
+	nodeBinary // binary operator (+, -, *, ...)
 
 	nodeFnCall
 	nodeVariable
@@ -35,85 +38,102 @@ const (
 	nodeFunction
 
 	// Other
-	nodeList
+	nodeBlock
 )
 
-type numberNode struct {
+type intNode struct {
 	nodeType
-	val float64
+	Value int64
+}
+
+type floatNode struct {
+	nodeType
+	Value float64
 }
 
 type ifNode struct {
 	nodeType
 
 	// funky notation because `if` and `else` are go keywords
-	ifN   Node
-	thenN Node
-	elseN Node
+	If   Node
+	Then Node
+	Else Node
 }
 
 type forNode struct {
 	nodeType
 
-	counter string
-	start   Node
-	test    Node
-	step    Node
-	body    Node
+	Counter string
+	Start   Node
+	Test    Node
+	Step    Node
+	Body    Node
 }
 
 type unaryNode struct {
 	nodeType
 
-	name    string
-	operand Node
+	Name    string
+	Operand Node
 }
 
 type binaryNode struct {
 	nodeType
 
-	op    string
-	left  Node
-	right Node
+	OP    string
+	Left  Node
+	Right Node
 }
 
 type fnCallNode struct {
 	nodeType
-	callee string
-	args   []Node
+	Calee string
+	Args  []Node
 }
 
 type variableNameNode struct {
 	nodeType
-	name string
+	Name string
 }
 
 type variableNode struct {
 	nodeType
-	typ  string
-	name string
+	Type string
+	Name string
 }
 
 type variableExprNode struct {
 	nodeType
-	typ string
+	Type string
 	// vars []struct {
 	// 	name string
 	// 	node Node
 	// }
-	body Node
+	Body Node
+}
+
+type returnNode struct {
+	nodeType
+	Value Node
 }
 
 type functionNode struct {
 	nodeType
 
-	name string
-	args []variableNode
-	body Node
+	Name       string
+	Args       []variableNode
+	Body       blockNode
+	ReturnType string
 }
 
 type blockNode struct {
 	nodeType
+	Nodes []Node
+}
 
-	nodes []Node
+type whileNode struct {
+	nodeType
+
+	Predicate Node
+	Body      Node
 }

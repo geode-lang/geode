@@ -18,9 +18,7 @@
 
 # End of https://www.gitignore.io/api/go
 
-
 act
 actc
-
-
 build
+vendor

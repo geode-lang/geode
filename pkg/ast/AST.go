@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/nickwanninger/act/pkg/parser"
@@ -40,7 +41,6 @@ func Parse(tokens <-chan parser.Token) <-chan Node {
 func (p *Parser) parse() {
 	for p.next(); p.token.Type > 0; {
 		topLevelNode := p.parseTopLevelStmt()
-		spew.Dump(p.token)
 		if topLevelNode != nil {
 			p.topLevelNodes <- topLevelNode
 		} else {
@@ -51,18 +51,25 @@ func (p *Parser) parse() {
 }
 
 func (p *Parser) next() parser.Token {
-	for p.token = <-p.tokens; p.token.Type == parser.GetTokenId("WHITESPACE") || p.token.Type == parser.GetTokenId("COMMENT"); p.token = <-p.tokens {
+	for p.token = <-p.tokens; p.token.Type == parser.TokWhitespace || p.token.Type == parser.TokComment; p.token = <-p.tokens {
 	}
+
 	return p.token
 }
 
 func (p *Parser) parseTopLevelStmt() Node {
 	switch p.token.Type {
-	case parser.GetTokenId("FUNCDEFN"):
+	case parser.TokFuncDefn:
 		return p.parseFnDefn()
 	}
 
+	Error(p.token, "Invalid syntax in root")
+
 	return nil
+}
+
+func (p *Parser) getTokenPrecedence(token string) int {
+	return p.binaryOpPrecedence[token]
 }
 
 // parseFnDefn parses top level function definitions.
@@ -70,61 +77,131 @@ func (p *Parser) parseFnDefn() functionNode {
 	p.next()
 
 	fn := functionNode{}
+	fn.nodeType = nodeFunction
 
-	fn.name = p.token.Value
+	fn.Name = p.token.Value
 
 	p.next()
 
-	if p.token.Is("LEFT_PAREN") {
-		p.next()
-		for {
+	if p.token.Type == parser.TokLeftParen {
 
-			if p.token.Is("TYPE") {
+		for {
+			p.next()
+
+			// If there is an arg
+			if p.token.Is(parser.TokType) {
+
+				// Create the node
 				v := variableNode{}
-				v.typ = p.token.Value
+				v.nodeType = nodeVariable
+				// set it's type
+				v.Type = p.token.Value
+				// Check the next value
 				p.next()
-				if p.token.Is("IDENTIFIER") {
-					v.name = p.token.Value
-					fn.args = append(fn.args, v)
+
+				// if it is an identifier
+				if p.token.Is(parser.TokIdent) {
+
+					// Fill the variable's name
+					v.Name = p.token.Value
+					// and append it to the list
+					fn.Args = append(fn.Args, v)
 				} else {
-					Error(p.token, "Syntax error, invalid parameters to function %s\n", fn.name)
+					Error(p.token, "Syntax error, invalid parameters to function %s\n", fn.Name)
 				}
 			}
-			p.next()
+			// p.next()
 			// Break out case (not a comma, or a right paren)
-			if p.token.Is("RIGHT_PAREN") {
+			if p.token.Is(parser.TokRightParen) {
 				break
 			}
-			if p.token.Is("COMMA") {
-				p.next()
+			if p.token.Is(parser.TokComma) {
 				continue
 			}
-			Error(p.token, "")
 		}
 	}
 
-	if p.token.Is("TYPE") {
-		Error(p.token, "Syntax Error, function %s missing '->'\n", fn.name)
+	p.next()
+	if p.token.Is(parser.TokType) {
+		fn.ReturnType = p.token.Value
+		// move the token pointer along (no type, so we check the left curly brace)
+		p.next()
+	} else {
+		fn.ReturnType = "void"
 	}
 
 	// Get the token after the act arrow (->)
-	p.next()
-	if p.token.Is("LEFT_CURLY") {
-		fn.body = p.parseBlockStmt()
+	if p.token.Is(parser.TokLeftCurly) {
+		fn.Body = p.parseBlockStmt()
 	}
 	return fn
 }
 
+// func (p *Parser) parsePrimary() Node {
+
+// }
+
+func (p *Parser) parseIfStmt() ifNode {
+	// initialize the if statement
+	i := ifNode{}
+
+	// // Parse the predicate for the if-statement
+	// p.next()
+	// ifE := p.parseExpression()
+
+	// if ifE == nil {
+	// 	Error(p.token, "Syntax Error, expected")
+	// }
+
+	return i
+}
+
+// parse while statement
+func (p *Parser) parseWhileStmt() whileNode {
+	whl := whileNode{}
+
+	return whl
+}
+
+// parse any block statement
 func (p *Parser) parseBlockStmt() blockNode {
 	blk := blockNode{}
+	blk.nodeType = nodeBlock
+
 	for {
 		p.next()
-		if p.token.Is("RIGHT_CURLY") {
+
+		if p.token.Is(parser.TokReturn) {
+			// fmt.Println("RETURN")
+		}
+
+		if p.token.Is(parser.TokType) {
+			// parse possible variable definition
+		}
+
+		if p.token.Is(parser.TokIf) {
+			// Parse if statement
+		}
+
+		if p.token.Is(parser.TokFor) {
+			// Parse for statement
+		}
+
+		if p.token.Is(parser.TokIdent) {
+			// blk.nodes = append(blk.nodes, p.parseIdentifierExpr())
+		}
+
+		if p.token.Is(parser.TokWhile) {
+			blk.Nodes = append(blk.Nodes, p.parseWhileStmt())
+		}
+
+		// If the block is over.
+		if p.token.Is(parser.TokRightCurly) {
+			// Set the cursor on the next character
+			p.next()
 			break
 		}
 	}
-
-	p.next()
 
 	return blk
 }
@@ -134,8 +211,10 @@ func Error(t parser.Token, format string, args ...interface{}) {
 
 	fmt.Fprintf(os.Stderr, "\033[31;1m")
 	fmt.Fprintf(os.Stderr, "Token Error\n")
-	fmt.Fprintf(os.Stderr, parser.SyntaxError(t, fmt.Sprintf(format, args...)))
+
 	fmt.Fprintf(os.Stderr, "The token in question's data:\n")
+
+	fmt.Fprintf(os.Stderr, format, args...)
 	spew.Fdump(os.Stderr, t)
 	fmt.Fprintf(os.Stderr, "\033[0m\n")
 
@@ -144,19 +223,36 @@ func Error(t parser.Token, format string, args ...interface{}) {
 
 // DumpTree takes a channel of nodes and prints all Nodes it recieves,
 // then pushes them back out a new channel it makes and returns
-func DumpTree(in <-chan Node) <-chan Node {
+func DumpTree(in <-chan Node, useJSON bool) <-chan Node {
 	out := make(chan Node)
 	go func() {
 		for {
-			n, ok := <-in
-			if !ok {
+
+			// Read from the input channel of nodes.
+			n, stillOpen := <-in
+
+			// If the channel is closed, exit out of the printing phase
+			if !stillOpen {
 				close(out)
 				return
 			}
-			fmt.Println("")
-			fmt.Println("================ Root Node Parsed ================")
-			fmt.Println("")
-			spew.Dump(n)
+
+			if useJSON {
+				// Attempt to parse the
+				j, jsonParseError := json.MarshalIndent(n, "", "    ")
+				// We need to warn the user of some error printing the node, but don't fail
+				// Instead print it as a spew dump, this way presentation is still given,
+				// but maybe not in a json format.
+				if jsonParseError != nil {
+					fmt.Println("Error printing node: ", jsonParseError)
+					fmt.Println("Raw representation of the node:")
+					spew.Dump(n)
+				}
+				fmt.Println(string(j))
+			} else {
+				spew.Dump(n)
+			}
+
 			out <- n
 		}
 	}()

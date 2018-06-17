@@ -8,95 +8,155 @@ import (
 	"os"
 )
 
-// TokenType - The type of token as a string
-type TokenType string
+// int - The type of token as a string
+// type TokenType int
+
+// Assigning tokens integer values
+const (
+	TokError int = iota
+	TokWhitespace
+	TokChar
+	TokString
+	TokNumber
+
+	TokOperatorStart
+	TokStar
+	TokPlus
+	TokMinus
+	TokDiv
+	TokExp
+	TokLT
+	TokLTE
+	TokGT
+	TokGTE
+	TokOperatorEnd
+
+	TokSemiColon
+
+	TokDefereference
+	TokReference
+
+	TokAssignment
+	TokEquality
+
+	TokRightParen
+	TokLeftParen
+
+	TokRightCurly
+	TokLeftCurly
+
+	TokRightBrace
+	TokLeftBrace
+
+	TokRightArrow
+	TokLeftArrow
+
+	TokFor
+	TokWhile
+	TokIf
+	TokElse
+	TokReturn
+	TokFuncDefn
+
+	TokType
+
+	TokComma
+
+	TokIdent
+
+	TokComment
+)
+
+// TokenIsOperator will return if a given token is an operator or not
+func TokenIsOperator(t int) bool {
+	return t > TokOperatorStart && t < TokOperatorEnd
+}
 
 // TokenRegexRelation - allows a relationship between a token type and a certain regex
 type TokenRegexRelation struct {
-	token TokenType
+	token int
 	regex string
 }
 
 // Tokens is a list of all tokens
 var Tokens = []TokenRegexRelation{
-	{"ERROR", ""},
+	{TokError, ""},
 
-	{"CHAR", `'.'`},
-	{"STRING", `"([^\"]|(\\.))*"`},
-	{"NUMBER", `[+-]?[0-9]*\.?[0-9]+`},
+	{TokChar, `'.'`},
+	{TokString, `"([^\"]|(\\.))*"`},
+	{TokNumber, `[+-]?[0-9]*\.?[0-9]+`},
 
-	{"MUL", `\*`},
-	{"PLUS", `\+`},
-	{"MINUS", `-`},
-	{"DIV", `/`},
-	{"EXP", `\^`},
+	{TokStar, `\*`},
+	{TokPlus, `\+`},
+	{TokMinus, `-`},
+	{TokDiv, `/`},
+	{TokExp, `\^`},
+	{TokSemiColon, `;`},
 
-	{"DEREFERENCE", `@`},
-	{"REFERENCE", `\*`},
+	{TokDefereference, `@`},
+	{TokReference, `\*`},
 
-	{"ASSIGNMENT", `:=`},
-	{"EQUALITY", `=`},
+	{TokAssignment, `:=`},
+	{TokEquality, `=`},
 
-	{"RIGHT_PAREN", `\)`},
-	{"LEFT_PAREN", `\(`},
+	{TokRightParen, `\)`},
+	{TokLeftParen, `\(`},
 
-	{"RIGHT_CURLY", `}`},
-	{"LEFT_CURLY", `{`},
+	{TokRightCurly, `}`},
+	{TokLeftCurly, `{`},
 
-	{"RIGHT_BRACE", `\[`},
-	{"LEFT_BRACE", `\]`},
+	{TokRightBrace, `\[`},
+	{TokLeftBrace, `\]`},
 
-	{"RIGHTARROW", `->`},
-	{"LEFTARROW", `<-`},
+	{TokRightArrow, `->`},
+	{TokLeftArrow, `<-`},
 	// The main parser won't work correctly and will just look these up later
-	{"IF", ""},
-	{"ELSE", ""},
-	{"RETURN", ""},
-	{"FUNCDEFN", ""},
+	{TokIf, ""},
+	{TokElse, ""},
+	{TokReturn, ""},
+	{TokFuncDefn, ""},
 
-	{"TYPE", ""},
+	{TokType, ""},
 
-	{"COMMA", `,`},
+	{TokComma, `,`},
 
-	{"IDENTIFIER", `[a-zA-Z_][a-zA-Z0-9_]*`},
+	{TokIdent, `[a-zA-Z_][a-zA-Z0-9_]*`},
 
-	{"COMMENT", `\/\/[^\n]*`},
-	{"COMMENT", `{-.*-}`},
-	{"WHITESPACE", `\s+`},
+	{TokComment, `\/\/[^\n]*`},
+	{TokComment, `{-.*-}`},
+	{TokWhitespace, `\s+`},
 
-	{"LT", `<`},
-	{"LTE", `<=|≤`},
-	{"GT", `>`},
-	{"GTE", `>=|≥`},
+	{TokLT, `<`},
+	{TokLTE, `<=|≤`},
+	{TokGT, `>`},
+	{TokGTE, `>=|≥`},
 }
 
-var keywordrmap = map[string]TokenType{
-	"return": "RETURN",
-	"if":     "IF",
-	"else":   "ELSE",
-	"act":    "FUNCDEFN",
+var keyWordMap = map[string]int{
+	"return": TokReturn,
+	"if":     TokIf,
+	"else":   TokElse,
+	"for":    TokFor,
+	"while":  TokWhile,
+	"act":    TokFuncDefn,
 
 	// We also determine type mapping in here as well
-	"int":    "TYPE",
-	"long":   "TYPE",
-	"float":  "TYPE",
-	"string": "TYPE",
-	"char":   "TYPE",
+	"void":   TokType,
+	"int":    TokType,
+	"long":   TokType,
+	"float":  TokType,
+	"string": TokType,
+	"char":   TokType,
 }
 
-var tokmap map[TokenType]int
-
-var tokRegexMap map[string]TokenType
+var tokRegexMap map[string]int
 
 func init() {
-	tokmap = make(map[TokenType]int)
-	tokRegexMap = make(map[string]TokenType)
-	for id, val := range Tokens {
-		tokmap[val.token] = id
+	tokRegexMap = make(map[string]int)
+	for _, val := range Tokens {
 		if val.regex != "" {
 			tokRegexMap[val.regex] = val.token
 		}
-
 	}
 }
 
@@ -118,14 +178,17 @@ func (s *LexState) Lex(text []byte) error {
 			e := err.(*machines.UnconsumedInput)
 			spew.Dump(e)
 			// scanner.TC = ui.FailTC
-			// // fmt.Println(SyntaxError(e.FailLine, e.StartColumn, e.FailColumn-e.StartColumn-1, string(text), "Tokenize Failed"))
+			// fmt.Println(SyntaxError(e.FailLine, e.StartColumn, e.FailColumn-e.StartColumn-1, string(text), "Tokenize Failed"))
 			os.Exit(1)
 		} else if err != nil {
 			return err
 		} else {
+
 			// I don't like lexmachine's token, so I will convert it to my own
 			to := *tk.(*lexmachine.Token)
+
 			t := Token{}
+			t.Pos = to.TC
 			t.StartCol = to.StartColumn
 			t.StartRow = to.StartLine
 			t.EndCol = to.EndColumn
@@ -150,11 +213,11 @@ func NewLexer() *LexState {
 
 	getToken := func(tokenType int) lexmachine.Action {
 		return func(s *lexmachine.Scanner, m *machines.Match) (interface{}, error) {
-			kw, isKwInMap := keywordrmap[string(m.Bytes)]
+			kw, isKwInMap := keyWordMap[string(m.Bytes)]
 			if isKwInMap {
-				return s.Token(tokmap[kw], string(m.Bytes), m), nil
+				return s.Token(kw, string(m.Bytes), m), nil
 			}
-			if tokenType == tokmap["WHITESPACE"] {
+			if tokenType == TokWhitespace {
 				return nil, nil
 			}
 			return s.Token(tokenType, string(m.Bytes), m), nil
@@ -164,7 +227,7 @@ func NewLexer() *LexState {
 	lexer := lexmachine.NewLexer()
 
 	for k, v := range tokRegexMap {
-		lexer.Add([]byte(k), getToken(tokmap[v]))
+		lexer.Add([]byte(k), getToken(v))
 	}
 	s := &LexState{}
 	s.Tokens = make(chan Token)
@@ -173,16 +236,11 @@ func NewLexer() *LexState {
 }
 
 // GetTokenName takes an id (an index) and returns the token's representation
-func GetTokenName(id int) TokenType {
-	return Tokens[id].token
+func GetTokenName(id int) int {
+	return id
 }
 
-// GetTokenId -
-func GetTokenId(t TokenType) int {
-	return tokmap[t]
-}
-
-// TokenIs -
-func TokenIs(t Token, a TokenType) bool {
-	return t.Type == GetTokenId(a)
+// GetTokenID -
+func GetTokenID(t int) int {
+	return t
 }

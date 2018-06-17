@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
-	// "github.com/nickwanninger/act/pkg/ast"
+	"github.com/nickwanninger/act/pkg/ast"
 	"github.com/nickwanninger/act/pkg/parser"
 	"io/ioutil"
 	"os"
@@ -12,11 +12,11 @@ import (
 )
 
 var (
-	batch       = flag.Bool("b", false, "batch (non-interactive) mode")
-	optimized   = flag.Bool("opt", true, "add some optimization passes")
-	printTokens = flag.Bool("tok", false, "Print tokens")
-	printAst    = flag.Bool("ast", false, "print abstract syntax tree")
-	printLLVMIR = flag.Bool("s", false, "print LLVM generated code")
+	optimizeLevel = flag.Int("o", 3, "add some optimization passes")
+	printTokens   = flag.Bool("tok", false, "Print tokens as they are parsed (for debugging)")
+	printAst      = flag.Bool("ast", false, "print abstract syntax tree (for debugging)")
+	printASTJson  = flag.Bool("json", false, "If true, the ast will be dumped to the console as json instead of raw")
+	printLLVMIR   = flag.Bool("s", false, "print LLVM generated code")
 )
 
 // Usage will print the usage of the program
@@ -50,46 +50,49 @@ func resolveFileName(filename string) (string, error) {
 
 func main() {
 
-	spew.Config.Indent = "        "
+	spew.Config.Indent = "  "
 	spew.Config.SortKeys = true
 	flag.Usage = Usage
 	flag.Parse()
+	// Pull the other arguments from the list of args
+	// these come from after the arguments parsed abov
+	// that allow the user to configure the compiler
 	args := flag.Args()
 
-	lexer := parser.NewLexer()
-
 	if flag.NArg() == 0 {
-		fmt.Println("No .act files provided.")
+		fmt.Println("No .act files or folders containing .act files provided.")
 		Usage()
 		return
 	}
-
+	// Get the filename with the resolver method. This allows a user to enter `.` and the compiler will assume they meant `./main.act`
+	// it also allows the user to enter `foo` and the compiler will attempt to compile `foo.act`
 	filename, ferr := resolveFileName(args[0])
 	if ferr != nil {
 		fmt.Println(ferr)
-		return
+		os.Exit(1)
 	}
 
 	data, err := ioutil.ReadFile(filename)
 
 	if err != nil {
 		fmt.Println(err)
+		os.Exit(1)
 	}
 
+	// Build a new lexer. This contans the methods required to parse some string of data into
+	lexer := parser.NewLexer()
+	// Run the lexer concurrently
 	go lexer.Lex(data)
 
-	// nodes := ast.Parse(lexer.Tokens)
+	nodes := ast.Parse(lexer.Tokens)
 
-	// if *printAst {
-	// 	nodes = ast.DumpTree(nodes)
-	// }
-
+	if *printAst {
+		nodes = ast.DumpTree(nodes, *printASTJson)
+	}
 	for true {
-		t, ok := <-lexer.Tokens
+		_, ok := <-nodes
 		if !ok {
 			break
 		}
-
-		fmt.Println(t)
 	}
 }

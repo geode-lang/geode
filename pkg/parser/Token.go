@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"fmt"
+// "fmt"
 )
 
 // Token is a token in the program
@@ -10,6 +10,7 @@ type Token struct {
 	Type       int     `json:"type,omitempty"`
 	Value      string  `json:"value,omitempty"`
 	Lexeme     []byte  `json:"lexeme,omitempty"`
+	Pos        int     `json:"pos"`
 	StartCol   int     `json:"start_col,omitempty"`
 	StartRow   int     `json:"start_row,omitempty"`
 	EndCol     int     `json:"end_col,omitempty"`
@@ -17,11 +18,11 @@ type Token struct {
 }
 
 // Is - returns if the token is a certain type as a string
-func (t *Token) Is(a TokenType) bool {
-	return t.Type == GetTokenId(a)
+func (t *Token) Is(a int) bool {
+	return t.Type == a
 }
 
-func (t Token) String() string {
+// func (t Token) String() string {
 
-	return fmt.Sprintf("%12s : %q", GetTokenName(t.Type), t.Value)
-}
+// 	return fmt.Sprintf("%12s : %q", GetTokenName(t.Type), t.Value)
+// }
