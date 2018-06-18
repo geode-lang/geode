@@ -1,3 +1,7 @@
-func main() {
-	return 1 + 2 * 3
+func main(int a, int b, int c, int d) {
+	return add(1, 2 + 3);
+}
+
+func add(int a, int b) void {
+	retrun a + b
 }

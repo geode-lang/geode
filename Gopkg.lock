@@ -15,7 +15,7 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/nickwanninger/llvm"
+  name = "github.com/go-llvm/llvm"
   packages = ["."]
   revision = "c8914dc5244584970ee28d046064ce246890cd69"
 

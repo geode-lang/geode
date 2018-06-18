@@ -2,19 +2,17 @@ package parser
 
 import (
 	"encoding/json"
+	"github.com/nickwanninger/act/pkg/types"
+	"strconv"
 )
 
 // Token is a token in the program
 type Token struct {
-	SourceCode *string `json:"source_code,omitempty"`
+	SourceCode *string `json:"-"`
 	Type       int     `json:"type,omitempty"`
 	Value      string  `json:"value,omitempty"`
-	Lexeme     []byte  `json:"lexeme,omitempty"`
-	Pos        int     `json:"pos"`
-	StartCol   int     `json:"start_col,omitempty"`
-	StartRow   int     `json:"start_row,omitempty"`
-	EndCol     int     `json:"end_col,omitempty"`
-	EndRow     int     `json:"end_row,omitempty"`
+	Pos        int     `json:"start_pos"`
+	EndPos     int     `json:"end_pos"`
 }
 
 // Is - returns if the token is a certain type as a string
@@ -27,7 +25,6 @@ func (t Token) String() string {
 	m := make(map[string]interface{})
 	m["type"] = GetTokenName(t.Type)
 	m["value"] = t.Value
-	m["start"], m["end"] = t.getPosRange()
 
 	encoded, err := json.MarshalIndent(t, "", "  ")
 	if err != nil {
@@ -36,11 +33,10 @@ func (t Token) String() string {
 	return string(encoded)
 }
 
-func (t Token) getPosRange() (int, int) {
+func (t *Token) buildEndPos(endCol int, endRow int) {
 
 	src := *t.SourceCode
 
-	start := t.Pos
 	end := 0
 
 	row := 1
@@ -52,13 +48,38 @@ func (t Token) getPosRange() (int, int) {
 			row++
 			col = 1
 		}
-		if row == t.EndRow && col == t.EndCol {
+		if row == endRow && col == endCol {
 			end = i
 			break
 		}
 	}
 
-	return start, end
+	t.EndPos = end
+}
+
+// InferType takes some token and guesses the type
+func (t Token) InferType() (*types.VarType, interface{}) {
+	if t.Type == TokNumber {
+		intval, intErr := strconv.ParseInt(t.Value, 10, 8)
+		if intErr == nil {
+			return types.DefaultIntType, intval
+		}
+
+		floatval, floatErr := strconv.ParseFloat(t.Value, 8)
+		if floatErr == nil {
+			return types.DefaultFloatType, floatval
+		}
+	}
+
+	// if t.Type == TokString {
+	// 	return types.DefaultStringType, t.Value
+	// }
+
+	// if t.Type == TokChar {
+	// 	return types.DefaultCharType, t.Value
+	// }
+
+	return nil, nil
 }
 
 // func (t Token) String() string {

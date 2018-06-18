@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/timtadh/lexmachine"
@@ -195,14 +196,9 @@ func (s *LexState) Lex(text []byte) error {
 			t := Token{}
 			t.SourceCode = &srcString
 			t.Pos = to.TC
-			t.StartCol = to.StartColumn
-			t.StartRow = to.StartLine
-			t.EndCol = to.EndColumn
-			t.EndRow = to.EndLine
+			t.buildEndPos(to.EndColumn, to.EndLine)
 			t.Type = to.Type
-			t.Lexeme = to.Lexeme
 			t.Value = string(to.Value.(string))
-			fmt.Println(t)
 			// t.SourceCode = &text
 			s.Tokens <- t
 		}
@@ -251,16 +247,30 @@ func GetTokenID(t int) int {
 // then pushes them back out a new channel it makes and returns
 func DumpTokens(in chan Token) chan Token {
 	out := make(chan Token)
+	tokens := make([]Token, 0)
 	go func() {
 		for {
 			// Read from the input channel of nodes.
 			n, stillOpen := <-in
 			// If the channel is closed, exit out of the printing phase
 			if !stillOpen {
+				tokenMaps := make([]map[string]interface{}, 0)
+				for _, t := range tokens {
+					m := make(map[string]interface{})
+					m["type"] = GetTokenName(t.Type)
+					m["type_raw"] = t.Type
+					m["value"] = t.Value
+					m["start_pos"] = t.Pos
+					m["end_pos"] = t.EndPos
+					_, m["type_inference"] = t.InferType()
+					tokenMaps = append(tokenMaps, m)
+				}
+				j, _ := json.MarshalIndent(tokenMaps, "", "  ")
+				fmt.Println(string(j))
 				close(out)
 				return
 			}
-			spew.Dump(n)
+			tokens = append(tokens, n)
 			out <- n
 		}
 	}()

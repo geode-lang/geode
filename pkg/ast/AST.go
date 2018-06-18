@@ -82,89 +82,11 @@ func (p *Parser) getTokenPrecedence(token string) int {
 	return p.binaryOpPrecedence[token]
 }
 
-// parseFnDefn parses top level function definitions.
-func (p *Parser) parseFnDefn() functionNode {
-	p.next()
-
-	fn := functionNode{}
-	fn.nodeType = nodeFunction
-
-	fn.Name = p.token.Value
-
-	p.next()
-
-	if p.token.Type == parser.TokLeftParen {
-
-		for {
-			p.next()
-
-			// If there is an arg
-			if p.token.Is(parser.TokType) {
-
-				// Create the node
-				v := variableNode{}
-				v.nodeType = nodeVariable
-				// set it's type
-				v.Type = p.token.Value
-				// Check the next value
-				p.next()
-
-				// if it is an identifier
-				if p.token.Is(parser.TokIdent) {
-
-					// Fill the variable's name
-					v.Name = p.token.Value
-					// and append it to the list
-					fn.Args = append(fn.Args, v)
-				} else {
-					Error(p.token, "Syntax error, invalid parameters to function %s\n", fn.Name)
-				}
-			}
-			// p.next()
-			// Break out case (not a comma, or a right paren)
-			if p.token.Is(parser.TokRightParen) {
-				break
-			}
-			if p.token.Is(parser.TokComma) {
-				continue
-			}
-		}
-	}
-
-	p.next()
-	if p.token.Is(parser.TokType) {
-		fn.ReturnType = p.token.Value
-		// move the token pointer along (no type, so we check the left curly brace)
-		p.next()
-	} else {
-		fn.ReturnType = "void"
-	}
-
-	// Get the token after the act arrow (->)
-	if p.token.Is(parser.TokLeftCurly) {
-		fn.Body = p.parseBlockStmt()
-	}
-	return fn
-}
+// Parse expression is the important ast parser function.Node
+// It can parse any expression like `1`, `1 + 2`, `func()`, `func(1)`
+// or any mixture. It's basically the workhorse function
 
 // parse any block statement
-func (p *Parser) parseBlockStmt() blockNode {
-	blk := blockNode{}
-	blk.nodeType = nodeBlock
-
-	for {
-		p.next()
-
-		// If the block is over.
-		if p.token.Is(parser.TokRightCurly) {
-			// Set the cursor on the next character
-			p.next()
-			break
-		}
-	}
-
-	return blk
-}
 
 // Error is a helper function to make logging easier
 func Error(t parser.Token, format string, args ...interface{}) {
@@ -175,7 +97,7 @@ func Error(t parser.Token, format string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, "The token in question's data:\n")
 
 	fmt.Fprintf(os.Stderr, format, args...)
-	spew.Fdump(os.Stderr, t)
+	// spew.Fdump(os.Stderr, t)
 	fmt.Fprintf(os.Stderr, "\033[0m\n")
 
 	os.Exit(1)
@@ -186,25 +108,7 @@ func Error(t parser.Token, format string, args ...interface{}) {
 func DumpTree(in <-chan Node, useJSON bool) <-chan Node {
 	out := make(chan Node)
 	go func() {
-		for {
-
-			// Read from the input channel of nodes.
-			n, stillOpen := <-in
-
-			// If the channel is closed, exit out of the printing phase
-			if !stillOpen {
-				close(out)
-				return
-			}
-			// var network bytes.Buffer        // Stand-in for a network connection
-			// enc := gob.NewEncoder(&network) // Will write to network.
-
-			// err := enc.Encode(n)
-			// if err != nil {
-			// 	fmt.Println("encode error:", err)
-			// }
-
-			// fmt.Printf("%x\n", sha1.Sum(network.Bytes()))
+		for n := range in {
 
 			if useJSON {
 				// Attempt to parse the

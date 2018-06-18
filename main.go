@@ -6,6 +6,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/nickwanninger/act/pkg/ast"
 	"github.com/nickwanninger/act/pkg/parser"
+	// "github.com/nickwanninger/act/pkg/types"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -27,6 +28,7 @@ func Usage() {
 	flag.PrintDefaults()
 }
 
+//
 // if the filename passed in is a folder, look in that folder for a main.act
 // if the filename is not, look for a file matching that filename, but with a .act extension
 func resolveFileName(filename string) (string, error) {
@@ -50,8 +52,11 @@ func resolveFileName(filename string) (string, error) {
 }
 
 func main() {
+
 	spew.Config.Indent = "  "
 	spew.Config.SortKeys = true
+	spew.Config.SpewKeys = true
+
 	flag.Usage = Usage
 	flag.Parse()
 	// Pull the other arguments from the list of args
@@ -95,10 +100,10 @@ func main() {
 	if *printAst {
 		nodes = ast.DumpTree(nodes, *printASTJson)
 	}
-	for true {
-		_, ok := <-nodes
-		if !ok {
-			break
-		}
+	for node := range nodes {
+		node.Codegen()
 	}
+	fmt.Println(ast.GetLLVMIR())
+	fmt.Println("Scope:")
+	spew.Dump(ast.GetRootScope())
 }

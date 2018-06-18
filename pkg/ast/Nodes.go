@@ -1,27 +1,43 @@
 package ast
 
 import (
-// "github.com/nickwanninger/llvm"
+	"github.com/go-llvm/llvm"
+	"github.com/nickwanninger/act/pkg/types"
 )
 
-// var foo llvm.Value
+var foo llvm.Type
+var foobar llvm.Value
+
+// NodeType -
+type NodeType int
 
 // Node -
 type Node interface {
-	Kind() nodeType
-	// codegen() llvm.Value
+	Kind() NodeType
+	NameString() string
+	Codegen() llvm.Value
 }
 
-type nodeType int
-
-func (t nodeType) Kind() nodeType {
+// Kind -
+func (t NodeType) Kind() NodeType {
 	return t
 }
 
+// Inferer interface allows anything that implements it to assume/infer
+// the type of itself and return it as a string
+type Inferer interface {
+	InferType() string
+}
+
+// func (t NodeType) String() string {
+// 	return "nothing"
+// }
+
 const (
 	// literals
-	nodeInt nodeType = iota
+	nodeInt NodeType = iota
 	nodeFloat
+	nodeString
 
 	// expressions
 	nodeIf
@@ -31,28 +47,41 @@ const (
 
 	nodeFnCall
 	nodeVariable
-	nodeVarialbeExpr
+	nodeVariableDecl
+	nodeVariableReference
 
 	// non-expression statements
 	nodeFnPrototype
 	nodeFunction
+	nodeFunctionCall
 
 	// Other
 	nodeBlock
 )
 
 type intNode struct {
-	nodeType
+	NodeType
 	Value int64
 }
 
+func (n intNode) NameString() string { return "intNode" }
+
 type floatNode struct {
-	nodeType
+	NodeType
 	Value float64
 }
 
+func (n floatNode) NameString() string { return "floatNode" }
+
+type stringNode struct {
+	NodeType
+	Value string
+}
+
+func (n stringNode) NameString() string { return "stringNode" }
+
 type ifNode struct {
-	nodeType
+	NodeType
 
 	// funky notation because `if` and `else` are go keywords
 	If   Node
@@ -60,8 +89,10 @@ type ifNode struct {
 	Else Node
 }
 
+func (n ifNode) NameString() string { return "ifNode" }
+
 type forNode struct {
-	nodeType
+	NodeType
 
 	Counter string
 	Start   Node
@@ -70,70 +101,91 @@ type forNode struct {
 	Body    Node
 }
 
+func (n forNode) NameString() string { return "forNode" }
+
 type unaryNode struct {
-	nodeType
+	NodeType
 
 	Name    string
 	Operand Node
 }
 
+func (n unaryNode) NameString() string { return "unaryNode" }
+
 type binaryNode struct {
-	nodeType
+	NodeType
 
 	OP    string
 	Left  Node
 	Right Node
 }
 
+func (n binaryNode) NameString() string { return "binaryNode" }
+
 type fnCallNode struct {
-	nodeType
+	NodeType
 	Calee string
 	Args  []Node
 }
 
-type variableNameNode struct {
-	nodeType
+func (n fnCallNode) NameString() string { return "fnCallNode" }
+
+type variableReferenceNode struct {
+	NodeType
 	Name string
 }
+
+func (n variableReferenceNode) NameString() string { return "variableReferenceNode" }
 
 type variableNode struct {
-	nodeType
-	Type string
-	Name string
+	NodeType
+	Type    *types.VarType
+	Name    string
+	IsArray bool
+	Body    Node
 }
 
-type variableExprNode struct {
-	nodeType
-	Type string
-	// vars []struct {
-	// 	name string
-	// 	node Node
-	// }
-	Body Node
-}
+func (n variableNode) NameString() string { return "variableNode" }
 
 type returnNode struct {
-	nodeType
+	NodeType
 	Value Node
 }
 
+func (n returnNode) NameString() string { return "returnNode" }
+
 type functionNode struct {
-	nodeType
+	NodeType
 
 	Name       string
 	Args       []variableNode
 	Body       blockNode
-	ReturnType string
+	ReturnType *types.VarType
 }
 
+func (n functionNode) NameString() string { return "functionNode" }
+
+type functionCallNode struct {
+	NodeType
+
+	Name string
+	Args []Node
+}
+
+func (n functionCallNode) NameString() string { return "functionCallNode" }
+
 type blockNode struct {
-	nodeType
+	NodeType
 	Nodes []Node
 }
 
+func (n blockNode) NameString() string { return "blockNode" }
+
 type whileNode struct {
-	nodeType
+	NodeType
 
 	Predicate Node
 	Body      Node
 }
+
+func (n whileNode) NameString() string { return "whileNode" }
