@@ -44,9 +44,8 @@ var (
 	DefaultIntType    = NewType("int", false, 8, false, llvm.Int64Type())
 	DefaultFloatType  = NewType("float", false, 8, false, llvm.DoubleType())
 	DefaultCharType   = NewType("char", false, 8, false, llvm.Int8Type())
-	DefaultStringType = NewType("string", false, 8, false, llvm.PointerType(llvm.Int8Type(), 0))
+	DefaultStringType = NewType("string", false, 8, false, llvm.Type{})
 	DefaultVoidType   = NewType("void", false, 8, false, llvm.VoidType())
-	// DefaultStringType = NewType("string", false, 1, true, llvm.Type{}) // strings are a pointer to a byte, with a size of 1
 	// DefaultCharType = NewType("char", false, 1, false, llvm.Int8Type())
 )
 
@@ -65,7 +64,6 @@ func (m *TypeMap) PopulateDefaults() {
 	m.Types["char"] = DefaultCharType
 	m.Types["string"] = DefaultStringType
 	m.Types["void"] = DefaultVoidType
-	// m.Types["string"] = DefaultStringType
 	// m.Types["char"] = DefaultStringType
 }
 

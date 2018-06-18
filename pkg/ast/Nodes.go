@@ -15,7 +15,7 @@ type NodeType int
 type Node interface {
 	Kind() NodeType
 	NameString() string
-	Codegen() llvm.Value
+	Codegen(*Scope) llvm.Value
 }
 
 // Kind -
@@ -139,10 +139,11 @@ func (n variableReferenceNode) NameString() string { return "variableReferenceNo
 
 type variableNode struct {
 	NodeType
-	Type    *types.VarType
-	Name    string
-	IsArray bool
-	Body    Node
+	Type     *types.VarType
+	HasValue bool
+	Name     string
+	IsArray  bool
+	Body     Node
 }
 
 func (n variableNode) NameString() string { return "variableNode" }

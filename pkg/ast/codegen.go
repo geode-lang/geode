@@ -3,6 +3,7 @@ package ast
 import (
 	"fmt"
 	"github.com/go-llvm/llvm"
+	"io/ioutil"
 	"os"
 )
 
@@ -15,16 +16,30 @@ var (
 	execEngine, jitInitErr = llvm.NewMCJITCompiler(rootModule, llvm.MCJITCompilerOptions{})
 )
 
-// Scope -
+// Scope trees represent block scoping by having a root scope
+// and children scopes that point back to their parent scope.
 type Scope struct {
 	Parent   *Scope
 	Children []*Scope
 	Vals     map[string]llvm.Value
 }
 
-// Set -
+// Set a value in this specific scope
 func (s *Scope) Set(name string, val llvm.Value) {
+	// _, alreadyDefined := s.Vals[name]
+	// if alreadyDefined {
+	// 	error(fmt.Sprintf("variable `%s` already defined in scope", name))
+	// }
 	s.Vals[name] = val
+}
+
+// Find will traverse the scope tree to find some definition of a symbol
+func (s *Scope) Find(name string) (llvm.Value, bool) {
+	val, found := s.Vals[name]
+	if !found && s.Parent != nil {
+		return s.Parent.Find(name)
+	}
+	return val, found
 }
 
 // SpawnChild takes a parent scope and creates a new variable scope for scoped variable access.
@@ -48,6 +63,23 @@ func init() {
 		os.Exit(-1)
 	}
 
+	llvm.InitializeAllTargetInfos()
+	llvm.InitializeAllTargets()
+	llvm.InitializeAllTargetMCs()
+	llvm.InitializeAllAsmParsers()
+	llvm.InitializeAllAsmPrinters()
+
+	CPU := "generic"
+	features := ""
+	targetTripple := llvm.DefaultTargetTriple()
+	opt := llvm.CodeGenLevelNone
+	reloc := llvm.RelocDefault
+	model := llvm.CodeModelDefault
+	target, err := llvm.GetTargetFromTriple(targetTripple)
+	if err != nil {
+		panic(err)
+	}
+	target.CreateTargetMachine(targetTripple, CPU, features, opt, reloc, model)
 }
 
 func error(err string) llvm.Value {
@@ -67,22 +99,99 @@ func Optimize() {
 	rootFuncPassMgr.InitializeFunc()
 }
 
-func (n intNode) Codegen() llvm.Value               { return llvm.Value{} }
-func (n stringNode) Codegen() llvm.Value            { return llvm.Value{} }
-func (n ifNode) Codegen() llvm.Value                { return llvm.Value{} }
-func (n forNode) Codegen() llvm.Value               { return llvm.Value{} }
-func (n unaryNode) Codegen() llvm.Value             { return llvm.Value{} }
-func (n binaryNode) Codegen() llvm.Value            { return llvm.Value{} }
-func (n fnCallNode) Codegen() llvm.Value            { return llvm.Value{} }
-func (n variableReferenceNode) Codegen() llvm.Value { return llvm.Value{} }
-func (n variableNode) Codegen() llvm.Value          { return llvm.Value{} }
-func (n returnNode) Codegen() llvm.Value            { return llvm.Value{} }
-func (n functionCallNode) Codegen() llvm.Value      { return llvm.Value{} }
-func (n blockNode) Codegen() llvm.Value             { return llvm.Value{} }
-func (n whileNode) Codegen() llvm.Value             { return llvm.Value{} }
+func (n ifNode) Codegen(scope *Scope) llvm.Value           { return llvm.Value{} }
+func (n forNode) Codegen(scope *Scope) llvm.Value          { return llvm.Value{} }
+func (n unaryNode) Codegen(scope *Scope) llvm.Value        { return llvm.Value{} }
+func (n binaryNode) Codegen(scope *Scope) llvm.Value       { return llvm.Value{} }
+func (n fnCallNode) Codegen(scope *Scope) llvm.Value       { return llvm.Value{} }
+func (n functionCallNode) Codegen(scope *Scope) llvm.Value { return llvm.Value{} }
 
-func (n floatNode) Codegen() llvm.Value {
+func (n whileNode) Codegen(scope *Scope) llvm.Value { return llvm.Value{} }
+
+func (n returnNode) Codegen(scope *Scope) llvm.Value {
+	retVal := n.Value.Codegen(scope)
+	builder.CreateRet(retVal)
+	return llvm.Value{}
+}
+
+func (n intNode) Codegen(scope *Scope) llvm.Value {
+	return llvm.ConstInt(llvm.Int64Type(), uint64(n.Value), true)
+}
+
+var stringIndex int
+
+func (n stringNode) Codegen(scope *Scope) llvm.Value {
+	// length := len(n.Value)
+
+	var backingArrayPointer llvm.Value
+
+	globString := builder.CreateGlobalStringPtr(n.Value, ".str")
+	fmt.Println(globString)
+	// backingArray := v.Create
+
+	return backingArrayPointer
+}
+
+func (n floatNode) Codegen(scope *Scope) llvm.Value {
 	return llvm.ConstFloat(llvm.DoubleType(), n.Value)
+}
+
+func (n variableReferenceNode) Codegen(scope *Scope) llvm.Value {
+	v, found := scope.Find(n.Name)
+	if !found {
+		fmt.Printf("unknown variable name `%s`\n", n.Name)
+		os.Exit(-1)
+	}
+	return builder.CreateLoad(v, n.Name)
+}
+
+func (n variableNode) Codegen(scope *Scope) llvm.Value {
+	var oldvars = []llvm.Value{}
+
+	f := builder.GetInsertBlock().Parent()
+	name := n.Name
+	body := n.Body
+	varType := n.Type.LLVMType
+
+	var val llvm.Value
+	if body != nil {
+		val = body.Codegen(scope)
+		if val.IsNil() {
+			return val // nil
+		}
+	}
+
+	alloca := createEntryBlockAlloca(f, varType, n.Name)
+	builder.CreateStore(val, alloca)
+
+	oldVar, _ := scope.Find(name)
+	oldvars = append(oldvars, oldVar)
+	scope.Set(name, alloca)
+
+	// evaluate body now that vars are in scope
+	bodyVal := body.Codegen(scope)
+	if bodyVal.IsNil() {
+		return ErrorV("body returns nil") // nil
+	}
+
+	// pop old values
+	// for i := range n.Vars {
+	// 	Scope.Set(name, oldvars[1])
+	// 	// namedVals[n.vars[i].name] = oldvars[i]
+	// }
+
+	return bodyVal
+}
+
+func (n blockNode) Codegen(scope *Scope) llvm.Value {
+	blockScope := scope.SpawnChild()
+
+	for _, node := range n.Nodes {
+		node.Codegen(blockScope)
+	}
+
+	return llvm.Value{}
+
 }
 
 func createEntryBlockAlloca(f llvm.Value, t llvm.Type, name string) llvm.Value {
@@ -91,8 +200,7 @@ func createEntryBlockAlloca(f llvm.Value, t llvm.Type, name string) llvm.Value {
 	return tmpB.CreateAlloca(t, name)
 }
 
-func (n functionNode) Codegen() llvm.Value {
-	scope := GetRootScope().SpawnChild()
+func (n functionNode) Codegen(scope *Scope) llvm.Value {
 
 	funcArgs := []llvm.Type{}
 	for _, arg := range n.Args {
@@ -128,12 +236,12 @@ func (n functionNode) Codegen() llvm.Value {
 		scope.Set(n.Args[i].Name, alloca)
 	}
 
-	n.Body.Codegen()
+	n.Body.Codegen(scope)
 
-	if llvm.VerifyFunction(function, llvm.PrintMessageAction) != nil {
-		function.EraseFromParentAsFunction()
-		return error("function verifiction failed")
-	}
+	// if llvm.VerifyFunction(function, llvm.PrintMessageAction) != nil {
+	// 	function.EraseFromParentAsFunction()
+	// 	return error("function verifiction failed")
+	// }
 
 	rootScope.Set(n.Name, function)
 
@@ -148,4 +256,35 @@ func GetRootScope() *Scope {
 // GetLLVMIR returns the llvm IR of the compiled program
 func GetLLVMIR() string {
 	return rootModule.String()
+}
+
+// ErrorV -
+func ErrorV(str string) llvm.Value {
+	fmt.Fprintf(os.Stderr, "Error: %v\n", str)
+	return llvm.Value{}
+}
+
+// EmitModuleObject takes an llvm module and emits the object code
+func EmitModuleObject() string {
+	filename := "out.o"
+
+	target, targetMachineTrippleError := llvm.GetTargetFromTriple(llvm.DefaultTargetTriple())
+	if targetMachineTrippleError != nil {
+		panic(targetMachineTrippleError)
+	}
+
+	targetMachine := target.CreateTargetMachine(llvm.DefaultTargetTriple(), "", "", llvm.CodeGenLevelNone, llvm.RelocDefault, llvm.CodeModelDefault)
+	// targetData := targetMachine.TargetData()
+
+	membuf, emitErr := targetMachine.EmitToMemoryBuffer(rootModule, llvm.ObjectFile)
+	if emitErr != nil {
+		panic(emitErr)
+	}
+
+	writeErr := ioutil.WriteFile(filename, membuf.Bytes(), 0666)
+	if writeErr != nil {
+		panic(writeErr)
+	}
+
+	return filename
 }

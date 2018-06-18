@@ -34,6 +34,7 @@ func (p *Parser) parseVariableDefn(allowDefn bool) variableNode {
 	}
 
 	if allowDefn && p.nextToken.Is(parser.TokAssignment) {
+		n.HasValue = true
 		p.next()
 		p.next()
 		n.Body = p.parseExpression()

@@ -101,9 +101,9 @@ func main() {
 		nodes = ast.DumpTree(nodes, *printASTJson)
 	}
 	for node := range nodes {
-		node.Codegen()
+		node.Codegen(ast.GetRootScope().SpawnChild())
 	}
+	ast.Optimize()
+	ast.EmitModuleObject()
 	fmt.Println(ast.GetLLVMIR())
-	fmt.Println("Scope:")
-	spew.Dump(ast.GetRootScope())
 }
