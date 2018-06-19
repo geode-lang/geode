@@ -1,11 +1,12 @@
-package ast
+package gen
 
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/nickwanninger/act/pkg/parser"
-	"os"
 )
 
 // Parser -
@@ -95,7 +96,7 @@ func Error(t parser.Token, format string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, "Token Error\n")
 
 	fmt.Fprintf(os.Stderr, "The token in question's data:\n")
-
+	spew.Dump(t)
 	fmt.Fprintf(os.Stderr, format, args...)
 	// spew.Fdump(os.Stderr, t)
 	fmt.Fprintf(os.Stderr, "\033[0m\n")

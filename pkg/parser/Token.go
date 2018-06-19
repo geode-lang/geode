@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/nickwanninger/act/pkg/types"
 	"strconv"
+	"strings"
 )
 
 // Token is a token in the program
@@ -75,9 +76,11 @@ func (t Token) InferType() (*types.VarType, interface{}) {
 	// 	return types.DefaultStringType, t.Value
 	// }
 
-	// if t.Type == TokChar {
-	// 	return types.DefaultCharType, t.Value
-	// }
+	if t.Type == TokChar {
+
+		c := strings.Trim(t.Value, "'")[0]
+		return types.DefaultCharType, c
+	}
 
 	return nil, nil
 }

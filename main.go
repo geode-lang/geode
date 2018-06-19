@@ -3,22 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/nickwanninger/act/pkg/ast"
-	"github.com/nickwanninger/act/pkg/parser"
-	// "github.com/nickwanninger/act/pkg/types"
+
 	"io/ioutil"
 	"os"
 	"strings"
-)
 
-var (
-	outFile       = flag.String("o", "a.out", "The output filename")
-	optimizeLevel = flag.Int("opt", 3, "add some optimization passes")
-	printTokens   = flag.Bool("tok", false, "Print tokens as they are parsed (for debugging)")
-	printAst      = flag.Bool("ast", false, "print abstract syntax tree (for debugging)")
-	printASTJson  = flag.Bool("json", false, "If true, the ast will be dumped to the console as json instead of raw")
-	printLLVMIR   = flag.Bool("s", false, "print LLVM generated code")
+	"github.com/davecgh/go-spew/spew"
+	"github.com/nickwanninger/act/pkg/gen"
+	"github.com/nickwanninger/act/pkg/parser"
 )
 
 // Usage will print the usage of the program
@@ -51,18 +43,39 @@ func resolveFileName(filename string) (string, error) {
 	return filename, nil
 }
 
+// FlagConfig -
+type FlagConfig struct {
+	OutFile       *string
+	OptimizeLevel *int
+	PrintTokens   *bool
+	PrintAst      *bool
+	PrintASTJson  *bool
+	PrintLLVMIR   *bool
+	Args          []string
+}
+
+func parseFlags() *FlagConfig {
+	c := &FlagConfig{}
+	flag.Usage = Usage
+	c.OutFile = flag.String("o", "out", "The output filename")
+	c.OptimizeLevel = flag.Int("opt", 3, "add some optimization passes")
+	c.PrintTokens = flag.Bool("tok", false, "Print tokens as they are parsed (for debugging)")
+	c.PrintAst = flag.Bool("ast", false, "print abstract syntax tree (for debugging)")
+	c.PrintASTJson = flag.Bool("json", false, "If true, the ast will be dumped to the console as json instead of raw")
+	c.PrintLLVMIR = flag.Bool("s", false, "dump LLVM IR to console and don't compile")
+	flag.Parse()
+	c.Args = flag.Args()
+
+	return c
+}
+
 func main() {
 
 	spew.Config.Indent = "  "
 	spew.Config.SortKeys = true
 	spew.Config.SpewKeys = true
 
-	flag.Usage = Usage
-	flag.Parse()
-	// Pull the other arguments from the list of args
-	// these come from after the arguments parsed abov
-	// that allow the user to configure the compiler
-	args := flag.Args()
+	config := parseFlags()
 
 	if flag.NArg() == 0 {
 		fmt.Println("No .act files or folders containing .act files provided.")
@@ -71,7 +84,7 @@ func main() {
 	}
 	// Get the filename with the resolver method. This allows a user to enter `.` and the compiler will assume they meant `./main.act`
 	// it also allows the user to enter `foo` and the compiler will attempt to compile `foo.act`
-	filename, ferr := resolveFileName(args[0])
+	filename, ferr := resolveFileName(config.Args[0])
 	if ferr != nil {
 		fmt.Println(ferr)
 		os.Exit(1)
@@ -87,23 +100,34 @@ func main() {
 	// Build a new lexer. This contans the methods required to parse some string of data into
 	lexer := parser.NewLexer()
 	// Run the lexer concurrently
-	go lexer.Lex(data)
+	go lexer.Lex([]byte(string(gen.RuntimeSource) + string(data)))
 
 	tokens := lexer.Tokens
 
-	if *printTokens {
+	if *config.PrintTokens {
 		tokens = parser.DumpTokens(lexer.Tokens)
 	}
 
-	nodes := ast.Parse(tokens)
+	nodes := gen.Parse(tokens)
 
-	if *printAst {
-		nodes = ast.DumpTree(nodes, *printASTJson)
+	if *config.PrintAst {
+		nodes = gen.DumpTree(nodes, *config.PrintASTJson)
 	}
+
+	comp := gen.NewCompiler(filename, *config.OutFile)
 	for node := range nodes {
-		node.Codegen(ast.GetRootScope().SpawnChild())
+		node.Codegen(comp.RootScope.SpawnChild(), comp)
 	}
-	ast.Optimize()
-	ast.EmitModuleObject()
-	fmt.Println(ast.GetLLVMIR())
+	// compiler.Optimize()
+
+	if *config.PrintLLVMIR {
+		fmt.Println(comp.GetLLVMIR())
+		return
+	}
+
+	comp.EmitModuleObject()
+	compiled := comp.Compile()
+	if !compiled {
+		fmt.Println("Compilation failed. Please check the logs")
+	}
 }

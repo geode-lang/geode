@@ -3,10 +3,11 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/timtadh/lexmachine"
 	"github.com/timtadh/lexmachine/machines"
-	"os"
 )
 
 // int - The type of token as a string
@@ -19,6 +20,8 @@ const (
 	TokChar
 	TokString
 	TokNumber
+
+	TokElipsis
 
 	TokOperatorStart
 	TokStar
@@ -87,6 +90,8 @@ var Tokens = []TokenInfoRelation{
 	{TokChar, `'.'`, "char"},
 	{TokString, `"([^\"]|(\\.))*"`, "string"},
 	{TokNumber, `[+-]?[0-9]*\.?[0-9]+`, "number"},
+
+	{TokElipsis, `\.\.\.`, "elipsis"},
 
 	{TokStar, `\*`, "star"},
 	{TokPlus, `\+`, "plus"},

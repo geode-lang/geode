@@ -1,4 +1,4 @@
-package ast
+package gen
 
 func (p *Parser) parseReturnStmt() returnNode {
 	n := returnNode{}

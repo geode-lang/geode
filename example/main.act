@@ -1,3 +1,5 @@
-func add(int a, int b) int {
-	return a;
+func putc(int a) int ...
+
+func main(int argc) int {
+	return putc(65);
 }

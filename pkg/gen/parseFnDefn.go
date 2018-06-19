@@ -1,4 +1,4 @@
-package ast
+package gen
 
 import (
 	"github.com/nickwanninger/act/pkg/parser"
@@ -43,9 +43,26 @@ func (p *Parser) parseFnDefn() functionNode {
 		fn.ReturnType = types.GlobalTypeMap.GetType("void")
 	}
 
-	// Get the token after the act arrow (->)
-	if p.token.Is(parser.TokLeftCurly) {
+	if p.token.Is(parser.TokRightArrow) {
+		fn.Body = blockNode{}
+		fn.Body.NodeType = nodeBlock
+		fn.Body.Nodes = make([]Node, 0)
+		p.next()
+
+		implReturnValue := p.parseExpression()
+		implReturn := returnNode{}
+		implReturn.Value = implReturnValue
+		fn.Body.Nodes = []Node{implReturn}
+		if p.token.Is(parser.TokSemiColon) {
+			p.next()
+		} else {
+			Error(p.token, "Missing semicolon after implicit return in function %q", fn.Name)
+		}
+	} else if p.token.Is(parser.TokLeftCurly) {
 		fn.Body = p.parseBlockStmt()
+	} else if p.token.Is(parser.TokElipsis) {
+		fn.IsExternal = true
+		p.next()
 	}
 	return fn
 }

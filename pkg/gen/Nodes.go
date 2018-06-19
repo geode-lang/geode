@@ -1,4 +1,4 @@
-package ast
+package gen
 
 import (
 	"github.com/go-llvm/llvm"
@@ -15,7 +15,7 @@ type NodeType int
 type Node interface {
 	Kind() NodeType
 	NameString() string
-	Codegen(*Scope) llvm.Value
+	Codegen(*Scope, *Compiler) llvm.Value
 }
 
 // Kind -
@@ -38,6 +38,7 @@ const (
 	nodeInt NodeType = iota
 	nodeFloat
 	nodeString
+	nodeChar
 
 	// expressions
 	nodeIf
@@ -79,6 +80,13 @@ type stringNode struct {
 }
 
 func (n stringNode) NameString() string { return "stringNode" }
+
+type charNode struct {
+	NodeType
+	Value int8
+}
+
+func (n charNode) NameString() string { return "charNode" }
 
 type ifNode struct {
 	NodeType
@@ -161,6 +169,7 @@ type functionNode struct {
 	Name       string
 	Args       []variableNode
 	Body       blockNode
+	IsExternal bool
 	ReturnType *types.VarType
 }
 
