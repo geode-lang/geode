@@ -21,6 +21,8 @@ Once you have the dependencies setup, building is easy:
 The first build could take anywhere from 3 to 10 minutes to compile llvm bindings
 
 ```
+$ go get -u gitlab.com/nickwanninger/geode
+$ cd $GOPATH/src/gitlab.com/nickwanninger/geode
 $ make dep
 $ make
 ```
