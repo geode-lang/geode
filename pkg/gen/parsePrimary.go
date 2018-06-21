@@ -1,7 +1,7 @@
 package gen
 
 import (
-	"github.com/nickwanninger/act/pkg/parser"
+	"gitlab.com/nickwanninger/geode/pkg/parser"
 )
 
 func (p *Parser) parsePrimary() Node {

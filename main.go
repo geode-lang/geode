@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/nickwanninger/act/pkg/gen"
-	"github.com/nickwanninger/act/pkg/parser"
+	"gitlab.com/nickwanninger/geode/pkg/gen"
+	"gitlab.com/nickwanninger/geode/pkg/parser"
 )
 
 // Usage will print the usage of the program

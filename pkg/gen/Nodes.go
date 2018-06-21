@@ -2,7 +2,7 @@ package gen
 
 import (
 	"github.com/go-llvm/llvm"
-	"github.com/nickwanninger/act/pkg/types"
+	"gitlab.com/nickwanninger/geode/pkg/types"
 )
 
 var foo llvm.Type

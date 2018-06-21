@@ -3,7 +3,7 @@ package gen
 import (
 	"fmt"
 
-	"github.com/nickwanninger/act/pkg/types"
+	"gitlab.com/nickwanninger/geode/pkg/types"
 )
 
 func (p *Parser) parseNumericExpr() Node {

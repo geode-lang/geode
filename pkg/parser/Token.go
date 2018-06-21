@@ -2,9 +2,10 @@ package parser
 
 import (
 	"encoding/json"
-	"github.com/nickwanninger/act/pkg/types"
 	"strconv"
 	"strings"
+
+	"gitlab.com/nickwanninger/geode/pkg/types"
 )
 
 // Token is a token in the program

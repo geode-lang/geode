@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/nickwanninger/act/pkg/parser"
+	"gitlab.com/nickwanninger/geode/pkg/parser"
 )
 
 // Parser -

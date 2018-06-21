@@ -1,8 +1,8 @@
 package gen
 
 import (
-	"github.com/nickwanninger/act/pkg/parser"
-	"github.com/nickwanninger/act/pkg/types"
+	"gitlab.com/nickwanninger/geode/pkg/parser"
+	"gitlab.com/nickwanninger/geode/pkg/types"
 )
 
 func (p *Parser) parseFnDefn() functionNode {
