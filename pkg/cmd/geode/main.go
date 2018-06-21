@@ -92,6 +92,8 @@ func build(filename string, output string) bool {
 		fmt.Println("No input files passed.")
 	}
 
+	filename, _ = resolveFileName(filename)
+
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		fmt.Println(err)
