@@ -18,8 +18,7 @@
 
 # End of https://www.gitignore.io/api/go
 
-act
-actc
+geode
 build
 vendor/
 .DS_Store

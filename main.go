@@ -15,29 +15,29 @@ import (
 
 // Usage will print the usage of the program
 func Usage() {
-	fmt.Println("Usage: act [options] <file>")
+	fmt.Println("Usage: geode [options] <file>")
 	fmt.Println("Options:")
 	flag.PrintDefaults()
 }
 
 //
-// if the filename passed in is a folder, look in that folder for a main.act
-// if the filename is not, look for a file matching that filename, but with a .act extension
+// if the filename passed in is a folder, look in that folder for a main.g
+// if the filename is not, look for a file matching that filename, but with a .g extension
 func resolveFileName(filename string) (string, error) {
 	// Grab the stats of the file
 	stats, err := os.Stat(filename)
 
 	// If there was an error (file doesnt exist)
 	if err != nil {
-		// Try resolving the filename with .act extension
-		if !strings.HasSuffix(filename, ".act") {
-			return resolveFileName(filename + ".act")
+		// Try resolving the filename with .g extension
+		if !strings.HasSuffix(filename, ".g") {
+			return resolveFileName(filename + ".g")
 		}
 		// There was no file by that name, so we fail
 		return "", fmt.Errorf("fatal error: No such file or directory %s", filename)
 	}
 	if stats.IsDir() {
-		return resolveFileName(filename + "/main.act")
+		return resolveFileName(filename + "/main.g")
 	}
 
 	return filename, nil
@@ -78,12 +78,12 @@ func main() {
 	config := parseFlags()
 
 	if flag.NArg() == 0 {
-		fmt.Println("No .act files or folders containing .act files provided.")
+		fmt.Println("No geode source files or folders containing .g files provided.")
 		Usage()
 		return
 	}
-	// Get the filename with the resolver method. This allows a user to enter `.` and the compiler will assume they meant `./main.act`
-	// it also allows the user to enter `foo` and the compiler will attempt to compile `foo.act`
+	// Get the filename with the resolver method. This allows a user to enter `.` and the compiler will assume they meant `./main.g`
+	// it also allows the user to enter `foo` and the compiler will attempt to compile `foo.g`
 	filename, ferr := resolveFileName(config.Args[0])
 	if ferr != nil {
 		fmt.Println(ferr)
