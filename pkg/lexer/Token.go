@@ -1,4 +1,4 @@
-package parser
+package lexer
 
 import (
 	"encoding/json"
@@ -7,6 +7,74 @@ import (
 
 	"gitlab.com/nickwanninger/geode/pkg/types"
 )
+
+//go:generate stringer -type=TokenType $GOFILE
+
+// TokenType -
+type TokenType int
+
+// Assigning tokens integer values
+const (
+	TokError TokenType = iota
+	TokWhitespace
+	TokChar
+	TokString
+	TokNumber
+
+	TokElipsis
+
+	TokOperatorStart
+	TokStar
+	TokPlus
+	TokMinus
+	TokDiv
+	TokExp
+	TokLT
+	TokLTE
+	TokGT
+	TokGTE
+	TokOperatorEnd
+
+	TokSemiColon
+
+	TokDefereference
+	TokReference
+
+	TokAssignment
+	TokEquality
+
+	TokRightParen
+	TokLeftParen
+
+	TokRightCurly
+	TokLeftCurly
+
+	TokRightBrace
+	TokLeftBrace
+
+	TokRightArrow
+	TokLeftArrow
+
+	TokFor
+	TokWhile
+	TokIf
+	TokElse
+	TokReturn
+	TokFuncDefn
+
+	TokType
+
+	TokComma
+
+	TokIdent
+
+	TokComment
+)
+
+// TokenIsOperator will return if a given token is an operator or not
+func TokenIsOperator(t TokenType) bool {
+	return t > TokOperatorStart && t < TokOperatorEnd
+}
 
 // Token is a token in the program
 type Token struct {
@@ -25,7 +93,7 @@ func (t *Token) Is(a TokenType) bool {
 func (t Token) String() string {
 
 	m := make(map[string]interface{})
-	m["type"] = t.Type.String()
+	m["type"] = string(t.Type)
 	m["value"] = t.Value
 
 	encoded, err := json.MarshalIndent(t, "", "  ")

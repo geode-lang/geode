@@ -6,22 +6,22 @@ import (
 	"os"
 
 	"github.com/davecgh/go-spew/spew"
-	"gitlab.com/nickwanninger/geode/pkg/parser"
+	"gitlab.com/nickwanninger/geode/pkg/lexer"
 )
 
 // Parser -
 type Parser struct {
-	name               string              // the filename of the program
-	tokens             <-chan parser.Token // channel of tokens from the lexer
-	token              parser.Token        // current token, most recently recieved
-	nextToken          parser.Token        // next token in the list (allows lookahead)
+	name               string             // the filename of the program
+	tokens             <-chan lexer.Token // channel of tokens from the lexer
+	token              lexer.Token        // current token, most recently recieved
+	nextToken          lexer.Token        // next token in the list (allows lookahead)
 	topLevelNodes      chan Node
 	binaryOpPrecedence map[string]int // maps binary operators to the precidence determining the order of operations
 }
 
-// Parse creates and runs a new parser, that returns the
+// Parse creates and runs a new lexer, that returns the
 // chan that the nodes will be passed through with
-func Parse(tokens <-chan parser.Token) <-chan Node {
+func Parse(tokens <-chan lexer.Token) <-chan Node {
 	p := &Parser{
 		tokens:        tokens,
 		topLevelNodes: make(chan Node, 100),
@@ -54,13 +54,13 @@ func (p *Parser) parse() {
 	close(p.topLevelNodes)
 }
 
-func (p *Parser) next() parser.Token {
+func (p *Parser) next() lexer.Token {
 	for {
 		// Set token to the value of next token and get a new value for nextToken
 		p.token = p.nextToken
 		p.nextToken = <-p.tokens
 		// if that token is valid, break from the loop
-		if !(p.token.Type == parser.TokWhitespace || p.token.Type == parser.TokComment) {
+		if !(p.token.Type == lexer.TokWhitespace || p.token.Type == lexer.TokComment) {
 			break
 		}
 	}
@@ -70,7 +70,7 @@ func (p *Parser) next() parser.Token {
 
 func (p *Parser) parseTopLevelStmt() Node {
 	switch p.token.Type {
-	case parser.TokFuncDefn:
+	case lexer.TokFuncDefn:
 		return p.parseFnDefn()
 	}
 
@@ -83,14 +83,14 @@ func (p *Parser) getTokenPrecedence(token string) int {
 	return p.binaryOpPrecedence[token]
 }
 
-// Parse expression is the important ast parser function.Node
+// Parse expression is the important ast lexer function.Node
 // It can parse any expression like `1`, `1 + 2`, `func()`, `func(1)`
 // or any mixture. It's basically the workhorse function
 
 // parse any block statement
 
 // Error is a helper function to make logging easier
-func Error(t parser.Token, format string, args ...interface{}) {
+func Error(t lexer.Token, format string, args ...interface{}) {
 
 	fmt.Fprintf(os.Stderr, "\033[31;1m")
 	fmt.Fprintf(os.Stderr, "Token Error\n")

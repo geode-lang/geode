@@ -21,3 +21,5 @@
 build
 vendor/
 .DS_Store
+
+_string.go

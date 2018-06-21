@@ -50,7 +50,7 @@ var (
 )
 
 // TypeMap is a mapping from type name to type object.
-// This will be used inside the parser to store custom
+// This will be used inside the lexer to store custom
 // type definitions
 type TypeMap struct {
 	Name  string

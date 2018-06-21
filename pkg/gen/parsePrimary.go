@@ -1,11 +1,11 @@
 package gen
 
 import (
-	"gitlab.com/nickwanninger/geode/pkg/parser"
+	"gitlab.com/nickwanninger/geode/pkg/lexer"
 )
 
 func (p *Parser) parsePrimary() Node {
-	// fmt.Println(parser.GetTokenName(p.token.Type))
+	// fmt.Println(lexer.GetTokenName(p.token.Type))
 	switch p.token.Type {
 	// case tokIdentifier:
 	// 	return p.parseIdentifierExpr()
@@ -15,13 +15,13 @@ func (p *Parser) parsePrimary() Node {
 	// 	return p.parseForExpr()
 	// case tokVariable:
 	// 	return p.parseVarExpr()
-	case parser.TokIdent:
+	case lexer.TokIdent:
 		return p.parseIdentifierExpr()
-	case parser.TokNumber:
+	case lexer.TokNumber:
 		return p.parseNumericExpr()
-	case parser.TokLeftParen:
+	case lexer.TokLeftParen:
 		return p.parseParenExpr()
-	case parser.TokString:
+	case lexer.TokString:
 		return p.parseStringExpr()
 	// case tokEndOfTokens:
 	// 	return nil // this token should not be skipped

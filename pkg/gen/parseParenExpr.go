@@ -1,7 +1,7 @@
 package gen
 
 import (
-	"gitlab.com/nickwanninger/geode/pkg/parser"
+	"gitlab.com/nickwanninger/geode/pkg/lexer"
 )
 
 func (p *Parser) parseParenExpr() Node {
@@ -11,7 +11,7 @@ func (p *Parser) parseParenExpr() Node {
 	if v == nil {
 		return nil
 	}
-	if p.token.Type != parser.TokRightParen {
+	if p.token.Type != lexer.TokRightParen {
 		Error(p.token, "expected ')'")
 		return nil
 	}

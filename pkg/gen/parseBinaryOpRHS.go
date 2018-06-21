@@ -1,13 +1,13 @@
 package gen
 
 import (
-	"gitlab.com/nickwanninger/geode/pkg/parser"
+	"gitlab.com/nickwanninger/geode/pkg/lexer"
 )
 
 func (p *Parser) parseBinaryOpRHS(exprPrec int, lhs Node) Node {
 	for {
 		_, isBinaryOp := p.binaryOpPrecedence[p.token.Value]
-		if !isBinaryOp || p.token.Is(parser.TokSemiColon) {
+		if !isBinaryOp || p.token.Is(lexer.TokSemiColon) {
 			return lhs // an expression like '5' will get sent back up to parseTopLevelExpr or parseDefinition from here.
 		}
 		tokenPrec := p.getTokenPrecedence(p.token.Value)

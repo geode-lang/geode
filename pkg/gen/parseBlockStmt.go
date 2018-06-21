@@ -1,7 +1,7 @@
 package gen
 
 import (
-	"gitlab.com/nickwanninger/geode/pkg/parser"
+	"gitlab.com/nickwanninger/geode/pkg/lexer"
 )
 
 func (p *Parser) parseBlockStmt() blockNode {
@@ -10,16 +10,16 @@ func (p *Parser) parseBlockStmt() blockNode {
 
 	for {
 		p.next()
-		if p.token.Is(parser.TokType) {
+		if p.token.Is(lexer.TokType) {
 			blk.Nodes = append(blk.Nodes, p.parseVariableDefn(true))
 		}
 
-		if p.token.Is(parser.TokReturn) {
+		if p.token.Is(lexer.TokReturn) {
 			blk.Nodes = append(blk.Nodes, p.parseReturnStmt())
 		}
 
 		// If the block is over.
-		if p.token.Is(parser.TokRightCurly) {
+		if p.token.Is(lexer.TokRightCurly) {
 			// Set the cursor on the next character
 			p.next()
 			break

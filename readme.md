@@ -18,16 +18,22 @@ Installing Geode is simple, just follow the steps below and install a few depend
 ### Building
 
 Once you have the dependencies setup, building is easy:
-The first build could take anywhere from 3 to 10 minutes to compile llvm bindings
+
+First you need to build the llvm bindings
 
 ```
-$ go get -u gitlab.com/nickwanninger/geode
-$ cd $GOPATH/src/gitlab.com/nickwanninger/geode
-$ make dep
-$ make
+$ git clone https://github.com/go-llvm/llvm.git $GOPATH/src/github.com/go-llvm/llvm
+$ cd $GOPATH/src/github.com/go-llvm/llvm
+$ ./update_llvm.sh
 ```
 
-This will install geode's executable binary to `$GOPATH/bin/`
+Then you can get the Geode Compiler
+
+```
+$ go get -u gitlab.com/nickwanninger/geode/...
+```
+
+This will build and install geode's executable binary to `$GOPATH/bin/`
 
 ## Example usage:
 

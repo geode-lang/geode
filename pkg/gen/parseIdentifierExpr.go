@@ -1,7 +1,7 @@
 package gen
 
 import (
-	"gitlab.com/nickwanninger/geode/pkg/parser"
+	"gitlab.com/nickwanninger/geode/pkg/lexer"
 )
 
 func (p *Parser) parseIdentifierExpr() Node {
@@ -9,7 +9,7 @@ func (p *Parser) parseIdentifierExpr() Node {
 	p.next()
 
 	// Is the next value a paren? If it isnt it is a normal variable reference
-	if !p.token.Is(parser.TokLeftParen) {
+	if !p.token.Is(lexer.TokLeftParen) {
 		n := variableReferenceNode{}
 		n.NodeType = nodeVariableReference
 		n.Name = name
@@ -21,9 +21,9 @@ func (p *Parser) parseIdentifierExpr() Node {
 	n.Name = name
 	n.NodeType = nodeFunctionCall
 
-	for p.next(); p.token.Type != parser.TokRightParen; {
+	for p.next(); p.token.Type != lexer.TokRightParen; {
 		switch p.token.Type {
-		case parser.TokComma:
+		case lexer.TokComma:
 			p.next()
 		default:
 			arg := p.parseExpression()

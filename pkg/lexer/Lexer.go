@@ -1,4 +1,4 @@
-package parser
+package lexer
 
 import (
 	"encoding/json"
@@ -9,72 +9,6 @@ import (
 	"github.com/timtadh/lexmachine"
 	"github.com/timtadh/lexmachine/machines"
 )
-
-//go:generate stringer -type=TokenType
-type TokenType int
-
-// Assigning tokens integer values
-const (
-	TokError TokenType = iota
-	TokWhitespace
-	TokChar
-	TokString
-	TokNumber
-
-	TokElipsis
-
-	TokOperatorStart
-	TokStar
-	TokPlus
-	TokMinus
-	TokDiv
-	TokExp
-	TokLT
-	TokLTE
-	TokGT
-	TokGTE
-	TokOperatorEnd
-
-	TokSemiColon
-
-	TokDefereference
-	TokReference
-
-	TokAssignment
-	TokEquality
-
-	TokRightParen
-	TokLeftParen
-
-	TokRightCurly
-	TokLeftCurly
-
-	TokRightBrace
-	TokLeftBrace
-
-	TokRightArrow
-	TokLeftArrow
-
-	TokFor
-	TokWhile
-	TokIf
-	TokElse
-	TokReturn
-	TokFuncDefn
-
-	TokType
-
-	TokComma
-
-	TokIdent
-
-	TokComment
-)
-
-// TokenIsOperator will return if a given token is an operator or not
-func TokenIsOperator(t TokenType) bool {
-	return t > TokOperatorStart && t < TokOperatorEnd
-}
 
 // TokenInfoRelation - allows a relationship between a token type and a certain regex
 type TokenInfoRelation struct {
@@ -116,7 +50,7 @@ var Tokens = []TokenInfoRelation{
 
 	{TokRightArrow, `->`},
 	{TokLeftArrow, `<-`},
-	// The main parser won't work correctly and will just look these up later
+	// The main lexer won't work correctly and will just look these up later
 	{TokIf, ""},
 	{TokElse, ""},
 	{TokReturn, ""},

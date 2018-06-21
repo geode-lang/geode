@@ -3,21 +3,20 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"os/exec"
-
 	"os"
 	"strings"
 
+	// "gopkg.in/alecthomas/kingpin.v2"
+	"github.com/jawher/mow.cli"
 	"gitlab.com/nickwanninger/geode/pkg/gen"
-	"gitlab.com/nickwanninger/geode/pkg/parser"
-	"gopkg.in/alecthomas/kingpin.v2"
+	"gitlab.com/nickwanninger/geode/pkg/lexer"
 )
 
 // Usage will print the usage of the program
 func Usage() {
 	fmt.Println("Usage: geode <command> [options] <file>")
 	fmt.Println("Options:")
-	app.UsageWriter(os.Stdout)
+	// app.UsageWriter(os.Stdout)
 }
 
 // Some constants that represent the program in it's current compiled state
@@ -26,19 +25,6 @@ const (
 	AUTHOR  = "Nick Wanninger"
 )
 
-var (
-	app = kingpin.New("geode", "Compiler for the Geode programming language.").Version(VERSION).Author(AUTHOR)
-
-	buildCommand     = app.Command("build", "Build an executable.")
-	buildOutput      = buildCommand.Flag("output", "Output binary name.").Short('o').Default("main").String()
-	buildInput       = buildCommand.Arg("input", "Geode source file or folder containing main.g").String()
-	buildPrintLLVMIR = buildCommand.Flag("llvm", "Print").Bool()
-
-	runCommand = app.Command("run", "Build and run a geode program")
-	runInput   = runCommand.Arg("input", "Geode source file or folder containing main.g").String()
-)
-
-//
 // if the filename passed in is a folder, look in that folder for a main.g
 // if the filename is not, look for a file matching that filename, but with a .g extension
 func resolveFileName(filename string) (string, error) {
@@ -61,41 +47,45 @@ func resolveFileName(filename string) (string, error) {
 	return filename, nil
 }
 
-// FlagConfig -
-type FlagConfig struct {
-	OutFile       *string
-	OptimizeLevel *int
-	PrintTokens   *bool
-	PrintAst      *bool
-	PrintASTJson  *bool
-	PrintLLVMIR   *bool
-	Args          []string
-}
-
 func main() {
 
-	// kingpin.MustParse(app.Parse(os.Args[1:]))
+	app := cli.App("geode", "A programming language")
 
-	command := kingpin.MustParse(app.Parse(os.Args[1:]))
+	// Declare our first command, which is invocable with "uman list"
+	app.Command("build", "Compile a geode source file", func(cmd *cli.Cmd) {
 
-	switch command {
-	case buildCommand.FullCommand():
-		filename, _ := resolveFileName(*buildInput)
-		build(filename, *buildOutput)
-	case buildCommand.FullCommand():
-		filename, _ := resolveFileName(*buildInput)
-		run(filename)
-	}
+		cmd.Spec = "[-o] SOURCE"
+		source := cmd.StringArg("SOURCE", "", "Source file to compile")
+		output := cmd.StringOpt("o output", "main", "Binary output name")
+
+		// Run this function when the command is invoked
+		cmd.Action = func() {
+			build(*source, *output)
+		}
+	})
+
+	app.Run(os.Args)
+	// // kingpin.MustParse(app.Parse(os.Args[1:]))
+	// command := kingpin.MustParse(app.Parse(os.Args[1:]))
+
+	// switch command {
+	// case buildCommand.FullCommand():
+	// 	filename, _ := resolveFileName(*buildInput)
+	// 	build(filename, *buildOutput)
+	// case buildCommand.FullCommand():
+	// 	filename, _ := resolveFileName(*buildInput)
+	// 	run(filename)
+	// }
 
 }
 
-func run(filename string) {
-	if build(filename, "/tmp/geodeprogram") {
-		cmd := exec.Command("/tmp/geodeprogram")
-		cmd.Start()
-		fmt.Println(cmd.Wait())
-	}
-}
+// func run(filename string) {
+// 	if build(filename, "/tmp/geodeprogram") {
+// 		cmd := exec.Command("/tmp/geodeprogram")
+// 		cmd.Start()
+// 		fmt.Println(cmd.Wait())
+// 	}
+// }
 
 func build(filename string, output string) bool {
 	if filename == "" {
@@ -109,7 +99,7 @@ func build(filename string, output string) bool {
 	}
 
 	// Build a new lexer. This contans the methods required to parse some string of data into
-	lexer := parser.NewLexer()
+	lexer := lexer.NewLexer()
 	// Run the lexer concurrently
 	go lexer.Lex([]byte(string(gen.RuntimeSource) + string(data)))
 
@@ -123,10 +113,10 @@ func build(filename string, output string) bool {
 		node.Codegen(comp.RootScope.SpawnChild(), comp)
 	}
 
-	if *buildPrintLLVMIR {
-		fmt.Println(comp.GetLLVMIR())
-		return false
-	}
+	// if *buildPrintLLVMIR {
+	// 	fmt.Println(comp.GetLLVMIR())
+	// 	return false
+	// }
 
 	comp.EmitModuleObject()
 	compiled := comp.Compile()

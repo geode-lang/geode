@@ -3,13 +3,9 @@ all: build
 
 build: clean
 	@echo "Building"
-	@go install  -gcflags '-N -l' gitlab.com/nickwanninger/geode/...
+	go install -v -gcflags="-N -l" gitlab.com/nickwanninger/geode/...
 
-uninstall:
-	rm -f $(GOPATH)/bin/geode
-
-install: uninstall
-	go install gitlab.com/nickwanninger/geodec
+install: gen build
 	
 watch:
 	nodemon --watch pkg/ --watch pkg/cmd/geode/main.go --ext go --exec make
@@ -19,8 +15,4 @@ clean:
 	@rm -rf geode
 
 gen:
-	go generate ./...
-
-deps:
-	dep ensure
-	vendor/github.com/go-llvm/llvm/update_llvm.sh
+	go generate -v ./...
