@@ -1,10 +1,9 @@
-FLAGS := -ldflags "-X main.revhash=`git rev-parse HEAD`"
-
 
 all: build
 
 build: clean
-	@go build -v -o geode main.go
+	@echo "Building"
+	@go install  -gcflags '-N -l' gitlab.com/nickwanninger/geode/...
 
 uninstall:
 	rm -f $(GOPATH)/bin/geode
@@ -13,15 +12,14 @@ install: uninstall
 	go install gitlab.com/nickwanninger/geodec
 	
 watch:
-	nodemon --watch pkg/ --watch main.go --ext go --exec make
-
-example: build
-	./geode example
+	nodemon --watch pkg/ --watch pkg/cmd/geode/main.go --ext go --exec make
 
 clean:
 	@rm -rf build
 	@rm -rf geode
 
+gen:
+	go generate ./...
 
 deps:
 	dep ensure

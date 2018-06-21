@@ -1,8 +1,6 @@
 package gen
 
 import (
-	"fmt"
-
 	"gitlab.com/nickwanninger/geode/pkg/types"
 )
 
@@ -29,7 +27,6 @@ func (p *Parser) parseNumericExpr() Node {
 		n := charNode{}
 		n.NodeType = nodeChar
 		n.Value = val.(int8)
-		fmt.Println(n.Value)
 		p.next()
 		return n
 	}

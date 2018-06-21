@@ -10,12 +10,12 @@ import (
 	"github.com/timtadh/lexmachine/machines"
 )
 
-// int - The type of token as a string
-// type TokenType int
+//go:generate stringer -type=TokenType
+type TokenType int
 
 // Assigning tokens integer values
 const (
-	TokError int = iota
+	TokError TokenType = iota
 	TokWhitespace
 	TokChar
 	TokString
@@ -72,74 +72,73 @@ const (
 )
 
 // TokenIsOperator will return if a given token is an operator or not
-func TokenIsOperator(t int) bool {
+func TokenIsOperator(t TokenType) bool {
 	return t > TokOperatorStart && t < TokOperatorEnd
 }
 
 // TokenInfoRelation - allows a relationship between a token type and a certain regex
 type TokenInfoRelation struct {
-	token int
+	token TokenType
 	regex string
-	name  string
 }
 
 // Tokens is a list of all tokens
 var Tokens = []TokenInfoRelation{
-	{TokError, "", "error"},
+	{TokError, ""},
 
-	{TokChar, `'.'`, "char"},
-	{TokString, `"([^\"]|(\\.))*"`, "string"},
-	{TokNumber, `[+-]?[0-9]*\.?[0-9]+`, "number"},
+	{TokChar, `'.'`},
+	{TokString, `"([^\"]|(\\.))*"`},
+	{TokNumber, `[+-]?[0-9]*\.?[0-9]+`},
 
-	{TokElipsis, `\.\.\.`, "elipsis"},
+	{TokElipsis, `\.\.\.`},
 
-	{TokStar, `\*`, "star"},
-	{TokPlus, `\+`, "plus"},
-	{TokMinus, `-`, "minus"},
-	{TokDiv, `/`, "divide"},
-	{TokExp, `\^`, "exp"},
-	{TokSemiColon, `;`, "semicolon"},
+	{TokStar, `\*`},
+	{TokPlus, `\+`},
+	{TokMinus, `-`},
+	{TokDiv, `/`},
+	{TokExp, `\^`},
+	{TokSemiColon, `;`},
 
-	// {TokDefereference, `@`, "defereference"},
-	// {TokReference, `\*`, "reference"},
+	// {TokDefereference, `@`},
+	// {TokReference, `\*`},
 
-	{TokAssignment, `:=`, "assign"},
-	{TokEquality, `=`, "equality"},
+	{TokAssignment, `:=`},
+	{TokEquality, `=`},
 
-	{TokRightParen, `\)`, "rightParen"},
-	{TokLeftParen, `\(`, "leftParen"},
+	{TokRightParen, `\)`},
+	{TokLeftParen, `\(`},
 
-	{TokRightCurly, `}`, "rightCurly"},
-	{TokLeftCurly, `{`, "leftCurly"},
+	{TokRightCurly, `}`},
+	{TokLeftCurly, `{`},
 
-	{TokRightBrace, `\[`, "rightBrace"},
-	{TokLeftBrace, `\]`, "leftBrace"},
+	{TokRightBrace, `\[`},
+	{TokLeftBrace, `\]`},
 
-	{TokRightArrow, `->`, "rightArrow"},
-	{TokLeftArrow, `<-`, "leftArrow"},
+	{TokRightArrow, `->`},
+	{TokLeftArrow, `<-`},
 	// The main parser won't work correctly and will just look these up later
-	{TokIf, "", "keywordIf"},
-	{TokElse, "", "keywordElse"},
-	{TokReturn, "", "keywordReturn"},
-	{TokFuncDefn, "", "keywordFunc"},
+	{TokIf, ""},
+	{TokElse, ""},
+	{TokReturn, ""},
+	{TokFuncDefn, ""},
 
-	{TokType, "", "type"},
+	{TokType, ""},
 
-	{TokComma, `,`, "comma"},
+	{TokComma, `,`},
 
-	{TokIdent, `[a-zA-Z_][a-zA-Z0-9_]*`, "ident"},
+	{TokIdent, `[a-zA-Z_][a-zA-Z0-9_]*`},
 
-	{TokComment, `\/\/[^\n]*`, "lineComment"},
-	{TokComment, `{-.*-}`, "blockComment"},
-	{TokWhitespace, `\s+`, "whitespace"},
+	{TokComment, `\/\/[^\n]*`},
+	{TokComment, `{-.*-}`},
+	{TokWhitespace, `\s+`},
 
-	{TokLT, `<`, "lessThan"},
-	{TokLTE, `<=|≤`, "lessThanOrEqual"},
-	{TokGT, `>`, "greaterThan"},
-	{TokGTE, `>=|≥`, "greaterThanOrEqual"},
+	{TokLT, `<`},
+	{TokLTE, `<=|≤`},
+	{TokGT, `>`},
+	{TokGTE, `>=|≥`},
 }
 
-var keyWordMap = map[string]int{
+var keyWordMap = map[string]TokenType{
 	"return": TokReturn,
 	"if":     TokIf,
 	"else":   TokElse,
@@ -156,17 +155,14 @@ var keyWordMap = map[string]int{
 	"char":   TokType,
 }
 
-var tokRegexMap map[string]int
-var tokNameMap map[int]string
+var tokRegexMap map[string]TokenType
 
 func init() {
-	tokRegexMap = make(map[string]int)
-	tokNameMap = make(map[int]string)
+	tokRegexMap = make(map[string]TokenType)
 	for _, val := range Tokens {
 		if val.regex != "" {
 			tokRegexMap[val.regex] = val.token
 		}
-		tokNameMap[val.token] = val.name
 	}
 }
 
@@ -202,7 +198,7 @@ func (s *LexState) Lex(text []byte) error {
 			t.SourceCode = &srcString
 			t.Pos = to.TC
 			t.buildEndPos(to.EndColumn, to.EndLine)
-			t.Type = to.Type
+			t.Type = TokenType(to.Type)
 			t.Value = string(to.Value.(string))
 			// t.SourceCode = &text
 			s.Tokens <- t
@@ -219,16 +215,16 @@ func (s *LexState) Lex(text []byte) error {
 // NewLexer produces a new lexer and poluates it with the configuration
 func NewLexer() *LexState {
 
-	getToken := func(tokenType int) lexmachine.Action {
+	getToken := func(tokenType TokenType) lexmachine.Action {
 		return func(s *lexmachine.Scanner, m *machines.Match) (interface{}, error) {
 			kw, isKwInMap := keyWordMap[string(m.Bytes)]
 			if isKwInMap {
-				return s.Token(kw, string(m.Bytes), m), nil
+				return s.Token(int(kw), string(m.Bytes), m), nil
 			}
 			if tokenType == TokWhitespace {
 				return nil, nil
 			}
-			return s.Token(tokenType, string(m.Bytes), m), nil
+			return s.Token(int(tokenType), string(m.Bytes), m), nil
 		}
 	}
 
@@ -262,7 +258,7 @@ func DumpTokens(in chan Token) chan Token {
 				tokenMaps := make([]map[string]interface{}, 0)
 				for _, t := range tokens {
 					m := make(map[string]interface{})
-					m["type"] = GetTokenName(t.Type)
+					m["type"] = t.Type.String()
 					m["type_raw"] = t.Type
 					m["value"] = t.Value
 					m["start_pos"] = t.Pos
@@ -270,7 +266,7 @@ func DumpTokens(in chan Token) chan Token {
 					_, m["type_inference"] = t.InferType()
 					tokenMaps = append(tokenMaps, m)
 				}
-				j, _ := json.MarshalIndent(tokenMaps, "", "  ")
+				j, _ := json.MarshalIndent(tokenMaps, "", "   ")
 				fmt.Println(string(j))
 				close(out)
 				return
@@ -280,9 +276,4 @@ func DumpTokens(in chan Token) chan Token {
 		}
 	}()
 	return out
-}
-
-// GetTokenName returns the real name of a token
-func GetTokenName(tok int) string {
-	return tokNameMap[tok]
 }

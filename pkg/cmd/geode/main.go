@@ -1,24 +1,42 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-
 	"io/ioutil"
+	"os/exec"
+
 	"os"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"gitlab.com/nickwanninger/geode/pkg/gen"
 	"gitlab.com/nickwanninger/geode/pkg/parser"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 // Usage will print the usage of the program
 func Usage() {
-	fmt.Println("Usage: geode [options] <file>")
+	fmt.Println("Usage: geode <command> [options] <file>")
 	fmt.Println("Options:")
-	flag.PrintDefaults()
+	app.UsageWriter(os.Stdout)
 }
+
+// Some constants that represent the program in it's current compiled state
+const (
+	VERSION = "0.0.1"
+	AUTHOR  = "Nick Wanninger"
+)
+
+var (
+	app = kingpin.New("geode", "Compiler for the Geode programming language.").Version(VERSION).Author(AUTHOR)
+
+	buildCommand     = app.Command("build", "Build an executable.")
+	buildOutput      = buildCommand.Flag("output", "Output binary name.").Short('o').Default("main").String()
+	buildInput       = buildCommand.Arg("input", "Geode source file or folder containing main.g").String()
+	buildPrintLLVMIR = buildCommand.Flag("llvm", "Print").Bool()
+
+	runCommand = app.Command("run", "Build and run a geode program")
+	runInput   = runCommand.Arg("input", "Geode source file or folder containing main.g").String()
+)
 
 //
 // if the filename passed in is a folder, look in that folder for a main.g
@@ -54,44 +72,37 @@ type FlagConfig struct {
 	Args          []string
 }
 
-func parseFlags() *FlagConfig {
-	c := &FlagConfig{}
-	flag.Usage = Usage
-	c.OutFile = flag.String("o", "out", "The output filename")
-	c.OptimizeLevel = flag.Int("opt", 3, "add some optimization passes")
-	c.PrintTokens = flag.Bool("tok", false, "Print tokens as they are parsed (for debugging)")
-	c.PrintAst = flag.Bool("ast", false, "print abstract syntax tree (for debugging)")
-	c.PrintASTJson = flag.Bool("json", false, "If true, the ast will be dumped to the console as json instead of raw")
-	c.PrintLLVMIR = flag.Bool("s", false, "dump LLVM IR to console and don't compile")
-	flag.Parse()
-	c.Args = flag.Args()
-
-	return c
-}
-
 func main() {
 
-	spew.Config.Indent = "  "
-	spew.Config.SortKeys = true
-	spew.Config.SpewKeys = true
+	// kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	config := parseFlags()
+	command := kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	if flag.NArg() == 0 {
-		fmt.Println("No geode source files or folders containing .g files provided.")
-		Usage()
-		return
+	switch command {
+	case buildCommand.FullCommand():
+		filename, _ := resolveFileName(*buildInput)
+		build(filename, *buildOutput)
+	case buildCommand.FullCommand():
+		filename, _ := resolveFileName(*buildInput)
+		run(filename)
 	}
-	// Get the filename with the resolver method. This allows a user to enter `.` and the compiler will assume they meant `./main.g`
-	// it also allows the user to enter `foo` and the compiler will attempt to compile `foo.g`
-	filename, ferr := resolveFileName(config.Args[0])
-	if ferr != nil {
-		fmt.Println(ferr)
-		os.Exit(1)
+
+}
+
+func run(filename string) {
+	if build(filename, "/tmp/geodeprogram") {
+		cmd := exec.Command("/tmp/geodeprogram")
+		cmd.Start()
+		fmt.Println(cmd.Wait())
+	}
+}
+
+func build(filename string, output string) bool {
+	if filename == "" {
+		fmt.Println("No input files passed.")
 	}
 
 	data, err := ioutil.ReadFile(filename)
-
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -104,30 +115,24 @@ func main() {
 
 	tokens := lexer.Tokens
 
-	if *config.PrintTokens {
-		tokens = parser.DumpTokens(lexer.Tokens)
-	}
-
 	nodes := gen.Parse(tokens)
 
-	if *config.PrintAst {
-		nodes = gen.DumpTree(nodes, *config.PrintASTJson)
-	}
+	comp := gen.NewCompiler(filename, output)
 
-	comp := gen.NewCompiler(filename, *config.OutFile)
 	for node := range nodes {
 		node.Codegen(comp.RootScope.SpawnChild(), comp)
 	}
-	// compiler.Optimize()
 
-	if *config.PrintLLVMIR {
+	if *buildPrintLLVMIR {
 		fmt.Println(comp.GetLLVMIR())
-		return
+		return false
 	}
 
 	comp.EmitModuleObject()
 	compiled := comp.Compile()
 	if !compiled {
 		fmt.Println("Compilation failed. Please check the logs")
+		return false
 	}
+	return true
 }
