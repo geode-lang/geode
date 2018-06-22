@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.com/nickwanninger/geode/pkg/types"
+	"gitlab.com/nickwanninger/geode/pkg/typesystem"
 )
 
 //go:generate stringer -type=TokenType $GOFILE
@@ -128,22 +128,22 @@ func (t *Token) buildEndPos(endCol int, endRow int) {
 }
 
 // InferType takes some token and guesses the type
-func (t Token) InferType() (*types.VarType, interface{}) {
+func (t Token) InferType() (*typesystem.VarType, interface{}) {
 	if t.Type == TokNumber {
 		intval, intErr := strconv.ParseInt(t.Value, 10, 64)
 		if intErr == nil {
-			return types.DefaultIntType, intval
+			return typesystem.GeodeI64, intval
 		}
 
 		floatval, floatErr := strconv.ParseFloat(t.Value, 64)
 		if floatErr == nil {
-			return types.DefaultFloatType, floatval
+			return typesystem.GeodeF64, floatval
 		}
 	}
 
 	if t.Type == TokChar {
 		c := strings.Trim(t.Value, "'")[0]
-		return types.DefaultCharType, c
+		return typesystem.GeodeI8, c
 	}
 
 	return nil, nil

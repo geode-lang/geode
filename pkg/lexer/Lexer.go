@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"gitlab.com/nickwanninger/geode/pkg/typesystem"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/timtadh/lexmachine"
 	"github.com/timtadh/lexmachine/machines"
@@ -62,7 +64,7 @@ var Tokens = []TokenInfoRelation{
 
 	{TokIdent, `[a-zA-Z_][a-zA-Z0-9_]*`},
 
-	{TokComment, `\/\/[^\n]*`},
+	{TokComment, `\#[^\n]*`},
 	{TokComment, `{-.*-}`},
 	{TokWhitespace, `\s+`},
 
@@ -79,14 +81,6 @@ var keyWordMap = map[string]TokenType{
 	"for":    TokFor,
 	"while":  TokWhile,
 	"func":   TokFuncDefn,
-
-	// We also determine type mapping in here as well
-	"void":   TokType,
-	"int":    TokType,
-	"long":   TokType,
-	"float":  TokType,
-	"string": TokType,
-	"char":   TokType,
 }
 
 var tokRegexMap map[string]TokenType
@@ -151,6 +145,9 @@ func NewLexer() *LexState {
 
 	getToken := func(tokenType TokenType) lexmachine.Action {
 		return func(s *lexmachine.Scanner, m *machines.Match) (interface{}, error) {
+			if typesystem.GlobalTypeMap.GetType(string(m.Bytes)) != nil {
+				return s.Token(int(TokType), string(m.Bytes), m), nil
+			}
 			kw, isKwInMap := keyWordMap[string(m.Bytes)]
 			if isKwInMap {
 				return s.Token(int(kw), string(m.Bytes), m), nil

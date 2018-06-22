@@ -6,44 +6,91 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/go-llvm/llvm"
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/types"
 )
+
+type blockStack struct {
+	top    *blockstacknode
+	length int
+}
+type blockstacknode struct {
+	value *ir.BasicBlock
+	prev  *blockstacknode
+}
+
+// Return the number of items in the stack
+func (s *blockStack) Len() int {
+	return s.length
+}
+
+// View the top item on the stack
+func (s *blockStack) Peek() *ir.BasicBlock {
+	if s.length == 0 {
+		return nil
+	}
+	return s.top.value
+}
+
+// Pop the top item of the stack and return it
+func (s *blockStack) Pop() *ir.BasicBlock {
+	if s.length == 0 {
+		return nil
+	}
+
+	n := s.top
+	s.top = n.prev
+	s.length--
+	return n.value
+}
+
+// Push a value onto the top of the stack
+func (s *blockStack) Push(value *ir.BasicBlock) {
+	n := &blockstacknode{value, s.top}
+	s.top = n
+	s.length++
+}
 
 // Compiler contains all information to compile a program into a .o file.
 type Compiler struct {
-	OutputName         string
-	Target             llvm.Target
-	TargetMachine      llvm.TargetMachine
-	TargetData         llvm.TargetData
+	OutputName string
+	// Target             llvm.Target
+	// TargetMachine      llvm.TargetMachine
+	// TargetData         llvm.TargetData
 	RootScope          *Scope
-	RootModule         llvm.Module
-	RootPassManager    llvm.PassManager
-	Builder            llvm.Builder
-	CodeModel          llvm.CodeModel
-	RelocMode          llvm.RelocMode
-	Opt                llvm.CodeGenOptLevel
+	RootModule         *ir.Module
+	blocks             *blockStack
+	FN                 *ir.Function // current funciton being compiled
 	objectFilesEmitted []string
+}
+
+// CurrentBlock -
+func (c *Compiler) CurrentBlock() *ir.BasicBlock {
+	return c.blocks.Peek()
+}
+
+// PushBlock -
+func (c *Compiler) PushBlock(b *ir.BasicBlock) {
+	c.blocks.Push(b)
+}
+
+// PopBlock -
+func (c *Compiler) PopBlock() *ir.BasicBlock {
+	return c.blocks.Pop()
 }
 
 // GetLLVMIR returns the llvm repr of the module
 func (c *Compiler) GetLLVMIR() string {
-
 	return c.RootModule.String()
 }
 
 // EmitModuleObject takes an llvm module and emits the object code
 func (c *Compiler) EmitModuleObject() string {
-	filename := "out.o"
+	filename := "out.ll"
 
-	c.TargetMachine = c.Target.CreateTargetMachine(llvm.DefaultTargetTriple(), "", "", llvm.CodeGenLevelNone, llvm.RelocDefault, llvm.CodeModelDefault)
-	// targetData := targetMachine.TargetData()
+	llvmir := c.GetLLVMIR()
 
-	membuf, emitErr := c.TargetMachine.EmitToMemoryBuffer(c.RootModule, llvm.ObjectFile)
-	if emitErr != nil {
-		panic(emitErr)
-	}
-
-	writeErr := ioutil.WriteFile(filename, membuf.Bytes(), 0666)
+	writeErr := ioutil.WriteFile(filename, []byte(llvmir), 0666)
 	if writeErr != nil {
 		panic(writeErr)
 	}
@@ -55,10 +102,10 @@ func (c *Compiler) EmitModuleObject() string {
 
 // Compile the object files a Compiler instance has emitted
 func (c *Compiler) Compile() bool {
-	linker := "cc"
+	linker := "clang"
 	linkArgs := make([]string, 0)
 
-	linkArgs = append(linkArgs, "-fno-PIE", "-nodefaultlibs", "-lc", "-lm")
+	linkArgs = append(linkArgs)
 
 	linkArgs = append(linkArgs, "-o", c.OutputName)
 
@@ -90,18 +137,13 @@ func NewCompiler(moduleName string, outputName string) *Compiler {
 	comp := &Compiler{}
 	comp.OutputName = outputName
 	// Initialize the module for this compiler.
-	comp.RootModule = llvm.NewModule(moduleName)
-	comp.RootPassManager = llvm.NewFunctionPassManagerForModule(comp.RootModule)
-	comp.Builder = llvm.NewBuilder()
+	comp.RootModule = ir.NewModule()
 	comp.RootScope = NewScope()
-	CPU := "generic"
-	features := ""
-	comp.CodeModel = llvm.CodeModelDefault
-	comp.RelocMode = llvm.RelocDefault
+	comp.blocks = &blockStack{nil, 0}
 
-	targetTripple := llvm.DefaultTargetTriple()
-	comp.Opt = llvm.CodeGenLevelAggressive
-	comp.Target, _ = llvm.GetTargetFromTriple(targetTripple)
-	comp.Target.CreateTargetMachine(targetTripple, CPU, features, comp.Opt, comp.RelocMode, comp.CodeModel)
+	i8 := types.I8
+	i8ptr := types.NewPointer(i8)
+	printf := comp.RootModule.NewFunction("printf", types.I64, ir.NewParam("format", i8ptr))
+	printf.Sig.Variadic = true
 	return comp
 }

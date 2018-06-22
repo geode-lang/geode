@@ -19,7 +19,7 @@ Installing Geode is simple, just follow the steps below and install a few depend
 
 Once you have the dependencies setup, building is easy:
 
-First you need to build the llvm bindings
+First you need to build the llvm bindings. This can take some time depending on the speed of your machine. Luckly this doesn't need to be done on every build.
 
 ```
 $ git clone https://github.com/go-llvm/llvm.git $GOPATH/src/github.com/go-llvm/llvm

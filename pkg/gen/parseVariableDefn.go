@@ -2,7 +2,7 @@ package gen
 
 import (
 	"gitlab.com/nickwanninger/geode/pkg/lexer"
-	"gitlab.com/nickwanninger/geode/pkg/types"
+	"gitlab.com/nickwanninger/geode/pkg/typesystem"
 )
 
 func (p *Parser) parseVariableDefn(allowDefn bool) variableNode {
@@ -10,7 +10,7 @@ func (p *Parser) parseVariableDefn(allowDefn bool) variableNode {
 	n.NodeType = nodeVariableDecl
 
 	if p.token.Is(lexer.TokType) {
-		n.Type = types.GlobalTypeMap.GetType(p.token.Value)
+		n.Type = typesystem.GlobalTypeMap.GetType(p.token.Value)
 		p.next()
 
 		if p.token.Is(lexer.TokRightBrace) {

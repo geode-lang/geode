@@ -4,20 +4,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"strconv"
 	"strings"
 
-	// "gopkg.in/alecthomas/kingpin.v2"
 	"github.com/jawher/mow.cli"
 	"gitlab.com/nickwanninger/geode/pkg/gen"
 	"gitlab.com/nickwanninger/geode/pkg/lexer"
 )
-
-// Usage will print the usage of the program
-func Usage() {
-	fmt.Println("Usage: geode <command> [options] <file>")
-	fmt.Println("Options:")
-	// app.UsageWriter(os.Stdout)
-}
 
 // Some constants that represent the program in it's current compiled state
 const (
@@ -34,8 +28,8 @@ func resolveFileName(filename string) (string, error) {
 	// If there was an error (file doesnt exist)
 	if err != nil {
 		// Try resolving the filename with .g extension
-		if !strings.HasSuffix(filename, ".g") {
-			return resolveFileName(filename + ".g")
+		if !strings.HasSuffix(filename, ".gd") {
+			return resolveFileName(filename + ".gd")
 		}
 		// There was no file by that name, so we fail
 		return "", fmt.Errorf("fatal error: No such file or directory %s", filename)
@@ -47,45 +41,67 @@ func resolveFileName(filename string) (string, error) {
 	return filename, nil
 }
 
+var (
+	printLLVM *bool
+)
+
 func main() {
 
-	app := cli.App("geode", "A programming language")
+	app := cli.App("geode", "A programming language by Nick Wanninger")
+	app.Version("version", VERSION)
+
+	app.Spec = "[-S]"
+	printLLVM = app.BoolOpt("S", false, "Print the LLVM IR")
+	mainSpec := "[-o] SOURCE"
 
 	// Declare our first command, which is invocable with "uman list"
 	app.Command("build", "Compile a geode source file", func(cmd *cli.Cmd) {
 
-		cmd.Spec = "[-o] SOURCE"
+		cmd.Spec = mainSpec
 		source := cmd.StringArg("SOURCE", "", "Source file to compile")
 		output := cmd.StringOpt("o output", "main", "Binary output name")
-
 		// Run this function when the command is invoked
 		cmd.Action = func() {
 			build(*source, *output)
 		}
 	})
 
+	//
+	app.Command("run", "Run a geode source file", func(cmd *cli.Cmd) {
+
+		cmd.Spec = "SOURCE [ARGS...]"
+		source := cmd.StringArg("SOURCE", "", "Source file to compile")
+		args := cmd.StringsArg("ARGS", nil, "Arguments to pass into geode program")
+		// Run this function when the command is invoked
+		cmd.Action = func() {
+			run(*source, *args)
+		}
+	})
+
 	app.Run(os.Args)
-	// // kingpin.MustParse(app.Parse(os.Args[1:]))
-	// command := kingpin.MustParse(app.Parse(os.Args[1:]))
-
-	// switch command {
-	// case buildCommand.FullCommand():
-	// 	filename, _ := resolveFileName(*buildInput)
-	// 	build(filename, *buildOutput)
-	// case buildCommand.FullCommand():
-	// 	filename, _ := resolveFileName(*buildInput)
-	// 	run(filename)
-	// }
-
 }
 
-// func run(filename string) {
-// 	if build(filename, "/tmp/geodeprogram") {
-// 		cmd := exec.Command("/tmp/geodeprogram")
-// 		cmd.Start()
-// 		fmt.Println(cmd.Wait())
-// 	}
-// }
+func run(filename string, args []string) {
+	outFile := "/tmp/geodeprogram"
+	if build(filename, outFile) {
+		cmd := exec.Command(outFile, args...)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err := cmd.Run()
+		// The program exited with a failed code. So we need to exit with that same code.
+		// This is because the run command should feel like just running the binary
+		if err != nil {
+			exitCodeString := strings.Replace(err.Error(), "exit status ", "", -1)
+			exitCode, _ := strconv.Atoi(exitCodeString)
+			os.Exit(exitCode)
+		}
+		// The program exited safely, so we should too
+		os.Exit(0)
+	} else {
+		fmt.Printf("Failed to run %q because the build failed", filename)
+	}
+}
 
 func build(filename string, output string) bool {
 	if filename == "" {
@@ -115,11 +131,12 @@ func build(filename string, output string) bool {
 		node.Codegen(comp.RootScope.SpawnChild(), comp)
 	}
 
-	// if *buildPrintLLVMIR {
-	// 	fmt.Println(comp.GetLLVMIR())
-	// 	return false
-	// }
-
+	if *printLLVM {
+		fmt.Println("=====")
+		fmt.Println(comp.GetLLVMIR())
+		fmt.Println("=====")
+	}
+	// fmt.Println(comp.GetLLVMIR())
 	comp.EmitModuleObject()
 	compiled := comp.Compile()
 	if !compiled {

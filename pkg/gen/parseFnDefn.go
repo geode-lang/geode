@@ -2,7 +2,7 @@ package gen
 
 import (
 	"gitlab.com/nickwanninger/geode/pkg/lexer"
-	"gitlab.com/nickwanninger/geode/pkg/types"
+	"gitlab.com/nickwanninger/geode/pkg/typesystem"
 )
 
 func (p *Parser) parseFnDefn() functionNode {
@@ -36,11 +36,11 @@ func (p *Parser) parseFnDefn() functionNode {
 
 	p.next()
 	if p.token.Is(lexer.TokType) {
-		fn.ReturnType = types.GlobalTypeMap.GetType(p.token.Value)
+		fn.ReturnType = typesystem.GlobalTypeMap.GetType(p.token.Value)
 		// move the token pointer along (no type, so we check the left curly brace)
 		p.next()
 	} else {
-		fn.ReturnType = types.GlobalTypeMap.GetType("void")
+		fn.ReturnType = typesystem.GlobalTypeMap.GetType("void")
 	}
 
 	if p.token.Is(lexer.TokRightArrow) {

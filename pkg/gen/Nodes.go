@@ -1,12 +1,9 @@
 package gen
 
 import (
-	"github.com/go-llvm/llvm"
-	"gitlab.com/nickwanninger/geode/pkg/types"
+	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
-
-var foo llvm.Type
-var foobar llvm.Value
 
 // NodeType -
 type NodeType int
@@ -15,7 +12,7 @@ type NodeType int
 type Node interface {
 	Kind() NodeType
 	NameString() string
-	Codegen(*Scope, *Compiler) llvm.Value
+	Codegen(*Scope, *Compiler) value.Value
 }
 
 // Kind -
@@ -147,7 +144,7 @@ func (n variableReferenceNode) NameString() string { return "variableReferenceNo
 
 type variableNode struct {
 	NodeType
-	Type     *types.VarType
+	Type     types.Type
 	HasValue bool
 	Name     string
 	IsArray  bool
@@ -170,7 +167,7 @@ type functionNode struct {
 	Args       []variableNode
 	Body       blockNode
 	IsExternal bool
-	ReturnType *types.VarType
+	ReturnType types.Type
 }
 
 func (n functionNode) NameString() string { return "functionNode" }
