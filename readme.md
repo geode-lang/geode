@@ -7,27 +7,11 @@ Installing Geode is simple, just follow the steps below and install a few depend
 ### Dependencies
 
 - Golang with a `$GOPATH` setup in your env
-- [Go Dep](https://github.com/golang/dep) installed
-- The CC compiler for linking binaries
-- For building LLVM bindings:
-  - Subversion
-  - A C++ Compiler
-  - CMake installed
-  - `libedit-dev` installed
+- The clang c compiler for linking binaries
 
 ### Building
 
 Once you have the dependencies setup, building is easy:
-
-First you need to build the llvm bindings. This can take some time depending on the speed of your machine. Luckly this doesn't need to be done on every build.
-
-```
-$ git clone https://github.com/go-llvm/llvm.git $GOPATH/src/github.com/go-llvm/llvm
-$ cd $GOPATH/src/github.com/go-llvm/llvm
-$ ./update_llvm.sh
-```
-
-Then you can get the Geode Compiler
 
 ```
 $ go get -u gitlab.com/nickwanninger/geode/...
