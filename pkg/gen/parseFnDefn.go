@@ -19,7 +19,7 @@ func (p *Parser) parseFnDefn() functionNode {
 
 		for {
 			// If there is an arg
-			if p.nextToken.Is(lexer.TokType) {
+			if p.peek(1).Is(lexer.TokType) {
 				p.next()
 				fn.Args = append(fn.Args, p.parseVariableDefn(false))
 			}
@@ -56,7 +56,7 @@ func (p *Parser) parseFnDefn() functionNode {
 		if p.token.Is(lexer.TokSemiColon) {
 			p.next()
 		} else {
-			Error(p.token, "Missing semicolon after implicit return in function %q", fn.Name)
+			p.Error("Missing semicolon after implicit return in function %q", fn.Name)
 		}
 	} else if p.token.Is(lexer.TokLeftCurly) {
 		fn.Body = p.parseBlockStmt()

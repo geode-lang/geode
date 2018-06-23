@@ -29,7 +29,7 @@ func (p *Parser) parseNumericExpr() Node {
 		return n
 	}
 
-	Error(p.token, "invalid number syntax")
+	p.Error("invalid number syntax")
 
 	return nil
 }

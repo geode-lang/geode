@@ -73,23 +73,163 @@ func mangleName(name string) string {
 	return fmt.Sprintf("%s_%x_%d", name, b, nameNumber)
 }
 
-func (n ifNode) Codegen(scope *Scope, c *Compiler) value.Value     { return nil }
-func (n forNode) Codegen(scope *Scope, c *Compiler) value.Value    { return nil }
-func (n unaryNode) Codegen(scope *Scope, c *Compiler) value.Value  { return nil }
-func (n binaryNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
+func (n ifNode) Codegen(scope *Scope, c *Compiler) value.Value {
+	predicate := n.If.Codegen(scope, c)
+	one := constant.NewInt(1, types.I1)
+	parentBlock := c.CurrentBlock()
+	predicate = parentBlock.NewICmp(ir.IntEQ, one, createTypeCast(c, predicate, types.I1))
+	parentFunc := parentBlock.Parent
+
+	thenBlk := parentFunc.NewBlock(mangleName("then"))
+	elseBlk := &ir.BasicBlock{}
+	elseBlk = parentFunc.NewBlock(mangleName("else"))
+
+	endBlk := parentFunc.NewBlock(mangleName("merge"))
+	parentBlock.NewCondBr(predicate, thenBlk, elseBlk)
+
+	c.PushBlock(thenBlk)
+	n.Then.Codegen(scope, c)
+	// If there is no terminator for the block, IE: no return
+	// branch to the merge block
+	if thenBlk.Term == nil {
+		thenBlk.NewBr(endBlk)
+	}
+	c.PopBlock()
+
+	// We only want to construct the else block if there is one.
+	if n.Else != nil {
+		c.PushBlock(elseBlk)
+		n.Else.Codegen(scope, c)
+		if elseBlk.Term == nil {
+			elseBlk.NewBr(endBlk)
+		}
+		c.PopBlock()
+	} else {
+		// If there is no else block, just break to the merge block
+		elseBlk.NewBr(endBlk)
+	}
+
+	c.PushBlock(endBlk)
+
+	return endBlk
+}
+
+func (n forNode) Codegen(scope *Scope, c *Compiler) value.Value   { return nil }
+func (n unaryNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
+
 func (n fnCallNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
 func (n whileNode) Codegen(scope *Scope, c *Compiler) value.Value  { return nil }
 
+func typeSize(t types.Type) int {
+	if types.IsInt(t) {
+		return t.(*types.IntType).Size
+	}
+	if types.IsFloat(t) {
+		return int(t.(*types.FloatType).Kind)
+	}
+
+	return -1
+}
+
+// createTypeCast is where most, if not all, type casting happens in the language.
+func createTypeCast(c *Compiler, in value.Value, to types.Type) value.Value {
+	inType := in.Type()
+	fromInt := types.IsInt(inType)
+	fromFloat := types.IsFloat(inType)
+
+	toInt := types.IsInt(to)
+	toFloat := types.IsFloat(to)
+
+	inSize := typeSize(inType)
+	outSize := typeSize(to)
+
+	if fromFloat && toInt {
+		return c.CurrentBlock().NewFPToSI(in, to)
+	}
+
+	if fromInt && toFloat {
+		return c.CurrentBlock().NewSIToFP(in, to)
+	}
+
+	if fromInt && toInt {
+		if inSize < outSize {
+			return c.CurrentBlock().NewSExt(in, to)
+		}
+		if inSize == outSize {
+			return in
+		}
+		return c.CurrentBlock().NewTrunc(in, to)
+	}
+
+	if fromFloat && toFloat {
+		if inSize > outSize {
+			return c.CurrentBlock().NewFPExt(in, to)
+		}
+		if inSize == outSize {
+			return in
+		}
+		return c.CurrentBlock().NewFPTrunc(in, to)
+	}
+
+	// If the cast would not change the type, just return the in value
+	if types.Equal(inType, to) {
+		return in
+	}
+
+	return codegenError("Failed to typecast")
+}
+
+func (n binaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
+	// Special case '=' because we don't emit the LHS as an expression
+	// if n.OP == "=" {
+	// 	l, ok := n.Left.(*variableNode)
+	// 	if !ok {
+	// 		return codegenError("destination of '=' must be a variable")
+	// 	}
+
+	// 	// get value
+	// 	val := n.Right.Codegen(scope, c)
+	// 	if val == nil {
+	// 		return codegenError("cannot assign null value")
+	// 	}
+
+	// 	// lookup location of variable from name
+	// 	p, _ := scope.Find(l.Name)
+	// 	// store
+	// 	c.CurrentBlock().NewStore(val, p)
+
+	// 	return val
+	// }
+
+	l := n.Left.Codegen(scope, c)
+	r := n.Right.Codegen(scope, c)
+	if l == nil || r == nil {
+		return codegenError("operand was nil")
+	}
+
+	switch n.OP {
+	case "+":
+		return c.CurrentBlock().NewAdd(l, r)
+	case "-":
+		return c.CurrentBlock().NewSub(l, r)
+	case "*":
+		return c.CurrentBlock().NewMul(l, r)
+	case "/":
+		return c.CurrentBlock().NewSDiv(l, r)
+	case "%":
+		return c.CurrentBlock().NewSRem(l, r)
+	case "=":
+		return c.CurrentBlock().NewICmp(ir.IntEQ, l, r)
+	case "!=":
+		return c.CurrentBlock().NewICmp(ir.IntNE, l, r)
+	default:
+		return codegenError("invalid binary operator")
+	}
+}
+
 // Function Call statement Code Generator
 func (n functionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	funcs := c.RootModule.Funcs
-	var callee *ir.Function
-	for _, fnc := range funcs {
-		if fnc.Name == n.Name {
-			callee = fnc
-			break
-		}
-	}
+	callee := c.Functions[n.Name]
 
 	if callee == nil {
 		return codegenError(fmt.Sprintf("Unknown function %q referenced", n.Name))
@@ -109,14 +249,15 @@ func (n functionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 // Return statement Code Generator
 func (n returnNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	retVal := n.Value.Codegen(scope, c)
-	c.CurrentBlock().NewRet(retVal)
+	retValCoerced := createTypeCast(c, retVal, c.FN.Sig.Ret)
+	c.CurrentBlock().NewRet(retValCoerced)
 	return nil
 }
 
 // Int Code Generator
 func (n intNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	// return llvm.ConstInt(llvm.Int64Type(), , true)
-	return constant.NewInt(int64(n.Value), types.I32)
+	return constant.NewInt(n.Value, types.I64)
 }
 
 // Char Code Generator
@@ -128,6 +269,7 @@ func newCharArray(s string) *constant.Array {
 		b := constant.NewInt(int64(s[i]), types.I8)
 		bs = append(bs, b)
 	}
+	bs = append(bs, constant.NewInt(int64(0), types.I8))
 	c := constant.NewArray(bs...)
 	c.CharArray = true
 	return c
@@ -158,12 +300,9 @@ func (n variableReferenceNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 // Variable Node Code Generator
 func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	var oldvars = []value.Value{}
-
 	f := c.CurrentBlock().Parent
 	name := n.Name
 	body := n.Body
-	varType := n.Type
 
 	var val value.Value
 	if body != nil {
@@ -173,20 +312,21 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		}
 	}
 
-	alloca := createEntryBlockAlloca(f, varType, n.Name)
-	c.CurrentBlock().NewStore(val, alloca)
-
-	oldVar, _ := scope.Find(name)
-	oldvars = append(oldvars, oldVar)
-	scope.Set(name, alloca)
-
-	// evaluate body now that vars are in scope
-	bodyVal := body.Codegen(scope, c)
-	if bodyVal == nil {
-		return codegenError("body returns nil") // nil
+	var alloc *ir.InstAlloca
+	if n.Reassignment {
+		v, found := scope.Find(name)
+		if !found {
+			fmt.Println(v, "Not found")
+		}
+		alloc = v.(*ir.InstAlloca)
+	} else {
+		alloc = createBlockAlloca(f, n.Type, name)
+		scope.Set(name, alloc)
 	}
 
-	return bodyVal
+	val = createTypeCast(c, val, alloc.Elem)
+
+	return val
 }
 
 var nameNumber int
@@ -194,10 +334,13 @@ var nameNumber int
 // Code Block Code Generator
 func (n blockNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	blockScope := scope.SpawnChild()
-	name := mangleName("entry")
-	c.PushBlock(c.FN.NewBlock(name))
+	// spew.Dump(n.Nodes)
 	for _, node := range n.Nodes {
 		node.Codegen(blockScope, c)
+	}
+
+	if c.CurrentBlock().Term == nil {
+		c.CurrentBlock().NewRet(constant.NewInt(0, types.Void))
 	}
 	return nil
 }
@@ -207,11 +350,26 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	funcArgs := make([]*types.Param, 0)
 	for _, arg := range n.Args {
-		funcArgs = append(funcArgs, ir.NewParam(arg.Name, arg.Type))
+		p := ir.NewParam(arg.Name, arg.Type)
+		funcArgs = append(funcArgs, p)
+
 	}
 
 	function := c.RootModule.NewFunction(n.Name, n.ReturnType, funcArgs...)
+
 	c.FN = function
+	// Set the function name map to the function call
+	c.Functions[n.Name] = function
+	name := mangleName("entry")
+	c.PushBlock(c.FN.NewBlock(name))
+
+	for _, arg := range function.Params() {
+		alloc := c.CurrentBlock().NewAlloca(arg.Type())
+		c.CurrentBlock().NewStore(arg, alloc)
+		scope.Set(arg.Name, alloc)
+	}
+
+	n.Body.Codegen(scope, c)
 
 	// funcArgs := []llvm.Type{}
 	// for _, arg := range n.Args {
@@ -236,18 +394,16 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	// }
 
 	// if !n.IsExternal {
-	// 	block := llvm.AddBasicBlock(function, "entry")
+	// 	block := llvm.AddBasicBlock(fgiunction, "entry")
 	// 	c.Builder.SetInsertPointAtEnd(block)
 
 	// 	args := function.Params()
 	// 	for i, arg := range args {
-	// 		alloca := createEntryBlockAlloca(function, arg.Type(), n.Args[i].Name)
+	// 		alloca := createBlockAlloca(function, arg.Type(), n.Args[i].Name)
 	// 		c.Builder.CreateStore(arg, alloca)
 	// 		scope.Set(n.Args[i].Name, alloca)
 	// 	}
 	// }
-
-	n.Body.Codegen(scope, c)
 
 	// 	if llvm.VerifyFunction(function, llvm.PrintMessageAction) != nil {
 	// 		function.EraseFromParentAsFunction()
@@ -264,8 +420,12 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 // CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 // the function.  This is used for mutable variables etc.
-func createEntryBlockAlloca(f *ir.Function, t types.Type, name string) value.Value {
-	return nil
+func createBlockAlloca(f *ir.Function, elemType types.Type, name string) *ir.InstAlloca {
+	// Create a new allocation in the root of the function
+	alloca := f.Blocks[0].NewAlloca(elemType)
+	// Set the name of the allocation (the variable name)
+	alloca.SetName(name)
+	return alloca
 }
 
 // Allow functions to return an error isntead of having to manage closing the program each time.

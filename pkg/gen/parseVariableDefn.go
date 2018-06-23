@@ -20,20 +20,20 @@ func (p *Parser) parseVariableDefn(allowDefn bool) variableNode {
 			if p.token.Is(lexer.TokLeftBrace) {
 				p.next()
 			} else {
-				Error(p.token, "Malformed variable array definition")
+				p.Error("Malformed variable array definition")
 			}
 		}
 		if p.token.Is(lexer.TokIdent) {
 			n.Name = p.token.Value
 		} else {
-			Error(p.token, "Missing Variable name")
+			p.Error("Missing Variable name")
 		}
 
 	} else {
-		Error(p.token, "Invalid variable declaration")
+		p.Error("Invalid variable declaration")
 	}
 
-	if allowDefn && p.nextToken.Is(lexer.TokAssignment) {
+	if allowDefn && p.peek(1).Is(lexer.TokAssignment) {
 		n.HasValue = true
 		p.next()
 		p.next()

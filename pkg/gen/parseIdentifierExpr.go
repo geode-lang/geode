@@ -7,6 +7,15 @@ import (
 func (p *Parser) parseIdentifierExpr() Node {
 	name := p.token.Value
 	p.next()
+	if p.token.Is(lexer.TokLeftArrow) {
+		n := variableNode{}
+		n.Name = name
+		n.Reassignment = true
+		p.next()
+		n.NodeType = nodeVariable
+		n.Body = p.parseExpression()
+		return n
+	}
 
 	// Is the next value a paren? If it isnt it is a normal variable reference
 	if !p.token.Is(lexer.TokLeftParen) {

@@ -12,7 +12,7 @@ func (p *Parser) parseParenExpr() Node {
 		return nil
 	}
 	if p.token.Type != lexer.TokRightParen {
-		Error(p.token, "expected ')'")
+		p.Error("expected ')'")
 		return nil
 	}
 	p.next()

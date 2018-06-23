@@ -9,8 +9,7 @@ func (p *Parser) parsePrimary() Node {
 	switch p.token.Type {
 	// case tokIdentifier:
 	// 	return p.parseIdentifierExpr()
-	// case tokIf:
-	// 	return p.parseIfExpr()
+
 	// case tokFor:
 	// 	return p.parseForExpr()
 	// case tokVariable:

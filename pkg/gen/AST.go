@@ -12,9 +12,10 @@ import (
 // Parser -
 type Parser struct {
 	name               string             // the filename of the program
-	tokens             <-chan lexer.Token // channel of tokens from the lexer
-	token              lexer.Token        // current token, most recently recieved
-	nextToken          lexer.Token        // next token in the list (allows lookahead)
+	tokens             []lexer.Token      // channel of tokens from the lexer
+	tokenChan          <-chan lexer.Token // channel of tokens from the lexer
+	tokenIndex         int
+	token              lexer.Token // current token, most recently recieved
 	topLevelNodes      chan Node
 	binaryOpPrecedence map[string]int // maps binary operators to the precidence determining the order of operations
 }
@@ -23,27 +24,35 @@ type Parser struct {
 // chan that the nodes will be passed through with
 func Parse(tokens <-chan lexer.Token) <-chan Node {
 	p := &Parser{
-		tokens:        tokens,
+		tokens:        make([]lexer.Token, 0),
 		topLevelNodes: make(chan Node, 100),
 		binaryOpPrecedence: map[string]int{
-			"=": 2,
-			"<": 10,
-			"+": 20,
-			"-": 20,
-			"*": 40,
-			"/": 40,
+			"=":  2,
+			"!=": 2,
+			"<":  10,
+			"+":  20,
+			"-":  20,
+			"*":  40,
+			"/":  40,
 		},
 	}
 
 	// prime the next token for use by reading from the token channel (easier than handling in .next())
-	p.nextToken = <-p.tokens
+
+	for t := range tokens {
+		if t.Type != lexer.TokWhitespace && t.Type != lexer.TokComment {
+			p.tokens = append(p.tokens, t)
+		}
+	}
+
+	p.move(0)
 	go p.parse()
 
 	return p.topLevelNodes
 }
 
 func (p *Parser) parse() {
-	for p.next(); p.token.Type > 0; {
+	for p.token.Type > 0 {
 		topLevelNode := p.parseTopLevelStmt()
 		if topLevelNode != nil {
 			p.topLevelNodes <- topLevelNode
@@ -54,18 +63,38 @@ func (p *Parser) parse() {
 	close(p.topLevelNodes)
 }
 
-func (p *Parser) next() lexer.Token {
-	for {
-		// Set token to the value of next token and get a new value for nextToken
-		p.token = p.nextToken
-		p.nextToken = <-p.tokens
-		// if that token is valid, break from the loop
-		if !(p.token.Type == lexer.TokWhitespace || p.token.Type == lexer.TokComment) {
-			break
-		}
+func (p *Parser) requires(t lexer.TokenType) {
+	if p.token.Is(t) {
+		return
 	}
+	p.Error("Required token '%s' is missing. Has '%s' instead.", t.String(), p.token.Type.String())
+}
 
+func (p *Parser) back() lexer.Token {
+	return p.move(-1)
+}
+func (p *Parser) next() lexer.Token {
+	return p.move(1)
+}
+
+func (p *Parser) move(o int) lexer.Token {
+	p.tokenIndex += o
+	p.token = p.peek(0)
 	return p.token
+}
+
+func (p *Parser) peek(o int) lexer.Token {
+	target := p.tokenIndex + o
+	if target < 0 || target > len(p.tokens)-1 {
+		return lexer.Token{}
+	}
+	return p.tokens[target]
+}
+
+func (p *Parser) checkSemiColon() {
+	if !p.token.Is(lexer.TokSemiColon) {
+		p.Error("Missing Semicolon")
+	}
 }
 
 func (p *Parser) parseTopLevelStmt() Node {
@@ -74,7 +103,7 @@ func (p *Parser) parseTopLevelStmt() Node {
 		return p.parseFnDefn()
 	}
 
-	Error(p.token, "Invalid syntax in root")
+	p.Error("Invalid syntax in root")
 
 	return nil
 }
@@ -90,13 +119,13 @@ func (p *Parser) getTokenPrecedence(token string) int {
 // parse any block statement
 
 // Error is a helper function to make logging easier
-func Error(t lexer.Token, format string, args ...interface{}) {
+func (p *Parser) Error(format string, args ...interface{}) {
 
+	t := p.token
 	fmt.Fprintf(os.Stderr, "\033[31;1m")
 	fmt.Fprintf(os.Stderr, "Token Error\n")
-
-	fmt.Fprintf(os.Stderr, "The token in question's data:\n")
-	spew.Dump(t)
+	t.SyntaxError()
+	// spew.Dump(t)
 	fmt.Fprintf(os.Stderr, format, args...)
 	// spew.Fdump(os.Stderr, t)
 	fmt.Fprintf(os.Stderr, "\033[0m\n")

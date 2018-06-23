@@ -62,11 +62,14 @@ type Compiler struct {
 	blocks             *blockStack
 	FN                 *ir.Function // current funciton being compiled
 	objectFilesEmitted []string
+	Functions          map[string]*ir.Function
 }
 
 // CurrentBlock -
 func (c *Compiler) CurrentBlock() *ir.BasicBlock {
-	return c.blocks.Peek()
+	b := c.blocks.Peek()
+	// fmt.Println(b)
+	return b
 }
 
 // PushBlock -
@@ -100,12 +103,12 @@ func (c *Compiler) EmitModuleObject() string {
 	return filename
 }
 
-// Compile the object files a Compiler instance has emitted
+// Compile the llvm files a Compiler instance has emitted
 func (c *Compiler) Compile() bool {
 	linker := "clang"
 	linkArgs := make([]string, 0)
 
-	linkArgs = append(linkArgs)
+	linkArgs = append(linkArgs, "-O3")
 
 	linkArgs = append(linkArgs, "-o", c.OutputName)
 
@@ -121,7 +124,7 @@ func (c *Compiler) Compile() bool {
 	}
 
 	// Clean up all the object files that wwere built in the process.
-	c.cleanUpObjectFiles()
+	// c.cleanUpObjectFiles()
 
 	return true
 }
@@ -140,10 +143,16 @@ func NewCompiler(moduleName string, outputName string) *Compiler {
 	comp.RootModule = ir.NewModule()
 	comp.RootScope = NewScope()
 	comp.blocks = &blockStack{nil, 0}
-
+	comp.Functions = make(map[string]*ir.Function)
 	i8 := types.I8
 	i8ptr := types.NewPointer(i8)
+
 	printf := comp.RootModule.NewFunction("printf", types.I64, ir.NewParam("format", i8ptr))
 	printf.Sig.Variadic = true
+	comp.Functions["printf"] = printf
+
+	getchar := comp.RootModule.NewFunction("getchar", types.I8)
+	comp.Functions["getchar"] = getchar
+
 	return comp
 }

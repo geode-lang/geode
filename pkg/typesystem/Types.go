@@ -56,11 +56,13 @@ func NewType(name string, llvmType types.Type) *VarType {
 
 // Declare the base types in the language
 var (
-	GeodeI8       = NewType("i8", types.I8)
-	GeodeI32      = NewType("i32", types.I32)
-	GeodeI64      = NewType("i64", types.I64)
-	GeodeF32      = NewType("float", types.Float)
-	GeodeF64      = NewType("double", types.Double)
+	GeodeI8  = NewType("char", types.I8)
+	GeodeI16 = NewType("short", types.I16)
+	GeodeI32 = NewType("int", types.I32)
+	GeodeI64 = NewType("long", types.I64)
+	GeodeBig = NewType("big", types.NewInt(256))
+	// GeodeF32      = NewType("float32", types.Float)
+	GeodeF64      = NewType("float", types.Double)
 	GeodeBool     = NewType("bool", types.I8)
 	GeodeString   = NewType("string", types.NewPointer(GeodeI8.LLVMType))
 	GeodeVoidType = NewType("void", types.Void)

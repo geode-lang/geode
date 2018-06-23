@@ -1,4 +1,7 @@
-# hello there
-func main() i64 {
-	return printf("%.300f", 32.123);
+func main(int argc) int {
+	if argc = 3 {
+		printf("hello, world\n");
+		return 1;
+	}
+	return 0;
 }

@@ -99,7 +99,7 @@ func run(filename string, args []string) {
 		// The program exited safely, so we should too
 		os.Exit(0)
 	} else {
-		fmt.Printf("Failed to run %q because the build failed", filename)
+		fmt.Printf("Failed to run %q because the build failed\n", filename)
 	}
 }
 
@@ -132,9 +132,10 @@ func build(filename string, output string) bool {
 	}
 
 	if *printLLVM {
-		fmt.Println("=====")
-		fmt.Println(comp.GetLLVMIR())
-		fmt.Println("=====")
+		lines := strings.Split(comp.GetLLVMIR(), "\n")
+		for i, line := range lines {
+			fmt.Printf("%3d %s\n", i+1, line)
+		}
 	}
 	// fmt.Println(comp.GetLLVMIR())
 	comp.EmitModuleObject()

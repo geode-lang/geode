@@ -28,18 +28,23 @@ var Tokens = []TokenInfoRelation{
 
 	{TokElipsis, `\.\.\.`},
 
-	{TokStar, `\*`},
-	{TokPlus, `\+`},
-	{TokMinus, `-`},
-	{TokDiv, `/`},
-	{TokExp, `\^`},
+	{TokOper, `\*`},
+	{TokOper, `\+`},
+	{TokOper, `-`},
+	{TokOper, `/`},
+	{TokOper, `\^`},
+	{TokOper, `!=`},
+	{TokOper, `=`},
+	{TokOper, `<`},
+	{TokOper, `<=|≤`},
+	{TokOper, `>`},
+	{TokOper, `>=|≥`},
 	{TokSemiColon, `;`},
 
 	// {TokDefereference, `@`},
 	// {TokReference, `\*`},
 
 	{TokAssignment, `:=`},
-	{TokEquality, `=`},
 
 	{TokRightParen, `\)`},
 	{TokLeftParen, `\(`},
@@ -67,11 +72,6 @@ var Tokens = []TokenInfoRelation{
 	{TokComment, `\#[^\n]*`},
 	{TokComment, `{-.*-}`},
 	{TokWhitespace, `\s+`},
-
-	{TokLT, `<`},
-	{TokLTE, `<=|≤`},
-	{TokGT, `>`},
-	{TokGTE, `>=|≥`},
 }
 
 var keyWordMap = map[string]TokenType{
@@ -148,6 +148,7 @@ func NewLexer() *LexState {
 			if typesystem.GlobalTypeMap.GetType(string(m.Bytes)) != nil {
 				return s.Token(int(TokType), string(m.Bytes), m), nil
 			}
+
 			kw, isKwInMap := keyWordMap[string(m.Bytes)]
 			if isKwInMap {
 				return s.Token(int(kw), string(m.Bytes), m), nil

@@ -13,17 +13,12 @@ type Node interface {
 	Kind() NodeType
 	NameString() string
 	Codegen(*Scope, *Compiler) value.Value
+	InferType(scope *Scope) types.Type
 }
 
 // Kind -
 func (t NodeType) Kind() NodeType {
 	return t
-}
-
-// Inferer interface allows anything that implements it to assume/infer
-// the type of itself and return it as a string
-type Inferer interface {
-	InferType() string
 }
 
 // func (t NodeType) String() string {
@@ -62,39 +57,43 @@ type intNode struct {
 	Value int64
 }
 
-func (n intNode) NameString() string { return "intNode" }
+func (n intNode) NameString() string                { return "intNode" }
+func (n intNode) InferType(scope *Scope) types.Type { return types.I64 }
 
 type floatNode struct {
 	NodeType
 	Value float64
 }
 
-func (n floatNode) NameString() string { return "floatNode" }
+func (n floatNode) NameString() string                { return "floatNode" }
+func (n floatNode) InferType(scope *Scope) types.Type { return types.Double }
 
 type stringNode struct {
 	NodeType
 	Value string
 }
 
-func (n stringNode) NameString() string { return "stringNode" }
+func (n stringNode) NameString() string                { return "stringNode" }
+func (n stringNode) InferType(scope *Scope) types.Type { return types.NewPointer(types.I8) }
 
 type charNode struct {
 	NodeType
 	Value int8
 }
 
-func (n charNode) NameString() string { return "charNode" }
+func (n charNode) NameString() string                { return "charNode" }
+func (n charNode) InferType(scope *Scope) types.Type { return types.I8 }
 
 type ifNode struct {
 	NodeType
-
-	// funky notation because `if` and `else` are go keywords
-	If   Node
-	Then Node
-	Else Node
+	If    Node
+	Then  Node
+	Else  Node
+	Index int
 }
 
-func (n ifNode) NameString() string { return "ifNode" }
+func (n ifNode) NameString() string                { return "ifNode" }
+func (n ifNode) InferType(scope *Scope) types.Type { return types.Void }
 
 type forNode struct {
 	NodeType
@@ -106,7 +105,8 @@ type forNode struct {
 	Body    Node
 }
 
-func (n forNode) NameString() string { return "forNode" }
+func (n forNode) NameString() string                { return "forNode" }
+func (n forNode) InferType(scope *Scope) types.Type { return types.Void }
 
 type unaryNode struct {
 	NodeType
@@ -115,7 +115,8 @@ type unaryNode struct {
 	Operand Node
 }
 
-func (n unaryNode) NameString() string { return "unaryNode" }
+func (n unaryNode) NameString() string                { return "unaryNode" }
+func (n unaryNode) InferType(scope *Scope) types.Type { return n.Operand.InferType(scope) }
 
 type binaryNode struct {
 	NodeType
@@ -125,7 +126,8 @@ type binaryNode struct {
 	Right Node
 }
 
-func (n binaryNode) NameString() string { return "binaryNode" }
+func (n binaryNode) NameString() string                { return "binaryNode" }
+func (n binaryNode) InferType(scope *Scope) types.Type { return types.Void }
 
 type fnCallNode struct {
 	NodeType
@@ -133,32 +135,37 @@ type fnCallNode struct {
 	Args  []Node
 }
 
-func (n fnCallNode) NameString() string { return "fnCallNode" }
+func (n fnCallNode) NameString() string                { return "fnCallNode" }
+func (n fnCallNode) InferType(scope *Scope) types.Type { return types.Void }
 
 type variableReferenceNode struct {
 	NodeType
 	Name string
 }
 
-func (n variableReferenceNode) NameString() string { return "variableReferenceNode" }
+func (n variableReferenceNode) NameString() string                { return "variableReferenceNode" }
+func (n variableReferenceNode) InferType(scope *Scope) types.Type { return types.Void }
 
 type variableNode struct {
 	NodeType
-	Type     types.Type
-	HasValue bool
-	Name     string
-	IsArray  bool
-	Body     Node
+	Type         types.Type
+	HasValue     bool
+	Name         string
+	IsArray      bool
+	Reassignment bool
+	Body         Node
 }
 
-func (n variableNode) NameString() string { return "variableNode" }
+func (n variableNode) NameString() string                { return "variableNode" }
+func (n variableNode) InferType(scope *Scope) types.Type { return types.Void }
 
 type returnNode struct {
 	NodeType
 	Value Node
 }
 
-func (n returnNode) NameString() string { return "returnNode" }
+func (n returnNode) NameString() string                { return "returnNode" }
+func (n returnNode) InferType(scope *Scope) types.Type { return types.Void }
 
 type functionNode struct {
 	NodeType
@@ -170,7 +177,8 @@ type functionNode struct {
 	ReturnType types.Type
 }
 
-func (n functionNode) NameString() string { return "functionNode" }
+func (n functionNode) NameString() string                { return "functionNode" }
+func (n functionNode) InferType(scope *Scope) types.Type { return types.Void }
 
 type functionCallNode struct {
 	NodeType
@@ -179,14 +187,16 @@ type functionCallNode struct {
 	Args []Node
 }
 
-func (n functionCallNode) NameString() string { return "functionCallNode" }
+func (n functionCallNode) NameString() string                { return "functionCallNode" }
+func (n functionCallNode) InferType(scope *Scope) types.Type { return types.Void }
 
 type blockNode struct {
 	NodeType
 	Nodes []Node
 }
 
-func (n blockNode) NameString() string { return "blockNode" }
+func (n blockNode) NameString() string                { return "blockNode" }
+func (n blockNode) InferType(scope *Scope) types.Type { return types.Void }
 
 type whileNode struct {
 	NodeType
@@ -195,4 +205,5 @@ type whileNode struct {
 	Body      Node
 }
 
-func (n whileNode) NameString() string { return "whileNode" }
+func (n whileNode) NameString() string                { return "whileNode" }
+func (n whileNode) InferType(scope *Scope) types.Type { return types.Void }
