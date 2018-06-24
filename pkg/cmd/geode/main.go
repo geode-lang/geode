@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,15 +28,17 @@ func main() {
 
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	context := NewContext()
 	switch command {
 	case buildCMD.FullCommand():
-		if *buildInput == "" {
-			log.Fatal("Failed to build, no file passed\n")
-		}
-		context.Input, _ = resolveFileName(*buildInput)
-		context.Output = *buildOutput
+		filename, _ := resolveFileName(*buildInput)
+		context := NewContext(filename, *buildOutput)
 		context.Build()
+
+	case runCMD.FullCommand():
+		filename, _ := resolveFileName(*runInput)
+		context := NewContext(filename, "/tmp/"+time.Now().String())
+		context.Build()
+		context.Run(*runArgs)
 	}
 }
 
@@ -75,8 +79,14 @@ type Context struct {
 }
 
 // NewContext constructs a new context and returns a pointer to it
-func NewContext() *Context {
+func NewContext(in string, out string) *Context {
+
+	if in == "" {
+		log.Fatal("Failed to create context, no input file passed\n")
+	}
 	res := &Context{}
+	res.Input = in
+	res.Output = out
 	return res
 }
 
@@ -111,5 +121,24 @@ func (c *Context) Build() {
 	if !compiled {
 		log.Fatal("Compilation failed. Please check the logs\n")
 	}
+
+}
+
+// Run a context with a given set of arguments
+func (c *Context) Run(args []string) {
+	cmd := exec.Command(c.Output, args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	// The program exited with a failed code. So we need to exit with that same code.
+	// This is because the run command should feel like just running the binary
+	if err != nil {
+		exitCodeString := strings.Replace(err.Error(), "exit status ", "", -1)
+		exitCode, _ := strconv.Atoi(exitCodeString)
+		os.Exit(exitCode)
+	}
+	// The program exited safely, so we should too
+	os.Exit(0)
 
 }

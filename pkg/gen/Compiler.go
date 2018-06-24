@@ -123,9 +123,9 @@ func (c *Compiler) Compile() bool {
 		log.Fatal("failed to link object files: `%s`\n\n%s", err.Error(), string(out))
 	}
 
-	log.Printf(string(out))
+	// log.Printf(string(out))
 	// Clean up all the object files that wwere built in the process.
-	// c.cleanUpObjectFiles()
+	c.cleanUpObjectFiles()
 
 	return true
 }
@@ -134,6 +134,10 @@ func (c *Compiler) cleanUpObjectFiles() {
 	for _, objFile := range c.objectFilesEmitted {
 		os.Remove(objFile)
 	}
+}
+
+func (c *Compiler) injectTypes() {
+	// Does nothing for now
 }
 
 // NewCompiler returns a pointer to a new Compiler object.
@@ -154,6 +158,8 @@ func NewCompiler(moduleName string, outputName string) *Compiler {
 
 	getchar := comp.RootModule.NewFunction("getchar", types.I8)
 	comp.Functions["getchar"] = getchar
+
+	comp.injectTypes()
 
 	return comp
 }

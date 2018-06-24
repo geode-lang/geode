@@ -1,7 +1,6 @@
 package gen
 
 import (
-	"crypto/rand"
 	"fmt"
 	"os"
 
@@ -9,6 +8,8 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"gitlab.com/nickwanninger/geode/pkg/typesystem"
+	"gitlab.com/nickwanninger/geode/pkg/util/log"
 )
 
 func init() {
@@ -67,10 +68,10 @@ func error(err string) value.Value {
 }
 
 func mangleName(name string) string {
-	b := make([]byte, 2)
+	// b := make([]byte, 2)
 	nameNumber++
-	rand.Read(b)
-	return fmt.Sprintf("%s_%x_%d", name, b, nameNumber)
+	// rand.Read(b)
+	return fmt.Sprintf("%s_%d", name, nameNumber)
 }
 
 func (n ifNode) Codegen(scope *Scope, c *Compiler) value.Value {
@@ -131,6 +132,27 @@ func typeSize(t types.Type) int {
 	return -1
 }
 
+func binaryCast(c *Compiler, left, right value.Value) (value.Value, value.Value, types.Type) {
+	// Right and Left types
+	lt := left.Type()
+	rt := right.Type()
+
+	var casted types.Type
+
+	// Get the cast precidence of both sides
+	leftPrec := typesystem.CastPrecidence(lt)
+	rightPrec := typesystem.CastPrecidence(rt)
+
+	if leftPrec > rightPrec {
+		casted = lt
+		right = createTypeCast(c, right, lt)
+	} else {
+		casted = rt
+		left = createTypeCast(c, left, rt)
+	}
+	return left, right, casted
+}
+
 // createTypeCast is where most, if not all, type casting happens in the language.
 func createTypeCast(c *Compiler, in value.Value, to types.Type) value.Value {
 	inType := in.Type()
@@ -162,7 +184,7 @@ func createTypeCast(c *Compiler, in value.Value, to types.Type) value.Value {
 	}
 
 	if fromFloat && toFloat {
-		if inSize > outSize {
+		if inSize < outSize {
 			return c.CurrentBlock().NewFPExt(in, to)
 		}
 		if inSize == outSize {
@@ -179,37 +201,61 @@ func createTypeCast(c *Compiler, in value.Value, to types.Type) value.Value {
 	return codegenError("Failed to typecast")
 }
 
+func createAdd(blk *ir.BasicBlock, left, right value.Value) value.Value {
+	lt := left.Type()
+	rt := right.Type()
+
+	// You can only add two of the same types of values
+	// So here we check and fatally fail if so
+	if !types.Equal(lt, rt) {
+		log.Fatal("Addition of two different types failed. `%s + %s`\n", lt, rt)
+	}
+	if types.IsInt(left.Type()) {
+		return blk.NewAdd(left, right)
+	}
+
+	if types.IsFloat(left.Type()) {
+		return blk.NewFAdd(left, right)
+	}
+	// We were unable to generate an add instruction, so we need to fail fatally
+	log.Fatal("Creation of add instruction failed. `%s + %s`\n", lt, rt)
+
+	return nil
+
+}
+
+type instrFunc func(value.Value, value.Value) *ir.Instruction
+
+func operatorTypeSwitch(t types.Type, intFunc, floatFunc instrFunc) instrFunc {
+	if types.IsInt(t) {
+		return intFunc
+	}
+	if types.IsFloat(t) {
+		return floatFunc
+	}
+	log.Fatal("Unable to switch over operator generator function. Invalid type '%s' passed.\n", t.String())
+	return nil
+}
+
 func (n binaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	// Special case '=' because we don't emit the LHS as an expression
-	// if n.OP == "=" {
-	// 	l, ok := n.Left.(*variableNode)
-	// 	if !ok {
-	// 		return codegenError("destination of '=' must be a variable")
-	// 	}
-
-	// 	// get value
-	// 	val := n.Right.Codegen(scope, c)
-	// 	if val == nil {
-	// 		return codegenError("cannot assign null value")
-	// 	}
-
-	// 	// lookup location of variable from name
-	// 	p, _ := scope.Find(l.Name)
-	// 	// store
-	// 	c.CurrentBlock().NewStore(val, p)
-
-	// 	return val
-	// }
-
+	// Generate the left and right nodes
 	l := n.Left.Codegen(scope, c)
 	r := n.Right.Codegen(scope, c)
+
+	// Attempt to cast them with casting precidence
+	// This means the operation `int + float` will cast the int to a float.
+	l, r, _ = binaryCast(c, l, r)
+
 	if l == nil || r == nil {
-		return codegenError("operand was nil")
+		log.Fatal("An operand to a binart operation `%s` was nil and failed to generate\n", n.OP)
 	}
+
+	blk := c.CurrentBlock()
 
 	switch n.OP {
 	case "+":
-		return c.CurrentBlock().NewAdd(l, r)
+		return createAdd(blk, l, r)
+		// return c.CurrentBlock().NewAdd(l, r)
 	case "-":
 		return c.CurrentBlock().NewSub(l, r)
 	case "*":
@@ -326,7 +372,8 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	val = createTypeCast(c, val, alloc.Elem)
 
-	return val
+	c.CurrentBlock().NewStore(val, alloc)
+	return nil
 }
 
 var nameNumber int
@@ -358,7 +405,6 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	}
 
 	function := c.RootModule.NewFunction(n.Name, n.ReturnType, funcArgs...)
-	
 
 	c.FN = function
 	// Set the function name map to the function call
@@ -373,13 +419,12 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	}
 
 	n.Body.Codegen(scope, c)
-	
+
 	// Given that we are at the end of the function's codegen phase
 	// we can assume the current block is the last block. So we can
 	// make sure it has a terminator, and if there isn't one we need
 	// to create one only if the return type of the function is void
 	// otherwise we need to Error fatally
-	
 
 	// funcArgs := []llvm.Type{}
 	// for _, arg := range n.Args {
