@@ -1,10 +1,12 @@
 package gen
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
+
+	"gitlab.com/nickwanninger/geode/pkg/util/log"
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
@@ -103,28 +105,47 @@ func (c *Compiler) EmitModuleObject() string {
 	return filename
 }
 
+// CompileTarget is a target to build a binary for
+type CompileTarget int
+
+// Supported compile targets to use
+const (
+	ASMTarget CompileTarget = iota
+	BinaryTarget
+)
+
 // Compile the llvm files a Compiler instance has emitted
-func (c *Compiler) Compile() bool {
+func (c *Compiler) Compile(target CompileTarget) bool {
 	linker := "clang"
 	linkArgs := make([]string, 0)
 
 	linkArgs = append(linkArgs, "-O3")
 
-	linkArgs = append(linkArgs, "-o", c.OutputName)
+	filename := c.OutputName
 
+	if target == ASMTarget {
+		linkArgs = append(linkArgs, "-S", "-masm=intel")
+		ext := path.Ext(filename)
+		filename = filename[0:len(filename)-len(ext)] + ".s"
+	}
+
+	// set the output filename
+	linkArgs = append(linkArgs, "-o", filename)
+
+	// Append input files to the end of the command
 	for _, objFile := range c.objectFilesEmitted {
 		linkArgs = append(linkArgs, objFile)
 	}
 
 	cmd := exec.Command(linker, linkArgs...)
-
-	if out, err := cmd.CombinedOutput(); err != nil {
-		fmt.Printf("failed to link object files: `%s`\n%s", err.Error(), string(out))
-		return false
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal("failed to compile with clang: `%s`\n\n%s", err.Error(), string(out))
 	}
 
+	// log.Printf(string(out))
 	// Clean up all the object files that wwere built in the process.
-	// c.cleanUpObjectFiles()
+	c.cleanUpObjectFiles()
 
 	return true
 }
@@ -133,6 +154,10 @@ func (c *Compiler) cleanUpObjectFiles() {
 	for _, objFile := range c.objectFilesEmitted {
 		os.Remove(objFile)
 	}
+}
+
+func (c *Compiler) injectTypes() {
+	// Does nothing for now
 }
 
 // NewCompiler returns a pointer to a new Compiler object.
@@ -153,6 +178,8 @@ func NewCompiler(moduleName string, outputName string) *Compiler {
 
 	getchar := comp.RootModule.NewFunction("getchar", types.I8)
 	comp.Functions["getchar"] = getchar
+
+	comp.injectTypes()
 
 	return comp
 }

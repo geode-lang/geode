@@ -1,7 +1,6 @@
 package gen
 
 import (
-	"crypto/rand"
 	"fmt"
 	"os"
 
@@ -9,6 +8,8 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"gitlab.com/nickwanninger/geode/pkg/typesystem"
+	"gitlab.com/nickwanninger/geode/pkg/util/log"
 )
 
 func init() {
@@ -67,10 +68,10 @@ func error(err string) value.Value {
 }
 
 func mangleName(name string) string {
-	b := make([]byte, 2)
+	// b := make([]byte, 2)
 	nameNumber++
-	rand.Read(b)
-	return fmt.Sprintf("%s_%x_%d", name, b, nameNumber)
+	// rand.Read(b)
+	return fmt.Sprintf("%s_%d", name, nameNumber)
 }
 
 func (n ifNode) Codegen(scope *Scope, c *Compiler) value.Value {
@@ -131,6 +132,27 @@ func typeSize(t types.Type) int {
 	return -1
 }
 
+func binaryCast(c *Compiler, left, right value.Value) (value.Value, value.Value, types.Type) {
+	// Right and Left types
+	lt := left.Type()
+	rt := right.Type()
+
+	var casted types.Type
+
+	// Get the cast precidence of both sides
+	leftPrec := typesystem.CastPrecidence(lt)
+	rightPrec := typesystem.CastPrecidence(rt)
+
+	if leftPrec > rightPrec {
+		casted = lt
+		right = createTypeCast(c, right, lt)
+	} else {
+		casted = rt
+		left = createTypeCast(c, left, rt)
+	}
+	return left, right, casted
+}
+
 // createTypeCast is where most, if not all, type casting happens in the language.
 func createTypeCast(c *Compiler, in value.Value, to types.Type) value.Value {
 	inType := in.Type()
@@ -162,7 +184,7 @@ func createTypeCast(c *Compiler, in value.Value, to types.Type) value.Value {
 	}
 
 	if fromFloat && toFloat {
-		if inSize > outSize {
+		if inSize < outSize {
 			return c.CurrentBlock().NewFPExt(in, to)
 		}
 		if inSize == outSize {
@@ -179,49 +201,109 @@ func createTypeCast(c *Compiler, in value.Value, to types.Type) value.Value {
 	return codegenError("Failed to typecast")
 }
 
+func createAdd(blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
+	if types.IsInt(t) {
+		return blk.NewAdd(left, right)
+	}
+	if types.IsFloat(t) {
+		return blk.NewFAdd(left, right)
+	}
+	log.Fatal("Creation of add instruction failed. `%s + %s`\n", left.Type(), right.Type())
+	return nil
+}
+
+func createSub(blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
+	if types.IsInt(t) {
+		return blk.NewSub(left, right)
+	}
+	if types.IsFloat(t) {
+		return blk.NewFSub(left, right)
+	}
+	log.Fatal("Creation of sub instruction failed. `%s - %s`\n", left.Type(), right.Type())
+	return nil
+}
+
+func createMul(blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
+	if types.IsInt(t) {
+		return blk.NewMul(left, right)
+	}
+	if types.IsFloat(t) {
+		return blk.NewFMul(left, right)
+	}
+	log.Fatal("Creation of mul instruction failed. `%s * %s`\n", left.Type(), right.Type())
+	return nil
+}
+
+func createDiv(blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
+	if types.IsInt(t) {
+		return blk.NewSDiv(left, right)
+	}
+	if types.IsFloat(t) {
+		return blk.NewFDiv(left, right)
+	}
+	log.Fatal("Creation of div instruction failed. `%s ÷ %s`\n", left.Type(), right.Type())
+	return nil
+}
+
+func createRem(blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
+	if types.IsInt(t) {
+		return blk.NewSRem(left, right)
+	}
+	if types.IsFloat(t) {
+		return blk.NewFRem(left, right)
+	}
+	log.Fatal("Creation of rem instruction failed. `%s % %s`\n", left.Type(), right.Type())
+	return nil
+}
+
+func createCmp(blk *ir.BasicBlock, i ir.IntPred, f ir.FloatPred, t types.Type, left, right value.Value) value.Value {
+	if types.IsInt(t) {
+		return blk.NewICmp(i, left, right)
+	}
+	if types.IsFloat(t) {
+		return blk.NewFCmp(f, left, right)
+	}
+	log.Fatal("Creation of rem instruction failed. `%s % %s`\n", left.Type(), right.Type())
+	return nil
+}
 func (n binaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	// Special case '=' because we don't emit the LHS as an expression
-	// if n.OP == "=" {
-	// 	l, ok := n.Left.(*variableNode)
-	// 	if !ok {
-	// 		return codegenError("destination of '=' must be a variable")
-	// 	}
-
-	// 	// get value
-	// 	val := n.Right.Codegen(scope, c)
-	// 	if val == nil {
-	// 		return codegenError("cannot assign null value")
-	// 	}
-
-	// 	// lookup location of variable from name
-	// 	p, _ := scope.Find(l.Name)
-	// 	// store
-	// 	c.CurrentBlock().NewStore(val, p)
-
-	// 	return val
-	// }
-
+	// Generate the left and right nodes
 	l := n.Left.Codegen(scope, c)
 	r := n.Right.Codegen(scope, c)
+
+	// Attempt to cast them with casting precidence
+	// This means the operation `int + float` will cast the int to a float.
+	l, r, t := binaryCast(c, l, r)
+
 	if l == nil || r == nil {
-		return codegenError("operand was nil")
+		log.Fatal("An operand to a binart operation `%s` was nil and failed to generate\n", n.OP)
 	}
+
+	blk := c.CurrentBlock()
 
 	switch n.OP {
 	case "+":
-		return c.CurrentBlock().NewAdd(l, r)
+		return createAdd(blk, t, l, r)
 	case "-":
-		return c.CurrentBlock().NewSub(l, r)
+		return createSub(blk, t, l, r)
 	case "*":
-		return c.CurrentBlock().NewMul(l, r)
+		return createMul(blk, t, l, r)
 	case "/":
-		return c.CurrentBlock().NewSDiv(l, r)
+		return createDiv(blk, t, l, r)
 	case "%":
-		return c.CurrentBlock().NewSRem(l, r)
+		return createRem(blk, t, l, r)
 	case "=":
-		return c.CurrentBlock().NewICmp(ir.IntEQ, l, r)
+		return createCmp(blk, ir.IntEQ, ir.FloatOEQ, t, l, r)
 	case "!=":
-		return c.CurrentBlock().NewICmp(ir.IntNE, l, r)
+		return createCmp(blk, ir.IntNE, ir.FloatONE, t, l, r)
+	case ">":
+		return createCmp(blk, ir.IntSGT, ir.FloatOGT, t, l, r)
+	case ">=":
+		return createCmp(blk, ir.IntSGE, ir.FloatOGE, t, l, r)
+	case "<":
+		return createCmp(blk, ir.IntSLT, ir.FloatOLT, t, l, r)
+	case "<=":
+		return createCmp(blk, ir.IntSLE, ir.FloatOLE, t, l, r)
 	default:
 		return codegenError("invalid binary operator")
 	}
@@ -326,7 +408,8 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	val = createTypeCast(c, val, alloc.Elem)
 
-	return val
+	c.CurrentBlock().NewStore(val, alloc)
+	return nil
 }
 
 var nameNumber int
@@ -339,9 +422,11 @@ func (n blockNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		node.Codegen(blockScope, c)
 	}
 
-	if c.CurrentBlock().Term == nil {
-		c.CurrentBlock().NewRet(constant.NewInt(0, types.Void))
-	}
+	// spew.Dump(c.CurrentBlock())
+
+	// if c.CurrentBlock().Term == nil {
+	// 	c.CurrentBlock().NewRet(constant.NewInt(0, types.Void))
+	// }
 	return nil
 }
 
@@ -370,6 +455,12 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	}
 
 	n.Body.Codegen(scope, c)
+
+	// Given that we are at the end of the function's codegen phase
+	// we can assume the current block is the last block. So we can
+	// make sure it has a terminator, and if there isn't one we need
+	// to create one only if the return type of the function is void
+	// otherwise we need to Error fatally
 
 	// funcArgs := []llvm.Type{}
 	// for _, arg := range n.Args {
