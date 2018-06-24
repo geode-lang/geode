@@ -23,3 +23,7 @@ vendor/
 .DS_Store
 
 _string.go
+
+pkg-old
+
+/pkg - old

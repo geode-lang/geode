@@ -339,9 +339,11 @@ func (n blockNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		node.Codegen(blockScope, c)
 	}
 
-	if c.CurrentBlock().Term == nil {
-		c.CurrentBlock().NewRet(constant.NewInt(0, types.Void))
-	}
+	// spew.Dump(c.CurrentBlock())
+
+	// if c.CurrentBlock().Term == nil {
+	// 	c.CurrentBlock().NewRet(constant.NewInt(0, types.Void))
+	// }
 	return nil
 }
 
@@ -356,6 +358,7 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	}
 
 	function := c.RootModule.NewFunction(n.Name, n.ReturnType, funcArgs...)
+	
 
 	c.FN = function
 	// Set the function name map to the function call
@@ -370,6 +373,13 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	}
 
 	n.Body.Codegen(scope, c)
+	
+	// Given that we are at the end of the function's codegen phase
+	// we can assume the current block is the last block. So we can
+	// make sure it has a terminator, and if there isn't one we need
+	// to create one only if the return type of the function is void
+	// otherwise we need to Error fatally
+	
 
 	// funcArgs := []llvm.Type{}
 	// for _, arg := range n.Args {

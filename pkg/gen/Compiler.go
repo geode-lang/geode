@@ -1,10 +1,11 @@
 package gen
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
+
+	"gitlab.com/nickwanninger/geode/pkg/util/log"
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
@@ -117,12 +118,12 @@ func (c *Compiler) Compile() bool {
 	}
 
 	cmd := exec.Command(linker, linkArgs...)
-
-	if out, err := cmd.CombinedOutput(); err != nil {
-		fmt.Printf("failed to link object files: `%s`\n%s", err.Error(), string(out))
-		return false
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal("failed to link object files: `%s`\n\n%s", err.Error(), string(out))
 	}
 
+	log.Printf(string(out))
 	// Clean up all the object files that wwere built in the process.
 	// c.cleanUpObjectFiles()
 
