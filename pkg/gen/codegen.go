@@ -201,42 +201,71 @@ func createTypeCast(c *Compiler, in value.Value, to types.Type) value.Value {
 	return codegenError("Failed to typecast")
 }
 
-func createAdd(blk *ir.BasicBlock, left, right value.Value) value.Value {
-	lt := left.Type()
-	rt := right.Type()
-
-	// You can only add two of the same types of values
-	// So here we check and fatally fail if so
-	if !types.Equal(lt, rt) {
-		log.Fatal("Addition of two different types failed. `%s + %s`\n", lt, rt)
-	}
-	if types.IsInt(left.Type()) {
+func createAdd(blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
+	if types.IsInt(t) {
 		return blk.NewAdd(left, right)
 	}
-
-	if types.IsFloat(left.Type()) {
+	if types.IsFloat(t) {
 		return blk.NewFAdd(left, right)
 	}
-	// We were unable to generate an add instruction, so we need to fail fatally
-	log.Fatal("Creation of add instruction failed. `%s + %s`\n", lt, rt)
-
+	log.Fatal("Creation of add instruction failed. `%s + %s`\n", left.Type(), right.Type())
 	return nil
-
 }
 
-type instrFunc func(value.Value, value.Value) *ir.Instruction
-
-func operatorTypeSwitch(t types.Type, intFunc, floatFunc instrFunc) instrFunc {
+func createSub(blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
 	if types.IsInt(t) {
-		return intFunc
+		return blk.NewSub(left, right)
 	}
 	if types.IsFloat(t) {
-		return floatFunc
+		return blk.NewFSub(left, right)
 	}
-	log.Fatal("Unable to switch over operator generator function. Invalid type '%s' passed.\n", t.String())
+	log.Fatal("Creation of sub instruction failed. `%s - %s`\n", left.Type(), right.Type())
 	return nil
 }
 
+func createMul(blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
+	if types.IsInt(t) {
+		return blk.NewMul(left, right)
+	}
+	if types.IsFloat(t) {
+		return blk.NewFMul(left, right)
+	}
+	log.Fatal("Creation of mul instruction failed. `%s * %s`\n", left.Type(), right.Type())
+	return nil
+}
+
+func createDiv(blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
+	if types.IsInt(t) {
+		return blk.NewSDiv(left, right)
+	}
+	if types.IsFloat(t) {
+		return blk.NewFDiv(left, right)
+	}
+	log.Fatal("Creation of div instruction failed. `%s ÷ %s`\n", left.Type(), right.Type())
+	return nil
+}
+
+func createRem(blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
+	if types.IsInt(t) {
+		return blk.NewSRem(left, right)
+	}
+	if types.IsFloat(t) {
+		return blk.NewFRem(left, right)
+	}
+	log.Fatal("Creation of rem instruction failed. `%s % %s`\n", left.Type(), right.Type())
+	return nil
+}
+
+func createCmp(blk *ir.BasicBlock, i ir.IntPred, f ir.FloatPred, t types.Type, left, right value.Value) value.Value {
+	if types.IsInt(t) {
+		return blk.NewICmp(i, left, right)
+	}
+	if types.IsFloat(t) {
+		return blk.NewFCmp(f, left, right)
+	}
+	log.Fatal("Creation of rem instruction failed. `%s % %s`\n", left.Type(), right.Type())
+	return nil
+}
 func (n binaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	// Generate the left and right nodes
 	l := n.Left.Codegen(scope, c)
@@ -244,7 +273,7 @@ func (n binaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	// Attempt to cast them with casting precidence
 	// This means the operation `int + float` will cast the int to a float.
-	l, r, _ = binaryCast(c, l, r)
+	l, r, t := binaryCast(c, l, r)
 
 	if l == nil || r == nil {
 		log.Fatal("An operand to a binart operation `%s` was nil and failed to generate\n", n.OP)
@@ -254,20 +283,27 @@ func (n binaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	switch n.OP {
 	case "+":
-		return createAdd(blk, l, r)
-		// return c.CurrentBlock().NewAdd(l, r)
+		return createAdd(blk, t, l, r)
 	case "-":
-		return c.CurrentBlock().NewSub(l, r)
+		return createSub(blk, t, l, r)
 	case "*":
-		return c.CurrentBlock().NewMul(l, r)
+		return createMul(blk, t, l, r)
 	case "/":
-		return c.CurrentBlock().NewSDiv(l, r)
+		return createDiv(blk, t, l, r)
 	case "%":
-		return c.CurrentBlock().NewSRem(l, r)
+		return createRem(blk, t, l, r)
 	case "=":
-		return c.CurrentBlock().NewICmp(ir.IntEQ, l, r)
+		return createCmp(blk, ir.IntEQ, ir.FloatOEQ, t, l, r)
 	case "!=":
-		return c.CurrentBlock().NewICmp(ir.IntNE, l, r)
+		return createCmp(blk, ir.IntNE, ir.FloatONE, t, l, r)
+	case ">":
+		return createCmp(blk, ir.IntSGT, ir.FloatOGT, t, l, r)
+	case ">=":
+		return createCmp(blk, ir.IntSGE, ir.FloatOGE, t, l, r)
+	case "<":
+		return createCmp(blk, ir.IntSLT, ir.FloatOLT, t, l, r)
+	case "<=":
+		return createCmp(blk, ir.IntSLE, ir.FloatOLE, t, l, r)
 	default:
 		return codegenError("invalid binary operator")
 	}

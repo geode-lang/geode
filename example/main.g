@@ -1,5 +1,11 @@
+func fib(long n) long {
+	if n < 2 {
+		return n;
+	}
+	return fib(n - 1) + fib(n - 2);
+}
+
 func main(int argc) byte {
-	float a := 2 + 2.1;
-	printf("%f\n", a);
+	printf("%d\n", fib(30));
 	return 0;
 }

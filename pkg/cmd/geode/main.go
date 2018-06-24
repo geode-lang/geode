@@ -117,7 +117,13 @@ func (c *Context) Build() {
 		log.Debug("%s\n", comp.GetLLVMIR())
 	}
 	comp.EmitModuleObject()
-	compiled := comp.Compile()
+
+	target := gen.BinaryTarget
+	if *emitASM {
+		target = gen.ASMTarget
+	}
+
+	compiled := comp.Compile(target)
 	if !compiled {
 		log.Fatal("Compilation failed. Please check the logs\n")
 	}

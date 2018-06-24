@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 
 	"gitlab.com/nickwanninger/geode/pkg/util/log"
 
@@ -104,15 +105,34 @@ func (c *Compiler) EmitModuleObject() string {
 	return filename
 }
 
+// CompileTarget is a target to build a binary for
+type CompileTarget int
+
+// Supported compile targets to use
+const (
+	ASMTarget CompileTarget = iota
+	BinaryTarget
+)
+
 // Compile the llvm files a Compiler instance has emitted
-func (c *Compiler) Compile() bool {
+func (c *Compiler) Compile(target CompileTarget) bool {
 	linker := "clang"
 	linkArgs := make([]string, 0)
 
 	linkArgs = append(linkArgs, "-O3")
 
-	linkArgs = append(linkArgs, "-o", c.OutputName)
+	filename := c.OutputName
 
+	if target == ASMTarget {
+		linkArgs = append(linkArgs, "-S", "-masm=intel")
+		ext := path.Ext(filename)
+		filename = filename[0:len(filename)-len(ext)] + ".s"
+	}
+
+	// set the output filename
+	linkArgs = append(linkArgs, "-o", filename)
+
+	// Append input files to the end of the command
 	for _, objFile := range c.objectFilesEmitted {
 		linkArgs = append(linkArgs, objFile)
 	}
@@ -120,7 +140,7 @@ func (c *Compiler) Compile() bool {
 	cmd := exec.Command(linker, linkArgs...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal("failed to link object files: `%s`\n\n%s", err.Error(), string(out))
+		log.Fatal("failed to compile with clang: `%s`\n\n%s", err.Error(), string(out))
 	}
 
 	// log.Printf(string(out))
