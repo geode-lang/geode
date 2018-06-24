@@ -34,3 +34,21 @@ Files can be any of the following:
 - A folder containing a main.g
 - A geode source file without the .g extension
 - A .g file
+
+
+
+### Example fib.g
+
+```go
+func fib(int n) int {
+	if n < 2 {
+		return n;
+	}
+	return fib(n - 1) + fib(n - 2);
+}
+
+func main(int argc) byte {
+	printf("%d\n", fib(30));
+	return 0;
+}
+```
