@@ -12,4 +12,5 @@ before_script:
 geode-test:
   stage: test
   script:
+    - ls
     - geode-test
