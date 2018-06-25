@@ -7,13 +7,7 @@ import (
 func (p *Parser) parsePrimary() Node {
 	// fmt.Println(lexer.GetTokenName(p.token.Type))
 	switch p.token.Type {
-	// case tokIdentifier:
-	// 	return p.parseIdentifierExpr()
 
-	// case tokFor:
-	// 	return p.parseForExpr()
-	// case tokVariable:
-	// 	return p.parseVarExpr()
 	case lexer.TokIdent:
 		return p.parseIdentifierExpr()
 	case lexer.TokNumber:

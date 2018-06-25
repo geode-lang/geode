@@ -24,7 +24,7 @@ var Tokens = []TokenInfoRelation{
 
 	{TokChar, `'.'`},
 	{TokString, `"([^\"]|(\\.))*"`},
-	{TokNumber, `[+-]?[0-9]*\.?[0-9]+`},
+	{TokNumber, `[0-9]*\.?[0-9]+`},
 
 	{TokElipsis, `\.\.\.`},
 

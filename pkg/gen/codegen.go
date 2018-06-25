@@ -115,8 +115,15 @@ func (n ifNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return endBlk
 }
 
-func (n forNode) Codegen(scope *Scope, c *Compiler) value.Value   { return nil }
-func (n unaryNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
+func (n forNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
+
+func (n unaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
+	operandValue := n.Operand.Codegen(scope, c)
+	if operandValue == nil {
+		log.Fatal("nil operand")
+	}
+	return nil
+}
 
 func (n fnCallNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
 func (n whileNode) Codegen(scope *Scope, c *Compiler) value.Value  { return nil }
@@ -325,7 +332,7 @@ func (n functionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		}
 	}
 
-	return c.CurrentBlock().NewCall(callee, args...) // Entry(callee, args, n.Name+"-call-response")
+	return c.CurrentBlock().NewCall(callee, args...)
 }
 
 // Return statement Code Generator
@@ -384,15 +391,6 @@ func (n variableReferenceNode) Codegen(scope *Scope, c *Compiler) value.Value {
 func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	f := c.CurrentBlock().Parent
 	name := n.Name
-	body := n.Body
-
-	var val value.Value
-	if body != nil {
-		val = body.Codegen(scope, c)
-		if val == nil {
-			return val // nil
-		}
-	}
 
 	var alloc *ir.InstAlloca
 	if n.Reassignment {
@@ -406,9 +404,19 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		scope.Set(name, alloc)
 	}
 
-	val = createTypeCast(c, val, alloc.Elem)
+	if n.HasValue {
+		// Construct the body
+		var val value.Value
+		if n.Body != nil {
+			val = n.Body.Codegen(scope, c)
+			if val == nil {
+				return val // nil
+			}
+		}
+		val = createTypeCast(c, val, alloc.Elem)
+		c.CurrentBlock().NewStore(val, alloc)
+	}
 
-	c.CurrentBlock().NewStore(val, alloc)
 	return nil
 }
 

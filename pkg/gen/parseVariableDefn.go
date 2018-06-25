@@ -2,40 +2,31 @@ package gen
 
 import (
 	"gitlab.com/nickwanninger/geode/pkg/lexer"
-	"gitlab.com/nickwanninger/geode/pkg/typesystem"
+	"gitlab.com/nickwanninger/geode/pkg/util/log"
 )
 
 func (p *Parser) parseVariableDefn(allowDefn bool) variableNode {
+	p.requires(lexer.TokType)
 	n := variableNode{}
 	n.NodeType = nodeVariableDecl
 
 	if p.token.Is(lexer.TokType) {
-		n.Type = typesystem.GlobalTypeMap.GetType(p.token.Value)
-		p.next()
+		n.Type, n.IsPointer = p.parseType()
 
-		if p.token.Is(lexer.TokRightBrace) {
-			n.IsArray = true
-
-			p.next()
-			if p.token.Is(lexer.TokLeftBrace) {
-				p.next()
-			} else {
-				p.Error("Malformed variable array definition")
-			}
-		}
 		if p.token.Is(lexer.TokIdent) {
 			n.Name = p.token.Value
+			p.next()
 		} else {
-			p.Error("Missing Variable name")
+			log.Debug("%s\n", p.token)
+			log.Fatal("Missing Variable name")
 		}
 
 	} else {
-		p.Error("Invalid variable declaration")
+		log.Fatal("Invalid variable declaration")
 	}
 
-	if allowDefn && p.peek(1).Is(lexer.TokAssignment) {
+	if allowDefn && p.token.Is(lexer.TokAssignment) {
 		n.HasValue = true
-		p.next()
 		p.next()
 		n.Body = p.parseExpression()
 	}

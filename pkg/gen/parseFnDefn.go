@@ -3,6 +3,7 @@ package gen
 import (
 	"gitlab.com/nickwanninger/geode/pkg/lexer"
 	"gitlab.com/nickwanninger/geode/pkg/typesystem"
+	"gitlab.com/nickwanninger/geode/pkg/util/log"
 )
 
 func (p *Parser) parseFnDefn() functionNode {
@@ -16,34 +17,36 @@ func (p *Parser) parseFnDefn() functionNode {
 	p.next()
 
 	if p.token.Type == lexer.TokLeftParen {
-
+		p.next()
 		for {
+			log.Debug("parseTopLevelStmt - TokFuncDefn\n")
 			// If there is an arg
-			if p.peek(1).Is(lexer.TokType) {
-				p.next()
+			if p.token.Is(lexer.TokType) {
 				fn.Args = append(fn.Args, p.parseVariableDefn(false))
+
 			}
-			p.next()
 			// Break out case (not a comma, or a right paren)
 			if p.token.Is(lexer.TokRightParen) {
+				p.next()
 				break
 			}
 			if p.token.Is(lexer.TokComma) {
 				continue
 			}
 		}
+
 	}
 
-	p.next()
 	if p.token.Is(lexer.TokType) {
-		fn.ReturnType = typesystem.GlobalTypeMap.GetType(p.token.Value)
-		// move the token pointer along (no type, so we check the left curly brace)
-		p.next()
+		fn.ReturnType, _ = p.parseType()
 	} else {
 		fn.ReturnType = typesystem.GlobalTypeMap.GetType("void")
 	}
 
-	if p.token.Is(lexer.TokRightArrow) {
+	if p.token.Is(lexer.TokLeftCurly) {
+		fn.Body = p.parseBlockStmt()
+
+	} else if p.token.Is(lexer.TokRightArrow) {
 		fn.Body = blockNode{}
 		fn.Body.NodeType = nodeBlock
 		fn.Body.Nodes = make([]Node, 0)
@@ -58,8 +61,6 @@ func (p *Parser) parseFnDefn() functionNode {
 		} else {
 			p.Error("Missing semicolon after implicit return in function %q", fn.Name)
 		}
-	} else if p.token.Is(lexer.TokLeftCurly) {
-		fn.Body = p.parseBlockStmt()
 	} else if p.token.Is(lexer.TokElipsis) {
 		fn.IsExternal = true
 		p.next()

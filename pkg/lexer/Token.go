@@ -24,6 +24,7 @@ const (
 
 	TokElipsis
 	TokOper
+	TokPtr
 
 	TokOperatorStart
 	TokStar

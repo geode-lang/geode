@@ -151,6 +151,7 @@ type variableNode struct {
 	Type         types.Type
 	HasValue     bool
 	Name         string
+	IsPointer    bool
 	IsArray      bool
 	Reassignment bool
 	Body         Node

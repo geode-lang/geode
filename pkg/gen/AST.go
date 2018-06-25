@@ -60,6 +60,7 @@ func (p *Parser) parse() {
 			break
 		}
 	}
+
 	close(p.topLevelNodes)
 }
 
@@ -98,25 +99,21 @@ func (p *Parser) checkSemiColon() {
 }
 
 func (p *Parser) parseTopLevelStmt() Node {
+
 	switch p.token.Type {
 	case lexer.TokFuncDefn:
 		return p.parseFnDefn()
+		// case lexer.TokType:
+		// 	log.Debug("parseTopLevelStmt - TokFuncDefn\n")
+		// 	return p.parseVariableDefn(true)
 	}
-
 	p.Error("Invalid syntax in root")
-
 	return nil
 }
 
 func (p *Parser) getTokenPrecedence(token string) int {
 	return p.binaryOpPrecedence[token]
 }
-
-// Parse expression is the important ast lexer function.Node
-// It can parse any expression like `1`, `1 + 2`, `func()`, `func(1)`
-// or any mixture. It's basically the workhorse function
-
-// parse any block statement
 
 // Error is a helper function to make logging easier
 func (p *Parser) Error(format string, args ...interface{}) {

@@ -8,7 +8,7 @@ func (p *Parser) parseBinaryOpRHS(exprPrec int, lhs Node) Node {
 	for {
 		_, isBinaryOp := p.binaryOpPrecedence[p.token.Value]
 		if !isBinaryOp || p.token.Is(lexer.TokSemiColon) {
-			return lhs // an expression like '5' will get sent back up to parseTopLevelExpr or parseDefinition from here.
+			return lhs
 		}
 		tokenPrec := p.getTokenPrecedence(p.token.Value)
 		if tokenPrec < exprPrec {
