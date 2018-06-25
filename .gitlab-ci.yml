@@ -13,5 +13,5 @@ test:
     - go get -u gitlab.com/nickwanninger/geode/...
     - cd $GOPATH/src/gitlab.com/nickwanninger/geode
   script:
-    - pwd
+    - ls
     - geode-test
