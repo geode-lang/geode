@@ -14,4 +14,4 @@ test:
     - cd $GOPATH/src/gitlab.com/nickwanninger/geode
   script:
     - ls
-    - geode-test
+    - geode-test --show-output
