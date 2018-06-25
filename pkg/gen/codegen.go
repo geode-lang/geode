@@ -351,10 +351,17 @@ func (n functionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 // Return statement Code Generator
 func (n returnNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	retVal := n.Value.Codegen(scope, c)
-	retValCoerced := createTypeCast(c, retVal, c.FN.Sig.Ret)
-	c.CurrentBlock().NewRet(retValCoerced)
-	return nil
+	var retVal value.Value
+	if n.Value != nil {
+		retVal = n.Value.Codegen(scope, c)
+		retVal = createTypeCast(c, retVal, c.FN.Sig.Ret)
+	} else {
+		retVal = nil
+	}
+
+	c.CurrentBlock().NewRet(retVal)
+
+	return retVal
 }
 
 // Int Code Generator
@@ -466,6 +473,7 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	}
 
 	function := c.RootModule.NewFunction(n.Name, n.ReturnType, funcArgs...)
+	// spew.Dump(function)
 
 	c.FN = function
 	// Set the function name map to the function call
@@ -480,6 +488,10 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	}
 	// Gen the body of the function
 	n.Body.Codegen(scope, c)
+
+	if c.CurrentBlock().Term == nil {
+		c.CurrentBlock().NewRet(nil)
+	}
 
 	return function
 }

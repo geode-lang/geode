@@ -1,5 +1,5 @@
-Name       = "Minimal Program"
-Sourcefile = "nothing.g"
+Name       = "fibonacci"
+Sourcefile = "fibonacci.g"
 
 CompilerArgs = []
 RunArgs      = []
@@ -10,4 +10,4 @@ RunError      = 0
 Input = ""
 
 CompilerOutput = ""
-RunOutput      = ""
+RunOutput      = "832040\n"

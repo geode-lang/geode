@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"gitlab.com/nickwanninger/geode/pkg/gen"
 	"gitlab.com/nickwanninger/geode/pkg/lexer"
 	"gitlab.com/nickwanninger/geode/pkg/util/log"
@@ -24,6 +25,7 @@ const (
 var startTime time.Time
 
 func main() {
+	spew.Config.DisableMethods = true
 	startTime = time.Now()
 
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))

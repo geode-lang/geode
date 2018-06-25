@@ -1,5 +1,6 @@
-func main(int argc) byte {
-	float a;
-	printf("%f\n", a);
-	return 0;
+func main {
+	if 3 > 2 {
+		return;
+	}
+	printf("hello world\n");
 }

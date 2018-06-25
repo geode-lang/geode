@@ -1,17 +1,15 @@
 
-stages:
-  - test
+# stages:
+#   - test
 
 
 
-test:
-  stage: test
-  image: golang:1.10
-  before_script:
-    # Create a symbolic link under $GOPATH, this is needed for local build
-    # i.e. /go/src/gitlab.com/ykyuen/gitlab-ci-go-build
-    - go get -u gitlab.com/nickwanninger/geode/...
-    - cd $GOPATH/src/gitlab.com/nickwanninger/geode
-  script:
-    - ls
-    - geode-test --show-output
+# test:
+#   stage: test
+#   image: ubuntu
+#   before_script:
+#     - go get -u gitlab.com/nickwanninger/geode/...
+#     - cd $GOPATH/src/gitlab.com/nickwanninger/geode
+#   script:
+#     - ls
+#     - $GOPATH/bin/geode-test --show-output

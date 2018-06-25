@@ -29,6 +29,8 @@ func (p *Parser) parseFnDefn() functionNode {
 				break
 			}
 			if p.token.Is(lexer.TokComma) {
+				// Skip over the comma
+				p.next()
 				continue
 			}
 		}

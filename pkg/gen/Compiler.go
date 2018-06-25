@@ -136,6 +136,9 @@ func NewCompiler(moduleName string, outputName string) *Compiler {
 	comp.OutputName = outputName
 	// Initialize the module for this compiler.
 	comp.RootModule = ir.NewModule()
+	
+	
+
 	comp.RootScope = NewScope()
 	comp.blocks = make([]*ir.BasicBlock, 0)
 	comp.Functions = make(map[string]*ir.Function)
@@ -148,6 +151,9 @@ func NewCompiler(moduleName string, outputName string) *Compiler {
 
 	getchar := comp.RootModule.NewFunction("getchar", types.I8)
 	comp.Functions["getchar"] = getchar
+
+	malloc := comp.RootModule.NewFunction("malloc", i8ptr, ir.NewParam("size", types.I64))
+	comp.Functions["malloc"] = malloc
 
 	comp.injectTypes()
 

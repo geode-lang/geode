@@ -1,0 +1,14 @@
+
+Name       = "Conditional nesting"
+Sourcefile = "if-nesting.g"
+
+CompilerArgs = []
+RunArgs      = ["1", "2", "3"]
+
+CompilerError = 0
+RunError      = 0
+
+Input = ""
+
+CompilerOutput = ""
+RunOutput      = "2 3 4 4 end 4\n"
