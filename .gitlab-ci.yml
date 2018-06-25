@@ -4,6 +4,7 @@ stages:
 
 before_script:
   - go get -u -v gitlab.com/nickwanninger/geode/...
+  - cp -r /builds/nickwanninger /go/src/gitlab.com/nickwanninger/
   - cd /go/src/gitlab.com/nickwanninger/geode
 
 geode-test:
