@@ -11,6 +11,7 @@ func (p *Parser) parseIfStmt() Node {
 	n := ifNode{}
 	n.NodeType = nodeIf
 	n.Index = ifStmtIndex
+	ifStmtIndex++
 
 	p.next()
 
@@ -24,6 +25,6 @@ func (p *Parser) parseIfStmt() Node {
 		p.next()
 		n.Else = p.parseBlockStmt()
 	}
-	ifStmtIndex++ // increment the ifstmtindex for the next time around
+	// increment the ifstmtindex for the next time around
 	return n
 }

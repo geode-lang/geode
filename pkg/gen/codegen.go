@@ -67,50 +67,64 @@ func error(err string) value.Value {
 	return nil
 }
 
+// A global number to indicate which `name index` we are on. This way,
+// the mangler will never output the same name twice as this number is monotonic
+var nameNumber int
+
 func mangleName(name string) string {
-	// b := make([]byte, 2)
 	nameNumber++
-	// rand.Read(b)
 	return fmt.Sprintf("%s_%d", name, nameNumber)
+}
+
+func branchIfNoTerminator(blk *ir.BasicBlock, to *ir.BasicBlock) {
+	if blk.Term == nil {
+		blk.NewBr(to)
+	}
 }
 
 func (n ifNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	predicate := n.If.Codegen(scope, c)
 	one := constant.NewInt(1, types.I1)
+	// The name of the blocks is prefixed because
+	namePrefix := fmt.Sprintf("if_%d_", n.Index)
 	parentBlock := c.CurrentBlock()
 	predicate = parentBlock.NewICmp(ir.IntEQ, one, createTypeCast(c, predicate, types.I1))
 	parentFunc := parentBlock.Parent
 
-	thenBlk := parentFunc.NewBlock(mangleName("then"))
-	elseBlk := &ir.BasicBlock{}
-	elseBlk = parentFunc.NewBlock(mangleName("else"))
+	var endBlk *ir.BasicBlock
 
-	endBlk := parentFunc.NewBlock(mangleName("merge"))
-	parentBlock.NewCondBr(predicate, thenBlk, elseBlk)
-
+	thenBlk := parentFunc.NewBlock(mangleName(namePrefix + "then"))
 	c.PushBlock(thenBlk)
-	n.Then.Codegen(scope, c)
+	thenGenBlk := n.Then.Codegen(scope, c).(*ir.BasicBlock)
+
 	// If there is no terminator for the block, IE: no return
 	// branch to the merge block
-	if thenBlk.Term == nil {
-		thenBlk.NewBr(endBlk)
+
+	c.PopBlock()
+
+	elseBlk := parentFunc.NewBlock(mangleName(namePrefix + "else"))
+	var elseGenBlk *ir.BasicBlock
+
+	c.PushBlock(elseBlk)
+	// We only want to construct the else block if there is one.
+	if n.Else != nil {
+		elseGenBlk = n.Else.Codegen(scope, c).(*ir.BasicBlock)
 	}
 	c.PopBlock()
 
-	// We only want to construct the else block if there is one.
-	if n.Else != nil {
-		c.PushBlock(elseBlk)
-		n.Else.Codegen(scope, c)
-		if elseBlk.Term == nil {
-			elseBlk.NewBr(endBlk)
-		}
-		c.PopBlock()
-	} else {
-		// If there is no else block, just break to the merge block
-		elseBlk.NewBr(endBlk)
+	endBlk = parentFunc.NewBlock(mangleName(namePrefix + "merge"))
+	c.PushBlock(endBlk)
+
+	branchIfNoTerminator(thenBlk, endBlk)
+	branchIfNoTerminator(thenGenBlk, endBlk)
+	branchIfNoTerminator(elseBlk, endBlk)
+	if elseGenBlk != nil {
+		branchIfNoTerminator(elseGenBlk, endBlk)
 	}
 
-	c.PushBlock(endBlk)
+	parentBlock.NewCondBr(predicate, thenBlk, elseBlk)
+
+	// branchIfNoTerminator(c.CurrentBlock(), endBlk)
 
 	return endBlk
 }
@@ -390,6 +404,7 @@ func (n variableReferenceNode) Codegen(scope *Scope, c *Compiler) value.Value {
 // Variable Node Code Generator
 func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	f := c.CurrentBlock().Parent
+
 	name := n.Name
 
 	var alloc *ir.InstAlloca
@@ -420,8 +435,6 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return nil
 }
 
-var nameNumber int
-
 // Code Block Code Generator
 func (n blockNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	blockScope := scope.SpawnChild()
@@ -429,13 +442,14 @@ func (n blockNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	for _, node := range n.Nodes {
 		node.Codegen(blockScope, c)
 	}
+	// c.PopBlock()
 
 	// spew.Dump(c.CurrentBlock())
 
 	// if c.CurrentBlock().Term == nil {
 	// 	c.CurrentBlock().NewRet(constant.NewInt(0, types.Void))
 	// }
-	return nil
+	return c.CurrentBlock()
 }
 
 // Function Node Statement Code Generation
@@ -461,58 +475,8 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		c.CurrentBlock().NewStore(arg, alloc)
 		scope.Set(arg.Name, alloc)
 	}
-
+	// Gen the body of the function
 	n.Body.Codegen(scope, c)
-
-	// Given that we are at the end of the function's codegen phase
-	// we can assume the current block is the last block. So we can
-	// make sure it has a terminator, and if there isn't one we need
-	// to create one only if the return type of the function is void
-	// otherwise we need to Error fatally
-
-	// funcArgs := []llvm.Type{}
-	// for _, arg := range n.Args {
-	// 	funcArgs = append(funcArgs, arg.Type.LLVMType)
-	// }
-	// funcType := llvm.FunctionType(n.ReturnType.LLVMType, funcArgs, false)
-	// function := llvm.AddFunction(c.RootModule, n.Name, funcType)
-	// function.SetVisibility(llvm.DefaultVisibility)
-
-	// if function.Name() != n.Name {
-	// 	function.EraseFromParentAsFunction()
-	// 	function = c.RootModule.NamedFunction(n.Name)
-	// }
-
-	// if function.BasicBlocksCount() != 0 {
-	// 	return error("redefinition of function: " + n.Name)
-	// }
-	// // Set all the parameter names
-	// for i, param := range function.Params() {
-	// 	param.SetName(n.Args[i].Name)
-	// 	scope.Set(n.Args[i].Name, param)
-	// }
-
-	// if !n.IsExternal {
-	// 	block := llvm.AddBasicBlock(fgiunction, "entry")
-	// 	c.Builder.SetInsertPointAtEnd(block)
-
-	// 	args := function.Params()
-	// 	for i, arg := range args {
-	// 		alloca := createBlockAlloca(function, arg.Type(), n.Args[i].Name)
-	// 		c.Builder.CreateStore(arg, alloca)
-	// 		scope.Set(n.Args[i].Name, alloca)
-	// 	}
-	// }
-
-	// 	if llvm.VerifyFunction(function, llvm.PrintMessageAction) != nil {
-	// 		function.EraseFromParentAsFunction()
-	// 		return error("function verifiction failed")
-	// 	}
-	// } else {
-	// 	function.SetLinkage(llvm.ExternalLinkage)
-	// }
-
-	// c.RootScope.Set(n.Name, function)
 
 	return function
 }

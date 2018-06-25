@@ -1,57 +1,18 @@
 package gen
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 
+	"gitlab.com/nickwanninger/geode/pkg/util/color"
 	"gitlab.com/nickwanninger/geode/pkg/util/log"
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 )
-
-type blockStack struct {
-	top    *blockstacknode
-	length int
-}
-type blockstacknode struct {
-	value *ir.BasicBlock
-	prev  *blockstacknode
-}
-
-// Return the number of items in the stack
-func (s *blockStack) Len() int {
-	return s.length
-}
-
-// View the top item on the stack
-func (s *blockStack) Peek() *ir.BasicBlock {
-	if s.length == 0 {
-		return nil
-	}
-	return s.top.value
-}
-
-// Pop the top item of the stack and return it
-func (s *blockStack) Pop() *ir.BasicBlock {
-	if s.length == 0 {
-		return nil
-	}
-
-	n := s.top
-	s.top = n.prev
-	s.length--
-	return n.value
-}
-
-// Push a value onto the top of the stack
-func (s *blockStack) Push(value *ir.BasicBlock) {
-	n := &blockstacknode{value, s.top}
-	s.top = n
-	s.length++
-}
 
 // Compiler contains all information to compile a program into a .o file.
 type Compiler struct {
@@ -61,7 +22,7 @@ type Compiler struct {
 	// TargetData         llvm.TargetData
 	RootScope          *Scope
 	RootModule         *ir.Module
-	blocks             *blockStack
+	blocks             []*ir.BasicBlock
 	FN                 *ir.Function // current funciton being compiled
 	objectFilesEmitted []string
 	Functions          map[string]*ir.Function
@@ -69,19 +30,33 @@ type Compiler struct {
 
 // CurrentBlock -
 func (c *Compiler) CurrentBlock() *ir.BasicBlock {
-	b := c.blocks.Peek()
-	// fmt.Println(b)
-	return b
+	l := len(c.blocks)
+	if l == 0 {
+		return nil
+	}
+	blk := (c.blocks)[l-1]
+	return blk
 }
 
 // PushBlock -
-func (c *Compiler) PushBlock(b *ir.BasicBlock) {
-	c.blocks.Push(b)
+func (c *Compiler) PushBlock(blk *ir.BasicBlock) {
+
+	c.blocks = append(c.blocks, blk)
+	l := len(c.blocks)
+	fmt.Println(color.Green("PUSHED. LEN ="), l, blk.Name)
 }
 
 // PopBlock -
 func (c *Compiler) PopBlock() *ir.BasicBlock {
-	return c.blocks.Pop()
+	l := len(c.blocks)
+	if l == 0 {
+		return nil
+	}
+
+	blk := (c.blocks)[l-1]
+	c.blocks = (c.blocks)[:l-1]
+	fmt.Println(color.Red("POPPED. LEN ="), len(c.blocks), blk.Name)
+	return blk
 }
 
 // GetLLVMIR returns the llvm repr of the module
@@ -167,7 +142,7 @@ func NewCompiler(moduleName string, outputName string) *Compiler {
 	// Initialize the module for this compiler.
 	comp.RootModule = ir.NewModule()
 	comp.RootScope = NewScope()
-	comp.blocks = &blockStack{nil, 0}
+	comp.blocks = make([]*ir.BasicBlock, 0)
 	comp.Functions = make(map[string]*ir.Function)
 	i8 := types.I8
 	i8ptr := types.NewPointer(i8)

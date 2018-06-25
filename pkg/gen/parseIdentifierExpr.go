@@ -11,6 +11,7 @@ func (p *Parser) parseIdentifierExpr() Node {
 		n := variableNode{}
 		n.Name = name
 		n.Reassignment = true
+		n.HasValue = true
 		p.next()
 		n.NodeType = nodeVariable
 		n.Body = p.parseExpression()
