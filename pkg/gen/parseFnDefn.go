@@ -3,7 +3,6 @@ package gen
 import (
 	"gitlab.com/nickwanninger/geode/pkg/lexer"
 	"gitlab.com/nickwanninger/geode/pkg/typesystem"
-	"gitlab.com/nickwanninger/geode/pkg/util/log"
 )
 
 func (p *Parser) parseFnDefn() functionNode {
@@ -19,7 +18,6 @@ func (p *Parser) parseFnDefn() functionNode {
 	if p.token.Type == lexer.TokLeftParen {
 		p.next()
 		for {
-			log.Debug("parseTopLevelStmt - TokFuncDefn\n")
 			// If there is an arg
 			if p.token.Is(lexer.TokType) {
 				fn.Args = append(fn.Args, p.parseVariableDefn(false))

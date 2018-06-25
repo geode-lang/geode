@@ -1,11 +1,8 @@
 package gen
 
-import "fmt"
-
 // Parse unary will parse a single side of a binary statement
 
 func (p *Parser) parseUnary() Node {
-	fmt.Println(p.token)
 	_, isBinaryOp := p.binaryOpPrecedence[p.token.Value]
 	if !isBinaryOp {
 		return p.parsePrimary()
