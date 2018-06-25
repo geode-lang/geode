@@ -418,10 +418,9 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		alloc = createBlockAlloca(f, n.Type, name)
 		scope.Set(name, alloc)
 	}
-
+	var val value.Value
 	if n.HasValue {
 		// Construct the body
-		var val value.Value
 		if n.Body != nil {
 			val = n.Body.Codegen(scope, c)
 			if val == nil {
@@ -429,8 +428,12 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 			}
 		}
 		val = createTypeCast(c, val, alloc.Elem)
-		c.CurrentBlock().NewStore(val, alloc)
+	} else {
+		// Default to 0 from issue:
+		// https://gitlab.com/nickwanninger/geode/issues/5
+		val = createTypeCast(c, constant.NewInt(0, types.I64), alloc.Elem)
 	}
+	c.CurrentBlock().NewStore(val, alloc)
 
 	return nil
 }
