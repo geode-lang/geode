@@ -3,6 +3,8 @@ stages:
   - test
 
 before_script:
+  - echo $GOPATH
+  - mkdir -p /go/src/gitlab.com/nickwanninger/
   - cp -r /builds/nickwanninger /go/src/gitlab.com/nickwanninger/
   - cd /go/src/gitlab.com/nickwanninger/geode
   - go install -v -gcflags="-N -l" gitlab.com/nickwanninger/geode/...
