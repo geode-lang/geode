@@ -1,0 +1,13 @@
+Name       = "nothing"
+Sourcefile = "nothing.g"
+
+CompilerArgs = []
+RunArgs      = []
+
+CompilerError = 0
+RunError      = 0
+
+Input = ""
+
+CompilerOutput = ""
+RunOutput      = ""

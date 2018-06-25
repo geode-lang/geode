@@ -1,0 +1,12 @@
+image: golang:1.10
+stages:
+  - test
+
+before_script:
+  - go get -u -v gitlab.com/nickwanninger/geode/...
+  - cd /go/src/gitlab.com/nickwanninger/geode
+
+geode-test:
+  stage: test
+  script:
+    - geode-test

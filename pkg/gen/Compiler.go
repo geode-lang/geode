@@ -1,13 +1,11 @@
 package gen
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 
-	"gitlab.com/nickwanninger/geode/pkg/util/color"
 	"gitlab.com/nickwanninger/geode/pkg/util/log"
 
 	"github.com/llir/llvm/ir"
@@ -42,8 +40,6 @@ func (c *Compiler) CurrentBlock() *ir.BasicBlock {
 func (c *Compiler) PushBlock(blk *ir.BasicBlock) {
 
 	c.blocks = append(c.blocks, blk)
-	l := len(c.blocks)
-	fmt.Println(color.Green("PUSHED. LEN ="), l, blk.Name)
 }
 
 // PopBlock -
@@ -55,7 +51,6 @@ func (c *Compiler) PopBlock() *ir.BasicBlock {
 
 	blk := (c.blocks)[l-1]
 	c.blocks = (c.blocks)[:l-1]
-	fmt.Println(color.Red("POPPED. LEN ="), len(c.blocks), blk.Name)
 	return blk
 }
 
