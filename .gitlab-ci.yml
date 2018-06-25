@@ -4,7 +4,7 @@ stages:
 
 
 
-geode-test:
+test:
   stage: test
   image: golang:1.10
   before_script:
