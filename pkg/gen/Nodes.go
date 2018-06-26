@@ -165,7 +165,8 @@ type functionNode struct {
 	Name       string
 	Args       []variableNode
 	Body       blockNode
-	IsExternal bool
+	External   bool
+	Variadic   bool
 	ReturnType types.Type
 }
 

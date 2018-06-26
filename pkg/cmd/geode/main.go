@@ -116,14 +116,14 @@ func (c *Context) Build() {
 	}
 	linker := gen.NewLinker(*buildOutput)
 	linker.SetTarget(target)
+	linker.SetOutput(c.Output)
 
-	compilers := rootMod.Compile()
-	// Loop over the modules and codegen to .ll files
-	for c := range compilers {
-		// fmt.Println(c.Name)
+	// Loop over the compilers and generate to .ll files
+	for c := range rootMod.Compile() {
 		obj := c.EmitModuleObject()
 		linker.AddObject(obj)
 	}
+
 	linker.Run()
 
 	if !*emitLLVM {
@@ -140,6 +140,7 @@ func (c *Context) Run(args []string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
+
 	// The program exited with a failed code. So we need to exit with that same code.
 	// This is because the run command should feel like just running the binary
 	if err != nil {
@@ -147,6 +148,7 @@ func (c *Context) Run(args []string) {
 		exitCode, _ := strconv.Atoi(exitCodeString)
 		os.Exit(exitCode)
 	}
+
 	// The program exited safely, so we should too
 	os.Exit(0)
 

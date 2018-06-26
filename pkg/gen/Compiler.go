@@ -73,7 +73,7 @@ func (c *Compiler) AddFunction(fn *ir.Function) {
 func (c *Compiler) AddExternalFunction(fn *ir.Function) {
 	c.AddFunction(fn)
 	header := ir.NewFunction(fn.Name, fn.Sig.Ret, fn.Params()...)
-
+	header.Sig = fn.Sig
 	c.Module.AppendFunction(header)
 }
 

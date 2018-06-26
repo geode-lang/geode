@@ -13,6 +13,7 @@ watch:
 clean:
 	@rm -rf build
 	@rm -rf geode
+	@rm -rf *.s *.ll
 
 gen:
 	go generate -v ./...

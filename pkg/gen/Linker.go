@@ -2,10 +2,9 @@ package gen
 
 import (
 	"os"
-	"os/exec"
 	"path"
 
-	"gitlab.com/nickwanninger/geode/pkg/util/log"
+	"gitlab.com/nickwanninger/geode/pkg/util"
 )
 
 // CompileTarget is a target to build a binary for
@@ -67,8 +66,14 @@ func (l *Linker) Run() {
 
 	if l.target == ASMTarget {
 		linkArgs = append(linkArgs, "-S", "-masm=intel")
-		ext := path.Ext(l.output)
-		filename = filename[0:len(filename)-len(ext)] + ".s"
+
+		for _, obj := range l.objectPaths {
+			ext := path.Ext(obj)
+			filename = obj[0:len(obj)-len(ext)] + ".s"
+			asmArgs := append(linkArgs, "-o", filename, obj)
+			util.RunCommand(linker, asmArgs...)
+		}
+		return
 	}
 
 	// Append input files to the end of the command
@@ -77,11 +82,5 @@ func (l *Linker) Run() {
 	// set the output filename
 	linkArgs = append(linkArgs, "-o", filename)
 
-	// log.Debug("%s %s\n", linker, strings.Join(linkArgs, " "))
-	cmd := exec.Command(linker, linkArgs...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal("failed to compile with clang: `%s`\n\n%s", err.Error(), string(out))
-	}
-
+	util.RunCommand(linker, linkArgs...)
 }

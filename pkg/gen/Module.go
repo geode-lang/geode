@@ -126,6 +126,12 @@ func NewModule(name string, src *lexer.Sourcefile) *Module {
 
 // RuntimeSource is the source the runtime will use when compiling
 const RuntimeSource string = `
+# Define the printf sig
+func printf(string format, ...) ...
+
+func malloc(int size) byte* ...
+func realloc(byte* ptr, int size) ...
+
 func exp(int x, int n) int {
 	if n = 0 {
 		return 1;

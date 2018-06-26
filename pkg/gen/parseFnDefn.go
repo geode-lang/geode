@@ -1,8 +1,6 @@
 package gen
 
 import (
-	"fmt"
-
 	"gitlab.com/nickwanninger/geode/pkg/lexer"
 	"gitlab.com/nickwanninger/geode/pkg/typesystem"
 )
@@ -19,11 +17,19 @@ func (p *Parser) parseFnDefn() functionNode {
 
 	if p.token.Type == lexer.TokLeftParen {
 		p.next()
+
 		for {
+
 			// If there is an arg
 			if p.token.Is(lexer.TokType) {
 				fn.Args = append(fn.Args, p.parseVariableDefn(false))
 			}
+
+			if p.token.Is(lexer.TokElipsis) {
+				fn.Variadic = true
+				p.next()
+			}
+
 			// Break out case (not a comma, or a right paren)
 			if p.token.Is(lexer.TokRightParen) {
 				p.next()
@@ -64,8 +70,7 @@ func (p *Parser) parseFnDefn() functionNode {
 			p.Error("Missing semicolon after implicit return in function %q", fn.Name)
 		}
 	} else if p.token.Is(lexer.TokElipsis) {
-		fmt.Println("EXTERNAL")
-		fn.IsExternal = true
+		fn.External = true
 		p.next()
 	}
 	return fn

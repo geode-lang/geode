@@ -1,1 +1,4 @@
-func main int -> exp(3, 4);
+func main int {
+	printf("Hello, world %s\n", malloc(3000));
+	return 0;
+}

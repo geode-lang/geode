@@ -488,6 +488,15 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	c.FN = function
 	c.AddFunction(function)
+	function.Sig.Variadic = n.Variadic
+
+	// fmt.Println(function.Name, function.Sig.Variadic)
+
+	// If the function is external (has ... at the end) we don't build a block
+	if n.External {
+		return function
+	}
+
 	name := mangleName("entry")
 	c.PushBlock(c.FN.NewBlock(name))
 
@@ -498,7 +507,6 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	}
 	// Gen the body of the function
 	n.Body.Codegen(scope, c)
-
 	if c.CurrentBlock().Term == nil {
 		log.Warn("Function %s is missing a return statement in the root block. Defaulting to 0\n", n.Name)
 		v := createTypeCast(c, constant.NewInt(0, types.I64), n.ReturnType)
