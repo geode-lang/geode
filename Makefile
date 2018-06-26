@@ -3,7 +3,7 @@ all: build
 
 build: clean
 	@echo "Building"
-	go install -v -gcflags="-N -l" gitlab.com/nickwanninger/geode/...
+	go install -v -gcflags="-N -l" github.com/nickwanninger/geode/...
 
 install: gen build
 	

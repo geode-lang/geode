@@ -1,7 +1,7 @@
 package gen
 
 import (
-	"gitlab.com/nickwanninger/geode/pkg/lexer"
+	"github.com/nickwanninger/geode/pkg/lexer"
 )
 
 func (p *Parser) parseBinaryOpRHS(exprPrec int, lhs Node) Node {

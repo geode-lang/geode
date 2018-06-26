@@ -2,7 +2,7 @@ package typesystem
 
 import (
 	"github.com/llir/llvm/ir/types"
-	"gitlab.com/nickwanninger/geode/pkg/util/log"
+	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
 var (

@@ -17,7 +17,7 @@ import (
 	"syscall"
 
 	"github.com/BurntSushi/toml"
-	"gitlab.com/nickwanninger/geode/pkg/util/color"
+	"github.com/nickwanninger/geode/pkg/util/color"
 )
 
 type Job struct {

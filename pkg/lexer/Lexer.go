@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"gitlab.com/nickwanninger/geode/pkg/typesystem"
+	"github.com/nickwanninger/geode/pkg/typesystem"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/timtadh/lexmachine"

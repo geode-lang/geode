@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/nickwanninger/geode/pkg/gen"
-	"gitlab.com/nickwanninger/geode/pkg/lexer"
-	"gitlab.com/nickwanninger/geode/pkg/util/log"
+	"github.com/nickwanninger/geode/pkg/gen"
+	"github.com/nickwanninger/geode/pkg/lexer"
+	"github.com/nickwanninger/geode/pkg/util/log"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 

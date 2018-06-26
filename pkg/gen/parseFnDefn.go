@@ -1,8 +1,8 @@
 package gen
 
 import (
-	"gitlab.com/nickwanninger/geode/pkg/lexer"
-	"gitlab.com/nickwanninger/geode/pkg/typesystem"
+	"github.com/nickwanninger/geode/pkg/lexer"
+	"github.com/nickwanninger/geode/pkg/typesystem"
 )
 
 func (p *Parser) parseFnDefn() functionNode {

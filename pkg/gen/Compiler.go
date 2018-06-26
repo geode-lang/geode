@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/llir/llvm/ir"
-	"gitlab.com/nickwanninger/geode/pkg/util/log"
+	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
 // Compiler contains all information to compile a program into a .o file.

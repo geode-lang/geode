@@ -2,8 +2,8 @@ package gen
 
 import (
 	"github.com/llir/llvm/ir/types"
-	"gitlab.com/nickwanninger/geode/pkg/lexer"
-	"gitlab.com/nickwanninger/geode/pkg/typesystem"
+	"github.com/nickwanninger/geode/pkg/lexer"
+	"github.com/nickwanninger/geode/pkg/typesystem"
 )
 
 func (p *Parser) parseType() (t types.Type, ptr bool) {

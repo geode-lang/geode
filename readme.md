@@ -14,7 +14,7 @@ Installing Geode is simple, just follow the steps below and install a few depend
 Once you have the dependencies setup, building is easy:
 
 ```
-$ go get -u -v gitlab.com/nickwanninger/geode/...
+$ go get -u -v github.com/nickwanninger/geode/...
 ```
 
 This will build and install geode's executable binary to `$GOPATH/bin/`

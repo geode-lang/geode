@@ -4,7 +4,7 @@ import (
 	"os"
 	"path"
 
-	"gitlab.com/nickwanninger/geode/pkg/util"
+	"github.com/nickwanninger/geode/pkg/util"
 )
 
 // CompileTarget is a target to build a binary for

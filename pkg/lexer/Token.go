@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.com/nickwanninger/geode/pkg/typesystem"
+	"github.com/nickwanninger/geode/pkg/typesystem"
 )
 
 //go:generate stringer -type=TokenType $GOFILE

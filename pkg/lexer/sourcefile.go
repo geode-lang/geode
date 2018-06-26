@@ -4,7 +4,7 @@ import (
 	"hash/fnv"
 	"io/ioutil"
 
-	"gitlab.com/nickwanninger/geode/pkg/util/log"
+	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
 // Sourcefile is a

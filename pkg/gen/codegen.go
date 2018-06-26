@@ -9,8 +9,8 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 
-	"gitlab.com/nickwanninger/geode/pkg/typesystem"
-	"gitlab.com/nickwanninger/geode/pkg/util/log"
+	"github.com/nickwanninger/geode/pkg/typesystem"
+	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
 func init() {
@@ -441,7 +441,7 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		val = createTypeCast(c, val, alloc.Elem)
 	} else {
 		// Default to 0 from issue:
-		// https://gitlab.com/nickwanninger/geode/issues/5
+		// https://github.com/nickwanninger/geode/issues/5
 		val = createTypeCast(c, constant.NewInt(0, types.I64), alloc.Elem)
 	}
 	c.CurrentBlock().NewStore(val, alloc)

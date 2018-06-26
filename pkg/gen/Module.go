@@ -1,8 +1,8 @@
 package gen
 
 import (
-	"gitlab.com/nickwanninger/geode/pkg/lexer"
-	"gitlab.com/nickwanninger/geode/pkg/util/log"
+	"github.com/nickwanninger/geode/pkg/lexer"
+	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
 // Module is a grouping of top level nodes in a sourcefile and it's scope

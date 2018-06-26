@@ -1,7 +1,7 @@
 package gen
 
 import (
-	"gitlab.com/nickwanninger/geode/pkg/lexer"
+	"github.com/nickwanninger/geode/pkg/lexer"
 )
 
 var blkidx = 0

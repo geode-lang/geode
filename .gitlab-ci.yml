@@ -8,8 +8,8 @@
 #   stage: test
 #   image: ubuntu
 #   before_script:
-#     - go get -u gitlab.com/nickwanninger/geode/...
-#     - cd $GOPATH/src/gitlab.com/nickwanninger/geode
+#     - go get -u github.com/nickwanninger/geode/...
+#     - cd $GOPATH/src/github.com/nickwanninger/geode
 #   script:
 #     - ls
 #     - $GOPATH/bin/geode-test --show-output

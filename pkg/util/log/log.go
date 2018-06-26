@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"gitlab.com/nickwanninger/geode/pkg/util/color"
+	"github.com/nickwanninger/geode/pkg/util/color"
 )
 
 // LogLevel -

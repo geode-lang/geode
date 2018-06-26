@@ -1,8 +1,8 @@
 package gen
 
 import (
-	"gitlab.com/nickwanninger/geode/pkg/lexer"
-	"gitlab.com/nickwanninger/geode/pkg/util/log"
+	"github.com/nickwanninger/geode/pkg/lexer"
+	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
 func (p *Parser) parseVariableDefn(allowDefn bool) variableNode {
