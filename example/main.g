@@ -1,6 +1,7 @@
-func main {
-	if 3 > 2 {
-		return;
-	}
-	printf("hello world\n");
+# Implicit returns
+func foo string -> "hello there. How are you?";
+
+func main int {
+	printf("%s\n", foo());
+	return 0;
 }

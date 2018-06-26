@@ -5,7 +5,7 @@ func fib(int n) int {
 	return fib(n - 1) + fib(n - 2);
 }
 
-func main(int argc) byte {
+func main(int argc) int {
 	int a;
 	a <- 30;
 	printf("%d\n", fib(a));

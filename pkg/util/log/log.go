@@ -61,6 +61,12 @@ func Info(format string, args ...interface{}) {
 	log(tolog)
 }
 
+// Warn -
+func Warn(format string, args ...interface{}) {
+	tolog := color.Magenta("warning: ") + fmt.Sprintf(format, args...)
+	log(tolog)
+}
+
 // Error -
 func Error(format string, args ...interface{}) {
 	tolog := color.Red("error: ") + fmt.Sprintf(format, args...)

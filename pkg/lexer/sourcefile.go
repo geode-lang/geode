@@ -1,13 +1,10 @@
 package lexer
 
 import (
-	"crypto/sha1"
-	"fmt"
+	"hash/fnv"
 	"io/ioutil"
 
 	"gitlab.com/nickwanninger/geode/pkg/util/log"
-
-	"github.com/timtadh/data-structures/errors"
 )
 
 // Sourcefile is a
@@ -25,23 +22,38 @@ func NewSourcefile(name string) (*Sourcefile, error) {
 }
 
 // Hash - Get the has of the sourcefile
-func (s *Sourcefile) Hash() string {
-	hasher := sha1.New()
-	hasher.Write([]byte(string(s.Contents)))
-	sha := fmt.Sprintf("%x", hasher.Sum(nil))
-	return sha
+func (s *Sourcefile) Hash() uint32 {
+	h := fnv.New32a()
+	h.Write([]byte(string(s.Contents)))
+	return h.Sum32()
 }
 
-func (s *Sourcefile) Read(path string) error {
+func (s *Sourcefile) LoadFile(path string) error {
 	s.Path = path
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatal("Unable to read file at path '%s'\n", path)
 	}
-	runes := []rune(string(bytes))
+	s.LoadBytes(bytes)
+	return nil
+}
+
+// LoadString takes a string and loads it
+func (s *Sourcefile) LoadString(source string) {
+	runes := []rune(source)
 	s.Contents = runes
-	// for _, rn := range runes {
-	// 	fmt.Println(rn, strconv.QuoteRune(rn))
-	// }
-	return errors.Errorf("Unable to read file")
+}
+
+// LoadBytes takes an array of bytes and loads it into the source
+func (s *Sourcefile) LoadBytes(bytes []byte) {
+	s.LoadString(string(bytes))
+}
+
+func (s *Sourcefile) String() string {
+	return string(s.Contents)
+}
+
+// Bytes returns the source as a byte array
+func (s *Sourcefile) Bytes() []byte {
+	return []byte(string(s.Contents))
 }

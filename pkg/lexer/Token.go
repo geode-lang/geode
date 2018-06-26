@@ -2,7 +2,6 @@ package lexer
 
 import (
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -150,23 +149,4 @@ func (t Token) InferType() (*typesystem.VarType, interface{}) {
 	}
 
 	return nil, nil
-}
-
-// SyntaxError returns a syntax error string about the token
-func (t Token) SyntaxError() {
-	src := *t.SourceCode
-	// lines := make([]string, 0)
-	line := 0
-	col := 0
-	for i, chr := range src {
-		if i == t.Pos {
-			fmt.Printf("line %d, Col %d\n", line, col)
-		}
-		col++
-		if chr == '\n' {
-			line++
-			col = 0
-		}
-	}
-
 }

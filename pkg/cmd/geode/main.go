@@ -2,14 +2,12 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"gitlab.com/nickwanninger/geode/pkg/gen"
 	"gitlab.com/nickwanninger/geode/pkg/lexer"
 	"gitlab.com/nickwanninger/geode/pkg/util/log"
@@ -25,7 +23,7 @@ const (
 var startTime time.Time
 
 func main() {
-	spew.Config.DisableMethods = true
+	// spew.Config.DisableMethods = true
 	startTime = time.Now()
 
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
@@ -94,40 +92,43 @@ func NewContext(in string, out string) *Context {
 
 // Build some context into a binary file
 func (c *Context) Build() {
-	data, err := ioutil.ReadFile(c.Input)
+
+	src, err := lexer.NewSourcefile(c.Input)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal("Unable to construct a source file.\n")
+	}
+	err = src.LoadFile(c.Input)
+	if err != nil {
+		log.Fatal("Unable to read file %s into sourcefile structure: %s\n", c.Input, err)
 	}
 
-	// Build a new lexer. This contans the methods required to parse some string of data into
-	lexer := lexer.NewLexer()
-	// Run the lexer concurrently
-	go lexer.Lex([]byte(string(gen.RuntimeSource) + string(data)))
-
-	tokens := lexer.Tokens
-
-	nodes := gen.Parse(tokens)
-
-	comp := gen.NewCompiler(c.Input, c.Output)
-
-	for node := range nodes {
-		node.Codegen(comp.RootScope.SpawnChild(), comp)
+	path := strings.Split(c.Input, "/")
+	rootMod := gen.NewModule(path[len(path)-1], src)
+	modules := make([]*gen.Module, 0)
+	for mod := range rootMod.Parse() {
+		modules = append(modules, mod)
 	}
 
-	if *emitLLVM {
-		log.Debug("%s\n", comp.GetLLVMIR())
-	}
-	comp.EmitModuleObject()
-
+	// Construct a linker object
 	target := gen.BinaryTarget
 	if *emitASM {
 		target = gen.ASMTarget
 	}
+	linker := gen.NewLinker(*buildOutput)
+	linker.SetTarget(target)
 
-	compiled := comp.Compile(target)
-	if !compiled {
-		log.Fatal("Compilation failed. Please check the logs\n")
+	// Loop over the modules and codegen to .ll files
+	for _, module := range modules {
+		c := module.Compile()
+		obj := c.EmitModuleObject()
+		linker.AddObject(obj)
+	}
+	linker.Run()
+
+	if !*emitLLVM {
+		linker.Cleanup()
+	} else {
+		log.Debug("llvm files left in the filesystem\n")
 	}
 
 }

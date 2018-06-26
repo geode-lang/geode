@@ -8,6 +8,7 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+
 	"gitlab.com/nickwanninger/geode/pkg/typesystem"
 	"gitlab.com/nickwanninger/geode/pkg/util/log"
 )
@@ -186,6 +187,10 @@ func createTypeCast(c *Compiler, in value.Value, to types.Type) value.Value {
 	inSize := typeSize(inType)
 	outSize := typeSize(to)
 
+	if types.Equal(to, types.Void) {
+		return nil
+	}
+
 	if fromFloat && toInt {
 		return c.CurrentBlock().NewFPToSI(in, to)
 	}
@@ -219,7 +224,8 @@ func createTypeCast(c *Compiler, in value.Value, to types.Type) value.Value {
 		return in
 	}
 
-	return codegenError("Failed to typecast")
+	log.Fatal("Failed to typecast type %s to %s\n", inType.String(), to)
+	return nil
 }
 
 func createAdd(blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
@@ -387,7 +393,7 @@ func newCharArray(s string) *constant.Array {
 
 // String Constant Code Generator
 func (n stringNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	str := c.RootModule.NewGlobalDef(mangleName(".str"), newCharArray(n.Value))
+	str := c.Module.NewGlobalDef(mangleName(".str"), newCharArray(n.Value))
 	str.IsConst = true
 	zero := constant.NewInt(0, types.I32)
 	return constant.NewGetElementPtr(str, zero, zero)
@@ -471,8 +477,15 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		funcArgs = append(funcArgs, p)
 
 	}
+	// We need to do some special checks if the function is main. It's special.
+	// For instance, it must return int type.
+	if n.Name == "main" {
+		if n.ReturnType != typesystem.GeodeI64.LLVMType {
+			log.Fatal("Main function must return type int\n")
+		}
+	}
 
-	function := c.RootModule.NewFunction(n.Name, n.ReturnType, funcArgs...)
+	function := c.Module.NewFunction(n.Name, n.ReturnType, funcArgs...)
 	// spew.Dump(function)
 
 	c.FN = function
@@ -490,7 +503,9 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	n.Body.Codegen(scope, c)
 
 	if c.CurrentBlock().Term == nil {
-		c.CurrentBlock().NewRet(nil)
+		log.Warn("Function %s is missing a return statement in the root block. Defaulting to 0\n", n.Name)
+		v := createTypeCast(c, constant.NewInt(0, types.I64), n.ReturnType)
+		c.CurrentBlock().NewRet(v)
 	}
 
 	return function

@@ -1,3 +1,3 @@
-func main() byte {
+func main() int {
 	return 0;
 }

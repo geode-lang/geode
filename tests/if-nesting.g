@@ -1,4 +1,4 @@
-func main(int argc) byte {
+func main(int argc) int {
 	int a := 1;
 	if argc >= 2 {
 		a <- 2;

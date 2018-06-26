@@ -7,13 +7,13 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"gitlab.com/nickwanninger/geode/pkg/lexer"
+	"gitlab.com/nickwanninger/geode/pkg/util/log"
 )
 
 // Parser -
 type Parser struct {
-	name               string             // the filename of the program
-	tokens             []lexer.Token      // channel of tokens from the lexer
-	tokenChan          <-chan lexer.Token // channel of tokens from the lexer
+	name               string        // the filename of the program
+	tokens             []lexer.Token // channel of tokens from the lexer
 	tokenIndex         int
 	token              lexer.Token // current token, most recently recieved
 	topLevelNodes      chan Node
@@ -22,7 +22,7 @@ type Parser struct {
 
 // Parse creates and runs a new lexer, that returns the
 // chan that the nodes will be passed through with
-func Parse(tokens <-chan lexer.Token) <-chan Node {
+func Parse(tokens chan lexer.Token) <-chan Node {
 	p := &Parser{
 		tokens:        make([]lexer.Token, 0),
 		topLevelNodes: make(chan Node, 100),
@@ -120,16 +120,7 @@ func (p *Parser) getTokenPrecedence(token string) int {
 
 // Error is a helper function to make logging easier
 func (p *Parser) Error(format string, args ...interface{}) {
-
-	t := p.token
-	fmt.Fprintf(os.Stderr, "\033[31;1m")
-	fmt.Fprintf(os.Stderr, "Token Error\n")
-	t.SyntaxError()
-	// spew.Dump(t)
-	fmt.Fprintf(os.Stderr, format, args...)
-	// spew.Fdump(os.Stderr, t)
-	fmt.Fprintf(os.Stderr, "\033[0m\n")
-
+	log.Fatal(format, args...)
 	os.Exit(1)
 }
 
