@@ -36,7 +36,7 @@ func main() {
 
 	case runCMD.FullCommand():
 		filename, _ := resolveFileName(*runInput)
-		context := NewContext(filename, "/tmp/"+time.Now().String())
+		context := NewContext(filename, "/tmp/geoderuntemp")
 		context.Build()
 		context.Run(*runArgs)
 	}
@@ -117,9 +117,10 @@ func (c *Context) Build() {
 	linker := gen.NewLinker(*buildOutput)
 	linker.SetTarget(target)
 
+	compilers := rootMod.Compile()
 	// Loop over the modules and codegen to .ll files
-	for _, module := range modules {
-		c := module.Compile()
+	for c := range compilers {
+		// fmt.Println(c.Name)
 		obj := c.EmitModuleObject()
 		linker.AddObject(obj)
 	}
@@ -130,7 +131,6 @@ func (c *Context) Build() {
 	} else {
 		log.Debug("llvm files left in the filesystem\n")
 	}
-
 }
 
 // Run a context with a given set of arguments

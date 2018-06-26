@@ -129,15 +129,6 @@ type binaryNode struct {
 func (n binaryNode) NameString() string                { return "binaryNode" }
 func (n binaryNode) InferType(scope *Scope) types.Type { return types.Void }
 
-type fnCallNode struct {
-	NodeType
-	Calee string
-	Args  []Node
-}
-
-func (n fnCallNode) NameString() string                { return "fnCallNode" }
-func (n fnCallNode) InferType(scope *Scope) types.Type { return types.Void }
-
 type variableReferenceNode struct {
 	NodeType
 	Name string

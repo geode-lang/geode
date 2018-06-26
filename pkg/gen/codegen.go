@@ -140,8 +140,7 @@ func (n unaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return nil
 }
 
-func (n fnCallNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
-func (n whileNode) Codegen(scope *Scope, c *Compiler) value.Value  { return nil }
+func (n whileNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
 
 func typeSize(t types.Type) int {
 	if types.IsInt(t) {
@@ -338,8 +337,7 @@ func (n binaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 // Function Call statement Code Generator
 func (n functionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	callee := c.Functions[n.Name]
-
+	callee := c.GetFunction(n.Name)
 	if callee == nil {
 		return codegenError(fmt.Sprintf("Unknown function %q referenced", n.Name))
 	}
@@ -489,8 +487,7 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	// spew.Dump(function)
 
 	c.FN = function
-	// Set the function name map to the function call
-	c.Functions[n.Name] = function
+	c.AddFunction(function)
 	name := mangleName("entry")
 	c.PushBlock(c.FN.NewBlock(name))
 

@@ -2,14 +2,15 @@ package gen
 
 import (
 	"io/ioutil"
+	"strings"
 
 	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/types"
+	"gitlab.com/nickwanninger/geode/pkg/util/log"
 )
 
 // Compiler contains all information to compile a program into a .o file.
 type Compiler struct {
-	OutputName string
+	Name string
 	// Target             llvm.Target
 	// TargetMachine      llvm.TargetMachine
 	// TargetData         llvm.TargetData
@@ -49,6 +50,33 @@ func (c *Compiler) PopBlock() *ir.BasicBlock {
 	return blk
 }
 
+// GetFunction returns a function in this scope
+func (c *Compiler) GetFunction(name string) *ir.Function {
+	fn, ok := c.Functions[name]
+	if !ok {
+		log.Warn("Unknown function %s not found.\n", name)
+		return nil
+	}
+	return fn
+}
+
+// AddFunction is a way to add a function to a compiler instance
+func (c *Compiler) AddFunction(fn *ir.Function) {
+	_, exists := c.Functions[fn.Name]
+	if exists {
+		log.Warn("Function '%s' already defined.\n", fn.Name)
+	}
+	c.Functions[fn.Name] = fn
+}
+
+// AddExternalFunction adds just the sig to the module
+func (c *Compiler) AddExternalFunction(fn *ir.Function) {
+	c.AddFunction(fn)
+	header := ir.NewFunction(fn.Name, fn.Sig.Ret, fn.Params()...)
+
+	c.Module.AppendFunction(header)
+}
+
 // GetLLVMIR returns the llvm repr of the module
 func (c *Compiler) GetLLVMIR() string {
 	return c.Module.String()
@@ -56,7 +84,7 @@ func (c *Compiler) GetLLVMIR() string {
 
 // EmitModuleObject takes an llvm module and emits the object code
 func (c *Compiler) EmitModuleObject() string {
-	filename := "out.ll"
+	filename := strings.Replace(c.Name, ".g", "", -1) + ".ll"
 
 	llvmir := c.GetLLVMIR()
 
@@ -75,22 +103,23 @@ func NewCompiler(moduleName string) *Compiler {
 	comp := &Compiler{}
 	// Initialize the module for this compiler.
 	comp.Module = ir.NewModule()
+	comp.Name = moduleName
 
 	comp.Scope = NewScope()
 	comp.blocks = make([]*ir.BasicBlock, 0)
 	comp.Functions = make(map[string]*ir.Function)
-	i8 := types.I8
-	i8ptr := types.NewPointer(i8)
+	// i8 := types.I8
+	// i8ptr := types.NewPointer(i8)
 
-	printf := comp.Module.NewFunction("printf", types.I64, ir.NewParam("format", i8ptr))
-	printf.Sig.Variadic = true
-	comp.Functions["printf"] = printf
+	// printf := comp.Module.NewFunction("printf", types.I64, ir.NewParam("format", i8ptr))
+	// printf.Sig.Variadic = true
+	// comp.Functions["printf"] = printf
 
-	getchar := comp.Module.NewFunction("getchar", types.I8)
-	comp.Functions["getchar"] = getchar
+	// getchar := comp.Module.NewFunction("getchar", types.I8)
+	// comp.Functions["getchar"] = getchar
 
-	malloc := comp.Module.NewFunction("malloc", i8ptr, ir.NewParam("size", types.I64))
-	comp.Functions["malloc"] = malloc
+	// malloc := comp.Module.NewFunction("malloc", i8ptr, ir.NewParam("size", types.I64))
+	// comp.Functions["malloc"] = malloc
 
 	return comp
 }

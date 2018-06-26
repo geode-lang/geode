@@ -2,6 +2,7 @@ package gen
 
 import (
 	"gitlab.com/nickwanninger/geode/pkg/lexer"
+	"gitlab.com/nickwanninger/geode/pkg/util/log"
 )
 
 // Module is a grouping of top level nodes in a sourcefile and it's scope
@@ -14,6 +15,8 @@ type Module struct {
 	Lexer        *lexer.LexState
 	Tokens       []lexer.Token
 	source       *lexer.Sourcefile
+	IsRuntime    bool
+	Compiler     *Compiler
 }
 
 // Modules have a parse method on them that takes a channel of Modules.
@@ -23,6 +26,7 @@ type Module struct {
 
 // Parse runs the lexer and parser on the source file already passed in
 func (m *Module) Parse() chan *Module {
+
 	chn := make(chan *Module)
 	go func() {
 		srcBytes := m.source.Bytes()
@@ -41,16 +45,72 @@ func (m *Module) Parse() chan *Module {
 }
 
 // Compile returns a codegen-ed compiler instance
-func (m *Module) Compile() *Compiler {
-	c := NewCompiler(m.Name)
-	for _, node := range m.Nodes {
-		node.Codegen(c.Scope.SpawnChild(), c)
-	}
-	return c
+func (m *Module) Compile() chan *Compiler {
+	compilers := make(chan *Compiler)
+	go func() {
+		m.Compiler = NewCompiler(m.Name)
+		if !m.IsRuntime {
+			m.AddRuntime()
+		}
+
+		for _, dep := range m.Dependencies {
+			for c := range dep.Compile() {
+				compilers <- c
+			}
+			m.Inject(dep)
+		}
+
+		for _, node := range m.Nodes {
+			node.Codegen(m.Compiler.Scope.SpawnChild(), m.Compiler)
+		}
+		compilers <- m.Compiler
+		close(compilers)
+	}()
+
+	return compilers
 }
 
 func (m *Module) String() string {
 	return m.Name
+}
+
+// AddDep appends a dependency
+func (m *Module) AddDep(mod *Module) {
+	m.Dependencies = append(m.Dependencies, mod)
+}
+
+// AddRuntime builds the runtime and injects it into the module
+func (m *Module) AddRuntime() {
+	rts, err := lexer.NewSourcefile("runtime")
+	if err != nil {
+		log.Fatal("Error creating runtime source structure\n")
+	}
+	rts.LoadString(RuntimeSource)
+	mod := NewModule("runtime", rts)
+	mod.IsRuntime = true
+	for _ = range mod.Parse() {
+
+	}
+
+	// mod.Compile()
+
+	m.AddDep(mod)
+	// fmt.Println(mod.Compiler.Functions)
+	// m.Inject(mod)
+}
+
+// Inject another module's defintions into this module
+// This is how external dependencies work
+func (m *Module) Inject(c *Module) {
+
+	m.Dependencies = append(m.Dependencies, c)
+	for k, v := range c.Compiler.Scope.Vals {
+		m.Compiler.Scope.Set(k, v)
+	}
+
+	for _, fn := range c.Compiler.Functions {
+		m.Compiler.AddExternalFunction(fn)
+	}
 }
 
 // NewModule constructs a module from a source file and returns a pointer to it
@@ -66,7 +126,6 @@ func NewModule(name string, src *lexer.Sourcefile) *Module {
 
 // RuntimeSource is the source the runtime will use when compiling
 const RuntimeSource string = `
-# The exponent operator function
 func exp(int x, int n) int {
 	if n = 0 {
 		return 1;
