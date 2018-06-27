@@ -1,0 +1,13 @@
+Name       = "For Loops"
+Sourcefile = "for-loops.g"
+
+CompilerArgs = []
+RunArgs      = []
+
+CompilerError = 0
+RunError      = 0
+
+Input = ""
+
+CompilerOutput = ""
+RunOutput      = "1057046400"

@@ -87,31 +87,29 @@ func (n ifNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	predicate := n.If.Codegen(scope, c)
 	one := constant.NewInt(1, types.I1)
 	// The name of the blocks is prefixed because
-	namePrefix := fmt.Sprintf("if_%d_", n.Index)
+	namePrefix := fmt.Sprintf("if.%d.", n.Index)
 	parentBlock := c.CurrentBlock()
 	predicate = parentBlock.NewICmp(ir.IntEQ, one, createTypeCast(c, predicate, types.I1))
 	parentFunc := parentBlock.Parent
 
+	var thenGenBlk *ir.BasicBlock
 	var endBlk *ir.BasicBlock
 
 	thenBlk := parentFunc.NewBlock(mangleName(namePrefix + "then"))
-	c.PushBlock(thenBlk)
-	thenGenBlk := n.Then.Codegen(scope, c).(*ir.BasicBlock)
 
-	// If there is no terminator for the block, IE: no return
-	// branch to the merge block
-
-	c.PopBlock()
+	c.runInBlock(thenBlk, func() {
+		thenGenBlk = n.Then.Codegen(scope, c).(*ir.BasicBlock)
+	})
 
 	elseBlk := parentFunc.NewBlock(mangleName(namePrefix + "else"))
 	var elseGenBlk *ir.BasicBlock
 
-	c.PushBlock(elseBlk)
-	// We only want to construct the else block if there is one.
-	if n.Else != nil {
-		elseGenBlk = n.Else.Codegen(scope, c).(*ir.BasicBlock)
-	}
-	c.PopBlock()
+	c.runInBlock(elseBlk, func() {
+		// We only want to construct the else block if there is one.
+		if n.Else != nil {
+			elseGenBlk = n.Else.Codegen(scope, c).(*ir.BasicBlock)
+		}
+	})
 
 	endBlk = parentFunc.NewBlock(mangleName(namePrefix + "merge"))
 	c.PushBlock(endBlk)
@@ -131,63 +129,42 @@ func (n ifNode) Codegen(scope *Scope, c *Compiler) value.Value {
 }
 
 func (n forNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	// The name of the blocks is prefixed because
+	// The name of the blocks is prefixed so we can determine which for loop a block is for.
 	namePrefix := fmt.Sprintf("for_%d_", n.Index)
 	parentBlock := c.CurrentBlock()
-
+	var predicate value.Value
+	var condBlk *ir.BasicBlock
+	var bodyBlk *ir.BasicBlock
+	var bodyGenBlk *ir.BasicBlock
+	var endBlk *ir.BasicBlock
 	parentFunc := parentBlock.Parent
-	condBlk := parentFunc.NewBlock(mangleName(namePrefix + "cond"))
+
+	condBlk = parentFunc.NewBlock(mangleName(namePrefix + "cond"))
 
 	n.Init.Codegen(scope, c)
 
 	parentBlock.NewBr(condBlk)
 
-	var endBlk *ir.BasicBlock
-
-	c.PushBlock(condBlk)
-	predicate := n.Cond.Codegen(scope, c)
-	one := constant.NewInt(1, types.I1)
-	predicate = condBlk.NewICmp(ir.IntEQ, one, createTypeCast(c, predicate, types.I1))
-	c.PopBlock()
-
-	bodyBlk := parentFunc.NewBlock(mangleName(namePrefix + "body"))
-	c.PushBlock(bodyBlk)
-	bodyGenBlk := n.Body.Codegen(scope, c).(*ir.BasicBlock)
-
-	c.PushBlock(bodyGenBlk)
-	n.Step.Codegen(scope, c)
-	c.PopBlock()
-
-	branchIfNoTerminator(bodyBlk, condBlk)
-	branchIfNoTerminator(bodyGenBlk, condBlk)
-	c.PopBlock()
-
-	// c.PushBlock(startblock)
-	// predicate := n.Cond.Codegen(scope, c)
-	// one := constant.NewInt(1, types.I1)
-	// c.PopBlock()
-	// branchIfNoTerminator(parentBlock, startblock)
-	// predicate = startblock.NewICmp(ir.IntEQ, one, createTypeCast(c, predicate, types.I1))
-
-	// bodyBlk := parentFunc.NewBlock(mangleName(namePrefix + "body"))
-	// c.PushBlock(bodyBlk)
-	// bodyGenBlk := n.Body.Codegen(scope, c).(*ir.BasicBlock)
-
-	// // If there is no terminator for the block, IE: no return
-	// // branch to the merge block
-
-	endBlk = parentFunc.NewBlock(mangleName(namePrefix + "merge"))
+	c.runInBlock(condBlk, func() {
+		predicate = n.Cond.Codegen(scope, c)
+		one := constant.NewInt(1, types.I1)
+		predicate = condBlk.NewICmp(ir.IntEQ, one, createTypeCast(c, predicate, types.I1))
+	})
+	bodyBlk = parentFunc.NewBlock(mangleName(namePrefix + "body"))
+	c.runInBlock(bodyBlk, func() {
+		bodyGenBlk = n.Body.Codegen(scope, c).(*ir.BasicBlock)
+		c.runInBlock(bodyGenBlk, func() {
+			n.Step.Codegen(scope, c)
+		})
+		branchIfNoTerminator(bodyBlk, condBlk)
+		branchIfNoTerminator(bodyGenBlk, condBlk)
+	})
+	endBlk = parentFunc.NewBlock(mangleName(namePrefix + "exit"))
 	c.PushBlock(endBlk)
-
 	condBlk.NewCondBr(predicate, bodyBlk, endBlk)
-
-	// fmt.Println(parentFunc)
-	// os.Exit(1)
-
-	// branchIfNoTerminator(c.CurrentBlock(), endBlk)
-
 	return endBlk
 }
+
 func (n charNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
 
 func (n unaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
@@ -201,7 +178,7 @@ func (n unaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 func (n whileNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	// The name of the blocks is prefixed because
-	namePrefix := fmt.Sprintf("while.%d.", n.Index)
+	namePrefix := fmt.Sprintf("while_%d_", n.Index)
 	parentBlock := c.CurrentBlock()
 
 	parentFunc := parentBlock.Parent

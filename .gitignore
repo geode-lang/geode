@@ -11,4 +11,5 @@ vendor/
 .vscode
 _string.go
 
+*.s
 *.ll

@@ -1,0 +1,1 @@
+func main int -> 0;

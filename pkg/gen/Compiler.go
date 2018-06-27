@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/types"
 	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
@@ -98,6 +99,12 @@ func (c *Compiler) EmitModuleObject() string {
 	return filename
 }
 
+func (c *Compiler) runInBlock(blk *ir.BasicBlock, fn func()) {
+	c.PushBlock(blk)
+	fn()
+	c.PopBlock()
+}
+
 // NewCompiler returns a pointer to a new Compiler object.
 func NewCompiler(moduleName string) *Compiler {
 	comp := &Compiler{}
@@ -108,18 +115,7 @@ func NewCompiler(moduleName string) *Compiler {
 	comp.Scope = NewScope()
 	comp.blocks = make([]*ir.BasicBlock, 0)
 	comp.Functions = make(map[string]*ir.Function)
-	// i8 := types.I8
-	// i8ptr := types.NewPointer(i8)
 
-	// printf := comp.Module.NewFunction("printf", types.I64, ir.NewParam("format", i8ptr))
-	// printf.Sig.Variadic = true
-	// comp.Functions["printf"] = printf
-
-	// getchar := comp.Module.NewFunction("getchar", types.I8)
-	// comp.Functions["getchar"] = getchar
-
-	// malloc := comp.Module.NewFunction("malloc", i8ptr, ir.NewParam("size", types.I64))
-	// comp.Functions["malloc"] = malloc
-
+	comp.Module.NewType("unsigned int", types.NewPointer(types.I8))
 	return comp
 }

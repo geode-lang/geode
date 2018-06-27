@@ -127,11 +127,11 @@ func (c *Context) Build() {
 
 	linker.Run()
 
-	if !*emitLLVM {
-		linker.Cleanup()
-	} else {
-		log.Debug("llvm files left in the filesystem\n")
+	if *emitLLVM {
+		log.Debug("%s\n", rootMod.Compiler.GetLLVMIR())
 	}
+
+	// linker.Cleanup()
 }
 
 // Run a context with a given set of arguments

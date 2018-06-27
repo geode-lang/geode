@@ -1,5 +1,5 @@
 Name       = "Minimal Program"
-Sourcefile = "nothing.g"
+Sourcefile = "minimal.g"
 
 CompilerArgs = []
 RunArgs      = []
