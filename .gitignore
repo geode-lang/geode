@@ -10,3 +10,5 @@ vendor/
 .DS_Store
 .vscode
 _string.go
+
+*.ll

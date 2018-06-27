@@ -22,6 +22,7 @@ type Linker struct {
 	output      string
 	target      CompileTarget
 	objectPaths []string
+	optimize    bool
 }
 
 // NewLinker constructs a linker with an outpu
@@ -47,6 +48,11 @@ func (l *Linker) SetOutput(path string) {
 	l.output = path
 }
 
+// SetOptimize -
+func (l *Linker) SetOptimize(o bool) {
+	l.optimize = o
+}
+
 // Cleanup removes all the
 func (l *Linker) Cleanup() {
 	for _, objFile := range l.objectPaths {
@@ -62,7 +68,9 @@ func (l *Linker) Run() {
 
 	filename := l.output
 
-	linkArgs = append(linkArgs, "-O3")
+	if l.optimize {
+		linkArgs = append(linkArgs, "-O3")
+	}
 
 	if l.target == ASMTarget {
 		linkArgs = append(linkArgs, "-S", "-masm=intel")

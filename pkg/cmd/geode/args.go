@@ -8,6 +8,7 @@ var (
 	app         = kingpin.New("geode", "Compiler for the Geode Programming Language").Version(VERSION).Author(AUTHOR)
 	emitLLVM    = app.Flag("emit-llvm", "Leave LLVM IR in the filesystem").Short('S').Bool()
 	buildOutput = app.Flag("output", "Output binary name.").Short('o').Default("a.out").String()
+	optimize    = app.Flag("optimize", "Enable full optimization").Short('O').Bool()
 	// logLevel = app.Flag("loglevel", "Set the level of logging to show").Default("info").Enum("info", "verbose")
 
 	buildCMD   = app.Command("build", "Build an executable.")

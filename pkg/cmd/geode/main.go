@@ -117,6 +117,7 @@ func (c *Context) Build() {
 	linker := gen.NewLinker(*buildOutput)
 	linker.SetTarget(target)
 	linker.SetOutput(c.Output)
+	linker.SetOptimize(*optimize)
 
 	// Loop over the compilers and generate to .ll files
 	for c := range rootMod.Compile() {

@@ -34,6 +34,7 @@ const (
 
 	// expressions
 	nodeIf
+	nodeWhile
 	nodeFor
 	nodeUnary  // unary operator  (!, ...)
 	nodeBinary // binary operator (+, -, *, ...)
@@ -97,12 +98,11 @@ func (n ifNode) InferType(scope *Scope) types.Type { return types.Void }
 
 type forNode struct {
 	NodeType
-
-	Counter string
-	Start   Node
-	Test    Node
-	Step    Node
-	Body    Node
+	Index int
+	Init  Node
+	Cond  Node
+	Step  Node
+	Body  Node
 }
 
 func (n forNode) NameString() string                { return "forNode" }
@@ -129,13 +129,26 @@ type binaryNode struct {
 func (n binaryNode) NameString() string                { return "binaryNode" }
 func (n binaryNode) InferType(scope *Scope) types.Type { return types.Void }
 
-type variableReferenceNode struct {
-	NodeType
-	Name string
-}
+// type variableReferenceNode struct {
+// 	NodeType
+// 	Index     int
+// 	IndexExpr Node
+// 	Name      string
+// }
 
-func (n variableReferenceNode) NameString() string                { return "variableReferenceNode" }
-func (n variableReferenceNode) InferType(scope *Scope) types.Type { return types.Void }
+// func (n variableReferenceNode) NameString() string                { return "variableReferenceNode" }
+// func (n variableReferenceNode) InferType(scope *Scope) types.Type { return types.Void }
+
+// ReferenceType is how we go about accessing a variable. Do we just
+// want the value, or do we want to assign to it
+type ReferenceType int
+
+// The different ways you can access a variableNode
+const (
+	ReferenceDefine ReferenceType = iota
+	ReferenceAssign
+	ReferenceAccess
+)
 
 type variableNode struct {
 	NodeType
@@ -143,6 +156,8 @@ type variableNode struct {
 	HasValue     bool
 	Name         string
 	IsPointer    bool
+	RefType      ReferenceType
+	IndexExpr    Node
 	IsArray      bool
 	Reassignment bool
 	Body         Node
@@ -194,8 +209,9 @@ func (n blockNode) InferType(scope *Scope) types.Type { return types.Void }
 type whileNode struct {
 	NodeType
 
-	Predicate Node
-	Body      Node
+	If    Node
+	Body  Node
+	Index int
 }
 
 func (n whileNode) NameString() string                { return "whileNode" }

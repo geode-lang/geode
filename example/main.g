@@ -1,4 +1,6 @@
 func main int {
-	printf("Hello, world %s\n", malloc(3000));
-	return 0;
+	for int i := 0; i <= 25000; i <- i + 1 {
+		printf("%d\n", i);
+	}
+	return 1;
 }

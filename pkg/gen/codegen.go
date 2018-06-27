@@ -130,7 +130,65 @@ func (n ifNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return endBlk
 }
 
-func (n forNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
+func (n forNode) Codegen(scope *Scope, c *Compiler) value.Value {
+	// The name of the blocks is prefixed because
+	namePrefix := fmt.Sprintf("for_%d_", n.Index)
+	parentBlock := c.CurrentBlock()
+
+	parentFunc := parentBlock.Parent
+	condBlk := parentFunc.NewBlock(mangleName(namePrefix + "cond"))
+
+	n.Init.Codegen(scope, c)
+
+	parentBlock.NewBr(condBlk)
+
+	var endBlk *ir.BasicBlock
+
+	c.PushBlock(condBlk)
+	predicate := n.Cond.Codegen(scope, c)
+	one := constant.NewInt(1, types.I1)
+	predicate = condBlk.NewICmp(ir.IntEQ, one, createTypeCast(c, predicate, types.I1))
+	c.PopBlock()
+
+	bodyBlk := parentFunc.NewBlock(mangleName(namePrefix + "body"))
+	c.PushBlock(bodyBlk)
+	bodyGenBlk := n.Body.Codegen(scope, c).(*ir.BasicBlock)
+
+	c.PushBlock(bodyGenBlk)
+	n.Step.Codegen(scope, c)
+	c.PopBlock()
+
+	branchIfNoTerminator(bodyBlk, condBlk)
+	branchIfNoTerminator(bodyGenBlk, condBlk)
+	c.PopBlock()
+
+	// c.PushBlock(startblock)
+	// predicate := n.Cond.Codegen(scope, c)
+	// one := constant.NewInt(1, types.I1)
+	// c.PopBlock()
+	// branchIfNoTerminator(parentBlock, startblock)
+	// predicate = startblock.NewICmp(ir.IntEQ, one, createTypeCast(c, predicate, types.I1))
+
+	// bodyBlk := parentFunc.NewBlock(mangleName(namePrefix + "body"))
+	// c.PushBlock(bodyBlk)
+	// bodyGenBlk := n.Body.Codegen(scope, c).(*ir.BasicBlock)
+
+	// // If there is no terminator for the block, IE: no return
+	// // branch to the merge block
+
+	endBlk = parentFunc.NewBlock(mangleName(namePrefix + "merge"))
+	c.PushBlock(endBlk)
+
+	condBlk.NewCondBr(predicate, bodyBlk, endBlk)
+
+	// fmt.Println(parentFunc)
+	// os.Exit(1)
+
+	// branchIfNoTerminator(c.CurrentBlock(), endBlk)
+
+	return endBlk
+}
+func (n charNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
 
 func (n unaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	operandValue := n.Operand.Codegen(scope, c)
@@ -140,7 +198,42 @@ func (n unaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return nil
 }
 
-func (n whileNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
+func (n whileNode) Codegen(scope *Scope, c *Compiler) value.Value {
+
+	// The name of the blocks is prefixed because
+	namePrefix := fmt.Sprintf("while.%d.", n.Index)
+	parentBlock := c.CurrentBlock()
+
+	parentFunc := parentBlock.Parent
+	startblock := parentFunc.NewBlock(mangleName(namePrefix + "start"))
+	c.PushBlock(startblock)
+	predicate := n.If.Codegen(scope, c)
+	one := constant.NewInt(1, types.I1)
+	c.PopBlock()
+	branchIfNoTerminator(parentBlock, startblock)
+	predicate = startblock.NewICmp(ir.IntEQ, one, createTypeCast(c, predicate, types.I1))
+
+	var endBlk *ir.BasicBlock
+
+	bodyBlk := parentFunc.NewBlock(mangleName(namePrefix + "body"))
+	c.PushBlock(bodyBlk)
+	bodyGenBlk := n.Body.Codegen(scope, c).(*ir.BasicBlock)
+
+	// If there is no terminator for the block, IE: no return
+	// branch to the merge block
+
+	endBlk = parentFunc.NewBlock(mangleName(namePrefix + "merge"))
+	c.PushBlock(endBlk)
+
+	branchIfNoTerminator(bodyBlk, startblock)
+	branchIfNoTerminator(bodyGenBlk, startblock)
+
+	startblock.NewCondBr(predicate, bodyBlk, endBlk)
+
+	// branchIfNoTerminator(c.CurrentBlock(), endBlk)
+
+	return endBlk
+}
 
 func typeSize(t types.Type) int {
 	if types.IsInt(t) {
@@ -374,9 +467,6 @@ func (n intNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return constant.NewInt(n.Value, types.I64)
 }
 
-// Char Code Generator
-func (n charNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
-
 func newCharArray(s string) *constant.Array {
 	var bs []constant.Constant
 	for i := 0; i < len(s); i++ {
@@ -387,6 +477,10 @@ func newCharArray(s string) *constant.Array {
 	c := constant.NewArray(bs...)
 	c.CharArray = true
 	return c
+}
+
+func canBeIndexed(val value.Value) bool {
+	return types.IsArray(val.Type()) || types.IsPointer(val.Type())
 }
 
 // String Constant Code Generator
@@ -402,34 +496,59 @@ func (n floatNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return constant.NewFloat(n.Value, types.Double)
 }
 
-// Variable Reference Node Code Generator
-func (n variableReferenceNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	v, found := scope.Find(n.Name)
-	if !found {
-		fmt.Printf("unknown variable name `%s`\n", n.Name)
-		os.Exit(-1)
-	}
-	return c.CurrentBlock().NewLoad(v)
-}
+// // Variable Reference Node Code Generator
+// func (n variableReferenceNode) Codegen(scope *Scope, c *Compiler) value.Value {
+// 	v, found := scope.Find(n.Name)
+// 	if !found {
+// 		fmt.Printf("unknown variable name `%s`\n", n.Name)
+// 		os.Exit(-1)
+// 	}
+// 	return c.CurrentBlock().NewLoad(v)
+// }
 
 // Variable Node Code Generator
 func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	f := c.CurrentBlock().Parent
+	block := c.CurrentBlock()
+	f := block.Parent
 
 	name := n.Name
-
 	var alloc *ir.InstAlloca
-	if n.Reassignment {
+	var val value.Value
+
+	if n.RefType == ReferenceAccess {
+		v, found := scope.Find(name)
+		if !found {
+			fmt.Printf("unknown variable name `%s`\n", name)
+			os.Exit(-1)
+		}
+
+		alloc = v.(*ir.InstAlloca)
+
+		val = block.NewLoad(v)
+
+		if n.IndexExpr != nil {
+			if types.IsPointer(val.Type()) {
+				// zero := constant.NewInt(0, types.I32)
+				index := n.IndexExpr.Codegen(scope, c)
+				ptr := block.NewGetElementPtr(val, index)
+				val = block.NewLoad(ptr)
+			}
+
+		}
+		return val
+	}
+
+	if n.RefType == ReferenceAssign {
 		v, found := scope.Find(name)
 		if !found {
 			fmt.Println(v, "Not found")
 		}
 		alloc = v.(*ir.InstAlloca)
-	} else {
+	} else if n.RefType == ReferenceDefine {
 		alloc = createBlockAlloca(f, n.Type, name)
 		scope.Set(name, alloc)
 	}
-	var val value.Value
+
 	if n.HasValue {
 		// Construct the body
 		if n.Body != nil {
@@ -439,12 +558,13 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 			}
 		}
 		val = createTypeCast(c, val, alloc.Elem)
+
 	} else {
 		// Default to 0 from issue:
 		// https://github.com/nickwanninger/geode/issues/5
 		val = createTypeCast(c, constant.NewInt(0, types.I64), alloc.Elem)
 	}
-	c.CurrentBlock().NewStore(val, alloc)
+	block.NewStore(val, alloc)
 
 	return nil
 }

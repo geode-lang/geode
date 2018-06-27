@@ -1,0 +1,13 @@
+Name       = "while"
+Sourcefile = "while.g"
+
+CompilerArgs = []
+RunArgs      = []
+
+CompilerError = 0
+RunError      = 0
+
+Input = ""
+
+CompilerOutput = ""
+RunOutput      = "255"

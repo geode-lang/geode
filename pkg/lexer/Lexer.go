@@ -53,8 +53,8 @@ var Tokens = []TokenInfoRelation{
 	{TokRightCurly, `}`},
 	{TokLeftCurly, `{`},
 
-	{TokRightBrace, `\[`},
-	{TokLeftBrace, `\]`},
+	{TokLeftBrace, `\[`},
+	{TokRightBrace, `\]`},
 
 	{TokRightArrow, `->`},
 	{TokLeftArrow, `<-`},

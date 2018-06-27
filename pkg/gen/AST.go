@@ -97,7 +97,9 @@ func (p *Parser) peek(o int) lexer.Token {
 
 func (p *Parser) checkSemiColon() {
 	if !p.token.Is(lexer.TokSemiColon) {
-		p.Error("Missing Semicolon")
+		fmt.Println(p.token)
+		p.Error("Missing Semicolon\n")
+
 	}
 }
 
