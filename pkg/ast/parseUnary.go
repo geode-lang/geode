@@ -1,4 +1,4 @@
-package gen
+package ast
 
 // Parse unary will parse a single side of a binary statement
 

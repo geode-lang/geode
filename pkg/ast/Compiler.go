@@ -1,4 +1,4 @@
-package gen
+package ast
 
 import (
 	"io/ioutil"

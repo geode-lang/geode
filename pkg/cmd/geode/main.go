@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nickwanninger/geode/pkg/gen"
+	"github.com/nickwanninger/geode/pkg/ast"
 	"github.com/nickwanninger/geode/pkg/lexer"
 	"github.com/nickwanninger/geode/pkg/util/log"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -103,18 +103,18 @@ func (c *Context) Build() {
 	}
 
 	path := strings.Split(c.Input, "/")
-	rootMod := gen.NewModule(path[len(path)-1], src)
-	modules := make([]*gen.Module, 0)
+	rootMod := ast.NewModule(path[len(path)-1], src)
+	modules := make([]*ast.Module, 0)
 	for mod := range rootMod.Parse() {
 		modules = append(modules, mod)
 	}
 
 	// Construct a linker object
-	target := gen.BinaryTarget
+	target := ast.BinaryTarget
 	if *emitASM {
-		target = gen.ASMTarget
+		target = ast.ASMTarget
 	}
-	linker := gen.NewLinker(*buildOutput)
+	linker := ast.NewLinker(*buildOutput)
 	linker.SetTarget(target)
 	linker.SetOutput(c.Output)
 	linker.SetOptimize(*optimize)

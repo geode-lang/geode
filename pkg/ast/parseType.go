@@ -1,4 +1,4 @@
-package gen
+package ast
 
 import (
 	"github.com/llir/llvm/ir/types"

@@ -1,4 +1,4 @@
-package gen
+package ast
 
 func (p *Parser) parseExpression() Node {
 	lhs := p.parseUnary()
