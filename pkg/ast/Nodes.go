@@ -3,6 +3,7 @@ package ast
 import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"github.com/nickwanninger/geode/pkg/typesystem"
 )
 
 // NodeType -
@@ -40,6 +41,7 @@ const (
 	nodeBinary // binary operator (+, -, *, ...)
 
 	nodeFnCall
+	nodeCast
 	nodeVariable
 	nodeVariableDecl
 	nodeVariableReference
@@ -84,6 +86,15 @@ type charNode struct {
 
 func (n charNode) NameString() string                { return "charNode" }
 func (n charNode) InferType(scope *Scope) types.Type { return types.I8 }
+
+type castNode struct {
+	NodeType
+	From Node
+	To   string
+}
+
+func (n castNode) NameString() string                { return "castNode" }
+func (n castNode) InferType(scope *Scope) types.Type { return typesystem.GlobalTypeMap.GetType(n.To) }
 
 type ifNode struct {
 	NodeType
@@ -182,6 +193,7 @@ type functionNode struct {
 	Body       blockNode
 	External   bool
 	Variadic   bool
+	Nomangle   bool
 	ReturnType types.Type
 }
 

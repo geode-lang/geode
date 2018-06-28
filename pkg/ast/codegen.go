@@ -14,8 +14,7 @@ import (
 )
 
 func error(err string) value.Value {
-	fmt.Println(err)
-	os.Exit(-1)
+	log.Fatal(err)
 	return nil
 }
 
@@ -356,33 +355,49 @@ func (n binaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	}
 }
 
+func (n castNode) Codegen(scope *Scope, c *Compiler) value.Value {
+	from := n.From.Codegen(scope, c)
+	return createTypeCast(c, from, n.InferType(scope))
+}
+
 // Function Call statement Code Generator
 func (n functionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
-	scopeItem, found := c.Scope.Find(n.Name)
-	if !found {
-		log.Fatal("Unable to find function '%s' in scope of module '%s'\n", n.Name, c.Name)
-	}
-	if scopeItem.Type() != ScopeItemFunctionType {
-		log.Fatal("Variable '%s' is not of type funciton\n", n.Name)
-	}
-	// We finally have the function correctly
-	callee := scopeItem.Value().(*ir.Function)
-	if callee == nil {
-		return codegenError(fmt.Sprintf("Unknown function %q referenced", n.Name))
-	}
-
-	// fmt.Println(n.Name, callee.Type())
+	// scopeItem, found := c.Scope.Find(n.Name)
 
 	args := []value.Value{}
+	argTypes := []types.Type{}
 	for _, arg := range n.Args {
 		a := arg.Codegen(scope, c)
 		// fmt.Println(a.Type())
 		args = append(args, a)
+		argTypes = append(argTypes, a.Type())
 		if args[len(args)-1] == nil {
 			return codegenError(fmt.Sprintf("Argument to function %q failed to generate code", n.Name))
 		}
 	}
+	name := MangleFunctionName(n.Name, argTypes...)
+	functionOptions := c.Scope.FindFunctions(name)
+	funcCount := len(functionOptions)
+	if funcCount > 1 {
+		log.Fatal("Too many options for function call '%s'\n", name)
+	} else if funcCount == 0 {
+		log.Fatal("Unable to find function '%s' in scope of module '%s'\n", name, c.Name)
+	}
+
+	// if !found {
+	// 	log.Fatal("Unable to find function '%s' in scope of module '%s'\n", name, c.Name)
+	// }
+	// if scopeItem.Type() != ScopeItemFunctionType {
+	// 	log.Fatal("Variable '%s' is not of type funciton\n", name)
+	// }
+	// We finally have the function correctly
+	callee := functionOptions[0].Value().(*ir.Function)
+	if callee == nil {
+		return codegenError(fmt.Sprintf("Unknown function %q referenced", name))
+	}
+
+	// fmt.Println(n.Name, callee.Type())
 
 	return c.CurrentBlock().NewCall(callee, args...)
 }
@@ -392,7 +407,7 @@ func (n returnNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	var retVal value.Value
 	if n.Value != nil {
 		retVal = n.Value.Codegen(scope, c)
-		retVal = createTypeCast(c, retVal, c.FN.Sig.Ret)
+		// retVal = createTypeCast(c, retVal, c.FN.Sig.Ret)
 	} else {
 		retVal = nil
 	}
@@ -533,20 +548,27 @@ func (n blockNode) Codegen(scope *Scope, c *Compiler) value.Value {
 func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	funcArgs := make([]*types.Param, 0)
+	argTypes := make([]types.Type, 0)
 	for _, arg := range n.Args {
 		p := ir.NewParam(arg.Name, arg.Type)
 		funcArgs = append(funcArgs, p)
+		argTypes = append(argTypes, p.Type())
 
 	}
 	// We need to do some special checks if the function is main. It's special.
 	// For instance, it must return int type.
 	if n.Name == "main" {
 		if n.ReturnType != typesystem.GeodeI64.LLVMType {
-			log.Fatal("Main function must return type int\n")
+			log.Fatal("Main function must return type int. Called for type '%s'\n", n.ReturnType)
 		}
 	}
 
-	function := c.Module.NewFunction(n.Name, n.ReturnType, funcArgs...)
+	name := n.Name
+	if !n.Nomangle {
+		name = MangleFunctionName(n.Name, argTypes...)
+	}
+
+	function := c.Module.NewFunction(name, n.ReturnType, funcArgs...)
 	// spew.Dump(function)
 
 	c.FN = function
@@ -554,7 +576,8 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	function.Sig.Variadic = n.Variadic
 
 	// fmt.Println(function.Name, function.Sig.Variadic)
-	scopeItem := NewFunctionScopeItem(n.Name, function, PublicVisibility)
+	scopeItem := NewFunctionScopeItem(name, function, PublicVisibility)
+	scopeItem.SetMangled(!n.Nomangle)
 	c.Scope.Add(scopeItem)
 
 	// If the function is external (has ... at the end) we don't build a block

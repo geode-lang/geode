@@ -3,6 +3,7 @@ package ast
 import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/value"
+	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
 // Scope trees represent block scoping by having a root scope
@@ -20,11 +21,43 @@ func (s *Scope) Add(val ScopeItem) {
 
 // Find will traverse the scope tree to find some definition of a symbol
 func (s *Scope) Find(name string) (ScopeItem, bool) {
-	val, found := s.Vals[name]
-	if !found && s.Parent != nil {
+
+	for _, v := range s.Vals {
+		u := v.Name()
+		if u == name {
+			return v, true
+		}
+	}
+	if s.Parent != nil {
 		return s.Parent.Find(name)
 	}
-	return val, found
+	return nil, false
+}
+
+// FindFunctions returns a list of functions that might match the name provided
+func (s *Scope) FindFunctions(name string) []FunctionScopeItem {
+	funcs := make([]FunctionScopeItem, 0)
+
+	unMangled := UnmangleFunctionName(name)
+	fnc, found := s.Vals[unMangled]
+	if found {
+		return append(funcs, fnc.(FunctionScopeItem))
+	}
+
+	for _, v := range s.Vals {
+		if v.Type() == ScopeItemFunctionType {
+			fn := v.(FunctionScopeItem)
+			if fn.Name() == name {
+				funcs = append(funcs, fn)
+			}
+		}
+	}
+	if s.Parent != nil {
+		funcs = append(funcs, s.Parent.FindFunctions(name)...)
+	}
+
+	return funcs
+
 }
 
 // SpawnChild takes a parent scope and creates a new variable scope for scoped variable access.
@@ -53,6 +86,8 @@ type ScopeItem interface {
 	Value() value.Value // an llvm value
 	Visibility() Visibility
 	Name() string
+	Mangled() bool
+	SetMangled(m bool)
 }
 
 // ScopeItemType -
@@ -82,6 +117,7 @@ type FunctionScopeItem struct {
 	function *ir.Function
 	vis      Visibility
 	name     string
+	mangled  bool
 }
 
 // Value implements ScopeItem.Value()
@@ -104,6 +140,16 @@ func (item FunctionScopeItem) Name() string {
 	return item.name
 }
 
+// Mangled implements ScopeItem.Mangled()
+func (item FunctionScopeItem) Mangled() bool {
+	return item.mangled
+}
+
+// SetMangled implements ScopeItem.SetMangled()
+func (item FunctionScopeItem) SetMangled(m bool) {
+	item.mangled = m
+}
+
 // NewFunctionScopeItem constructs a function scope item
 func NewFunctionScopeItem(name string, function *ir.Function, vis Visibility) FunctionScopeItem {
 	item := FunctionScopeItem{}
@@ -118,9 +164,10 @@ func NewFunctionScopeItem(name string, function *ir.Function, vis Visibility) Fu
 // VariableScopeItem implements ScopeItem.
 // This is used so we can store functions in the scope (mainly in the root scope)
 type VariableScopeItem struct {
-	value value.Value
-	vis   Visibility
-	name  string
+	value   value.Value
+	vis     Visibility
+	name    string
+	mangled bool
 }
 
 // Value implements ScopeItem.Value()
@@ -143,9 +190,70 @@ func (item VariableScopeItem) Name() string {
 	return item.name
 }
 
+// Mangled implements ScopeItem.Mangled()
+func (item VariableScopeItem) Mangled() bool {
+	return item.mangled
+}
+
+// SetMangled implements ScopeItem.SetMangled()
+func (item VariableScopeItem) SetMangled(m bool) {
+	item.mangled = m
+}
+
 // NewVariableScopeItem constructs a function scope item
 func NewVariableScopeItem(name string, value value.Value, vis Visibility) VariableScopeItem {
 	item := VariableScopeItem{}
+	item.name = name
+	item.value = value
+	item.vis = vis
+	return item
+}
+
+//
+//
+// TypeScopeItem implements ScopeItem.
+// This is used so we can store functions in the scope (mainly in the root scope)
+type TypeScopeItem struct {
+	value   value.Value
+	vis     Visibility
+	name    string
+	mangled bool
+}
+
+// Value implements ScopeItem.Value()
+func (item TypeScopeItem) Value() value.Value {
+	log.Error("Unable to get value from scope item type '%s'\n", item.Name())
+	return nil
+}
+
+// Type implements ScopeItem.Type()
+func (item TypeScopeItem) Type() ScopeItemType {
+	return ScopeItemTypeType
+}
+
+// Visibility implements ScopeItem.Visibility()
+func (item TypeScopeItem) Visibility() Visibility {
+	return item.vis
+}
+
+// Name implements ScopeItem.Name()
+func (item TypeScopeItem) Name() string {
+	return item.name
+}
+
+// Mangled implements ScopeItem.Mangled()
+func (item TypeScopeItem) Mangled() bool {
+	return item.mangled
+}
+
+// SetMangled implements ScopeItem.SetMangled()
+func (item TypeScopeItem) SetMangled(m bool) {
+	item.mangled = m
+}
+
+// NewTypeScopeItem constructs a function scope item
+func NewTypeScopeItem(name string, value value.Value, vis Visibility) TypeScopeItem {
+	item := TypeScopeItem{}
 	item.name = name
 	item.value = value
 	item.vis = vis

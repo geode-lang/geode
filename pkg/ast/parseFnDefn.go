@@ -11,7 +11,17 @@ func (p *Parser) parseFnDefn() functionNode {
 	fn := functionNode{}
 	fn.NodeType = nodeFunction
 
+	if p.token.Type == lexer.TokIdent && p.token.Value == "nomangle" {
+		fn.Nomangle = true
+		p.next()
+	}
+
 	fn.Name = p.token.Value
+
+	// The main function should never be mangled
+	if fn.Name == "main" {
+		fn.Nomangle = true
+	}
 
 	p.next()
 

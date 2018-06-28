@@ -84,13 +84,5 @@ func NewCompiler(moduleName string) *Compiler {
 
 	comp.Scope = NewScope()
 	comp.blocks = make([]*ir.BasicBlock, 0)
-
-	// printf := comp.Module.NewFunction("printf", types.I64, ir.NewParam("format", types.NewPointer(types.I8)))
-	// printf.Sig.Variadic = true
-
-	// comp.Scope.Add(NewFunctionScopeItem("printf", printf, PublicVisibility))
-	// comp.Functions = make(map[string]*ir.Function)
-
-	// comp.Module.NewType("unsigned int", types.NewPointer(types.I8))
 	return comp
 }

@@ -1,9 +1,6 @@
 package ast
 
 import (
-	"fmt"
-
-	"github.com/davecgh/go-spew/spew"
 	"github.com/llir/llvm/ir"
 	"github.com/nickwanninger/geode/pkg/lexer"
 	"github.com/nickwanninger/geode/pkg/util/log"
@@ -96,19 +93,13 @@ func (m *Module) AddRuntime() {
 
 	}
 
-	// mod.Compile()
-
 	m.AddDep(mod)
-	// fmt.Println(mod.Compiler.Functions)
-	// m.Inject(mod)
 }
 
 // InjectExternalFunction injects the function without the body, just the sig
 func (m *Module) InjectExternalFunction(fn *ir.Function) {
-	fmt.Println(fn.Sig.Ret)
 	ex := ir.NewFunction(fn.Name, fn.Sig.Ret, fn.Params()...)
 	ex.Sig.Variadic = fn.Sig.Variadic
-	spew.Dump(fn.Sig)
 	m.Compiler.Module.AppendFunction(ex)
 	scopeItem := NewFunctionScopeItem(fn.Name, ex, PublicVisibility)
 
@@ -149,7 +140,7 @@ func NewModule(name string, src *lexer.Sourcefile) *Module {
 
 // RuntimeSource is the source the runtime will use when compiling
 const RuntimeSource string = `
-func printf(string format, ...) int ...
+func nomangle printf(string format, ...) int ...
 
 func exp(int x, int n) int {
 	if n = 0 {
