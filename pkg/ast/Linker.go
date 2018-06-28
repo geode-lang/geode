@@ -66,6 +66,8 @@ func (l *Linker) Run() {
 	linker := "clang"
 	linkArgs := make([]string, 0)
 
+	linkArgs = append(linkArgs, "-lm", "-lc")
+
 	filename := l.output
 
 	if l.optimize {

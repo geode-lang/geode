@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/nickwanninger/geode/pkg/ast"
 	"github.com/nickwanninger/geode/pkg/lexer"
 	"github.com/nickwanninger/geode/pkg/util/log"
@@ -23,7 +24,7 @@ const (
 var startTime time.Time
 
 func main() {
-	// spew.Config.DisableMethods = true
+	spew.Config.DisableMethods = true
 	startTime = time.Now()
 
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
@@ -39,7 +40,11 @@ func main() {
 		context := NewContext(filename, "/tmp/geoderuntemp")
 		context.Build()
 		context.Run(*runArgs)
+
+	case testCMD.FullCommand():
+		RunTests(*testDir)
 	}
+
 }
 
 // if the filename passed in is a folder, look in that folder for a main.g
@@ -114,6 +119,7 @@ func (c *Context) Build() {
 	if *emitASM {
 		target = ast.ASMTarget
 	}
+
 	linker := ast.NewLinker(*buildOutput)
 	linker.SetTarget(target)
 	linker.SetOutput(c.Output)
@@ -124,14 +130,13 @@ func (c *Context) Build() {
 		obj := c.EmitModuleObject()
 		linker.AddObject(obj)
 	}
-
-	linker.Run()
-
 	if *emitLLVM {
 		log.Debug("%s\n", rootMod.Compiler.GetLLVMIR())
 	}
 
-	// linker.Cleanup()
+	linker.Run()
+
+	linker.Cleanup()
 }
 
 // Run a context with a given set of arguments

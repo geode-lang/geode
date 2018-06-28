@@ -1,3 +1,6 @@
+# Name = "For Loops"
+# ExpectedOutput = "1057046400"
+
 func main int {
 	int i := 0;
 	for int x := 0; x <= 255; x <- x + 1 {

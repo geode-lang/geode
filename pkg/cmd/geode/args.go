@@ -18,4 +18,7 @@ var (
 	runCMD   = app.Command("run", "Build and run an executable, clean up afterwards")
 	runInput = runCMD.Arg("input", "Geode source file or package").String()
 	runArgs  = runCMD.Arg("args", "Arguments to be passed into the program after building").Strings()
+
+	testCMD = app.Command("test", "Run tests")
+	testDir = testCMD.Arg("dir", "Test Directory").Default("./tests").String()
 )

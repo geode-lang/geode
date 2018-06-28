@@ -1,6 +1,10 @@
 package ast
 
 import (
+	"fmt"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/llir/llvm/ir"
 	"github.com/nickwanninger/geode/pkg/lexer"
 	"github.com/nickwanninger/geode/pkg/util/log"
 )
@@ -11,12 +15,12 @@ type Module struct {
 	Parent       *Module
 	Dependencies []*Module
 	Nodes        []Node
-	Scope        *Scope
-	Lexer        *lexer.LexState
-	Tokens       []lexer.Token
-	source       *lexer.Sourcefile
-	IsRuntime    bool
-	Compiler     *Compiler
+	// Scope        *Scope
+	Lexer     *lexer.LexState
+	Tokens    []lexer.Token
+	source    *lexer.Sourcefile
+	IsRuntime bool
+	Compiler  *Compiler
 }
 
 // Modules have a parse method on them that takes a channel of Modules.
@@ -99,17 +103,35 @@ func (m *Module) AddRuntime() {
 	// m.Inject(mod)
 }
 
+// InjectExternalFunction injects the function without the body, just the sig
+func (m *Module) InjectExternalFunction(fn *ir.Function) {
+	fmt.Println(fn.Sig.Ret)
+	ex := ir.NewFunction(fn.Name, fn.Sig.Ret, fn.Params()...)
+	ex.Sig.Variadic = fn.Sig.Variadic
+	spew.Dump(fn.Sig)
+	m.Compiler.Module.AppendFunction(ex)
+	scopeItem := NewFunctionScopeItem(fn.Name, ex, PublicVisibility)
+
+	m.Compiler.Scope.Add(scopeItem)
+
+}
+
 // Inject another module's defintions into this module
 // This is how external dependencies work
 func (m *Module) Inject(c *Module) {
-
 	m.Dependencies = append(m.Dependencies, c)
-	for k, v := range c.Compiler.Scope.Vals {
-		m.Compiler.Scope.Set(k, v)
-	}
+	// Copy over all Scope Variables
+	for _, v := range c.Compiler.Scope.Vals {
+		if v.Visibility() == PublicVisibility {
 
-	for _, fn := range c.Compiler.Functions {
-		m.Compiler.AddExternalFunction(fn)
+			if v.Type() == ScopeItemFunctionType {
+
+				m.InjectExternalFunction(v.Value().(*ir.Function))
+			} else {
+				m.Compiler.Scope.Add(v)
+			}
+
+		}
 	}
 }
 
@@ -120,14 +142,14 @@ func NewModule(name string, src *lexer.Sourcefile) *Module {
 	m.Nodes = make([]Node, 0)
 	m.source = src
 	m.Lexer = lexer.NewLexer()
+	// m.Scope = NewScope()
 	m.Tokens = make([]lexer.Token, 0) // construct the token array.
 	return m
 }
 
 // RuntimeSource is the source the runtime will use when compiling
 const RuntimeSource string = `
-# Define the printf sig
-func printf(string format, ...) ...
+func printf(string format, ...) int ...
 
 func exp(int x, int n) int {
 	if n = 0 {

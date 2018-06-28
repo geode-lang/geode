@@ -1,9 +1,10 @@
 package util
 
 import (
-	"log"
 	"os/exec"
 	"strings"
+
+	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
 // RunCommand executes a command and returns stdout from it.

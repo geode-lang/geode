@@ -13,55 +13,6 @@ import (
 	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
-func init() {
-	// llvm.InitializeNativeTarget()
-	// llvm.InitializeAllTargetInfos()
-	// llvm.InitializeAllTargets()
-	// llvm.InitializeAllTargetMCs()
-	// llvm.InitializeAllAsmParsers()
-	// llvm.InitializeAllAsmPrinters()
-}
-
-// Scope trees represent block scoping by having a root scope
-// and children scopes that point back to their parent scope.
-type Scope struct {
-	Parent   *Scope
-	Children []*Scope
-	Vals     map[string]value.Value
-}
-
-// Set a value in this specific scope
-func (s *Scope) Set(name string, val value.Value) {
-	s.Vals[name] = val
-}
-
-// Find will traverse the scope tree to find some definition of a symbol
-func (s *Scope) Find(name string) (value.Value, bool) {
-	val, found := s.Vals[name]
-	if !found && s.Parent != nil {
-		return s.Parent.Find(name)
-	}
-	return val, found
-}
-
-// SpawnChild takes a parent scope and creates a new variable scope for scoped variable access.
-func (s *Scope) SpawnChild() *Scope {
-	n := &Scope{}
-	n.Parent = s
-	n.Vals = make(map[string]value.Value)
-	n.Children = make([]*Scope, 0)
-	s.Children = append(s.Children, n)
-	return n
-}
-
-// NewScope creates a scope (for use when generating root scopes)
-func NewScope() *Scope {
-	n := &Scope{}
-	n.Parent = nil
-	n.Vals = make(map[string]value.Value)
-	return n
-}
-
 func error(err string) value.Value {
 	fmt.Println(err)
 	os.Exit(-1)
@@ -407,14 +358,27 @@ func (n binaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 // Function Call statement Code Generator
 func (n functionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	callee := c.GetFunction(n.Name)
+
+	scopeItem, found := c.Scope.Find(n.Name)
+	if !found {
+		log.Fatal("Unable to find function '%s' in scope of module '%s'\n", n.Name, c.Name)
+	}
+	if scopeItem.Type() != ScopeItemFunctionType {
+		log.Fatal("Variable '%s' is not of type funciton\n", n.Name)
+	}
+	// We finally have the function correctly
+	callee := scopeItem.Value().(*ir.Function)
 	if callee == nil {
 		return codegenError(fmt.Sprintf("Unknown function %q referenced", n.Name))
 	}
 
+	// fmt.Println(n.Name, callee.Type())
+
 	args := []value.Value{}
 	for _, arg := range n.Args {
-		args = append(args, arg.Codegen(scope, c))
+		a := arg.Codegen(scope, c)
+		// fmt.Println(a.Type())
+		args = append(args, a)
 		if args[len(args)-1] == nil {
 			return codegenError(fmt.Sprintf("Argument to function %q failed to generate code", n.Name))
 		}
@@ -499,9 +463,9 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 			os.Exit(-1)
 		}
 
-		alloc = v.(*ir.InstAlloca)
+		alloc = v.Value().(*ir.InstAlloca)
 
-		val = block.NewLoad(v)
+		val = block.NewLoad(v.Value())
 
 		if n.IndexExpr != nil {
 			if types.IsPointer(val.Type()) {
@@ -520,10 +484,12 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		if !found {
 			fmt.Println(v, "Not found")
 		}
-		alloc = v.(*ir.InstAlloca)
+		alloc = v.Value().(*ir.InstAlloca)
 	} else if n.RefType == ReferenceDefine {
 		alloc = createBlockAlloca(f, n.Type, name)
-		scope.Set(name, alloc)
+
+		scItem := NewVariableScopeItem(n.Name, alloc, PrivateVisibility)
+		scope.Add(scItem)
 	}
 
 	if n.HasValue {
@@ -584,30 +550,32 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	// spew.Dump(function)
 
 	c.FN = function
-	c.AddFunction(function)
+
 	function.Sig.Variadic = n.Variadic
 
 	// fmt.Println(function.Name, function.Sig.Variadic)
+	scopeItem := NewFunctionScopeItem(n.Name, function, PublicVisibility)
+	c.Scope.Add(scopeItem)
 
 	// If the function is external (has ... at the end) we don't build a block
-	if n.External {
-		return function
-	}
+	if !n.External {
+		name := mangleName("entry")
+		c.PushBlock(c.FN.NewBlock(name))
 
-	name := mangleName("entry")
-	c.PushBlock(c.FN.NewBlock(name))
-
-	for _, arg := range function.Params() {
-		alloc := c.CurrentBlock().NewAlloca(arg.Type())
-		c.CurrentBlock().NewStore(arg, alloc)
-		scope.Set(arg.Name, alloc)
-	}
-	// Gen the body of the function
-	n.Body.Codegen(scope, c)
-	if c.CurrentBlock().Term == nil {
-		log.Warn("Function %s is missing a return statement in the root block. Defaulting to 0\n", n.Name)
-		v := createTypeCast(c, constant.NewInt(0, types.I64), n.ReturnType)
-		c.CurrentBlock().NewRet(v)
+		for _, arg := range function.Params() {
+			alloc := c.CurrentBlock().NewAlloca(arg.Type())
+			c.CurrentBlock().NewStore(arg, alloc)
+			// Set the scope item
+			scItem := NewVariableScopeItem(arg.Name, alloc, PrivateVisibility)
+			scope.Add(scItem)
+		}
+		// Gen the body of the function
+		n.Body.Codegen(scope, c)
+		if c.CurrentBlock().Term == nil {
+			log.Warn("Function %s is missing a return statement in the root block. Defaulting to 0\n", n.Name)
+			v := createTypeCast(c, constant.NewInt(0, types.I64), n.ReturnType)
+			c.CurrentBlock().NewRet(v)
+		}
 	}
 
 	return function

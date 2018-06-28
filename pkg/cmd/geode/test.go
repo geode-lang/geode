@@ -6,9 +6,9 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,52 +20,60 @@ import (
 	"github.com/nickwanninger/geode/pkg/util/color"
 )
 
-type Job struct {
-	Name, Sourcefile          string
-	CompilerArgs, RunArgs     []string
-	CompilerError, RunError   int
-	Input                     string
-	CompilerOutput, RunOutput string
+// TestJob -
+type TestJob struct {
+	Name, Sourcefile               string
+	CompilerArgs, RunArgs          []string
+	CompilerError, RunError        int
+	Input                          string
+	CompilerOutput, ExpectedOutput string
 }
 
-type Result struct {
-	Job            Job
+type testResult struct {
+	TestJob        TestJob
 	CompilerError  int
 	RunError       int
 	CompilerOutput string
-	RunOutput      string
+	ExpectedOutput string
 }
 
-func ParseJob(filename string) (Job, error) {
-	var job Job
-	if _, err := toml.DecodeFile(filename, &job); err != nil {
-		return Job{}, err
+func parseTestJob(filename string) (TestJob, error) {
+	var job TestJob
+
+	dataBytes, ferr := ioutil.ReadFile(filename)
+	if ferr != nil {
+		panic(ferr)
 	}
 
+	rawLines := strings.Split(string(dataBytes), "\n")
+	configLines := make([]string, 0, len(rawLines))
+
+	for _, line := range rawLines {
+		if len(line) > 0 && line[0] == '#' {
+			configLines = append(configLines, strings.Trim(line, "# "))
+		}
+	}
+
+	config := strings.Join(configLines, "\n")
+
+	if _, err := toml.Decode(config, &job); err != nil {
+		return TestJob{}, err
+	}
 	return job, nil
 }
 
-var (
-	showOutput    = flag.Bool("show-output", false, "Enable to show output of tests")
-	testDirectory = flag.String("test-directory", "./tests/", "The directory in which tests are located")
-)
-
-func main() {
-	flag.Parse()
-	os.Exit(realmain())
-}
-
-func realmain() int {
+// RunTests runs all the tests in some directory
+func RunTests(testDirectory string) int {
 	var dirs []string
 	files := make(map[string][]string)
 
 	// Find all toml files in test directory
-	filepath.Walk(*testDirectory, func(path string, info os.FileInfo, err error) error {
+	filepath.Walk(testDirectory, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		relpath, err := filepath.Rel(*testDirectory, path)
+		relpath, err := filepath.Rel(testDirectory, path)
 		if err != nil {
 			return err
 		}
@@ -79,7 +87,7 @@ func realmain() int {
 			}
 
 			dirs = append(dirs, file)
-		} else if strings.HasSuffix(file, ".toml") {
+		} else if strings.HasSuffix(file, ".g") {
 			files[dir] = append(files[dir], file)
 		}
 		return nil
@@ -88,21 +96,21 @@ func realmain() int {
 	// Sort directories
 	sort.Strings(dirs)
 
-	var jobs []Job
+	var jobs []TestJob
 	for _, dir := range dirs {
 		// Sort files
 		sort.Strings(files[dir])
 
 		for _, file := range files[dir] {
-			path := filepath.Join(*testDirectory, dir, file)
+			path := filepath.Join(testDirectory, dir, file)
 
 			// Parse job file
-			job, err := ParseJob(path)
+			job, err := parseTestJob(path)
 			if err != nil {
 				fmt.Printf("%s\n", err.Error())
 				return 1
 			}
-			job.Sourcefile = filepath.Join(*testDirectory, dir, job.Sourcefile)
+			job.Sourcefile = path
 
 			jobs = append(jobs, job)
 		}
@@ -110,7 +118,7 @@ func realmain() int {
 
 	// Do jobs
 
-	results := make(chan Result)
+	results := make(chan testResult)
 
 	go func() {
 		outBuf := new(bytes.Buffer)
@@ -123,12 +131,9 @@ func realmain() int {
 			buildArgs = append(buildArgs, []string{"-o", outpath, job.Sourcefile}...)
 
 			outBuf.Reset()
-			if *showOutput {
-				fmt.Printf("Building test: %s\n", job.Name)
-			}
 
 			var err error
-			res := Result{Job: job}
+			res := testResult{TestJob: job}
 
 			res.CompilerError, err = runCommand(outBuf, "", "geode", buildArgs)
 			if err != nil {
@@ -145,20 +150,13 @@ func realmain() int {
 
 			// Run the test program
 			outBuf.Reset()
-			if *showOutput {
-				fmt.Printf("\nRunning test: %s\n", job.Name)
-			}
 
 			res.RunError, err = runCommand(outBuf, job.Input, fmt.Sprintf("./%s", outpath), job.RunArgs)
 			if err != nil {
 				fmt.Printf("Error while running test:\n%s\n", err.Error())
 				os.Exit(1)
 			}
-			res.RunOutput = outBuf.String()
-
-			if *showOutput {
-				fmt.Printf("\n")
-			}
+			res.ExpectedOutput = outBuf.String()
 
 			// Remove test executable
 			if err := os.Remove(outpath); err != nil {
@@ -175,63 +173,67 @@ func realmain() int {
 	numSucceses := 0
 	numTests := 0
 
-	fmt.Printf("Test name              | Build error | Run error | B. output | R. output | Res  \n")
-	fmt.Printf("-----------------------|-------------|-----------|-----------|-----------|------\n")
+	fmt.Printf("\n\n")
+	// fmt.Printf("Test name              | Build error | Run error | B. output | R. output | Res  \n")
+	// fmt.Printf("-----------------------|-------------|-----------|-----------|-----------|------\n")
 	for res := range results {
 		failure := false
-		if len(res.Job.Name) > 22 {
-			fmt.Printf("%s... |", res.Job.Name[:19])
-		} else {
-			fmt.Printf("%-22s |", res.Job.Name)
-		}
+
+		fmt.Printf("%s\n", res.TestJob.Name)
 
 		// Check build errors
-		if (res.Job.CompilerError == -1 && res.CompilerError != 0) || (res.CompilerError == res.Job.CompilerError) {
-			fmt.Printf("   %s%3d%s (%3d) |", color.TEXT_GREEN, res.CompilerError, color.TEXT_RESET, res.Job.CompilerError)
+		fmt.Printf("  CompilerError:\n    ")
+		if (res.TestJob.CompilerError == -1 && res.CompilerError != 0) || (res.CompilerError == res.TestJob.CompilerError) {
+			fmt.Printf("%s    (%d)\n", color.Green("✔"), res.TestJob.CompilerError)
 		} else {
-			fmt.Printf("   %s%3d%s (%3d) |", color.TEXT_RED, res.CompilerError, color.TEXT_RESET, res.Job.CompilerError)
+			msg := color.Red("✗")
+			fmt.Printf("%s. Expected %d\n", msg, res.TestJob.CompilerError)
 			failure = true
 		}
 
+		fmt.Printf("  CompilerOutput:\n    ")
 		// Check run errors
-		if res.RunError == res.Job.RunError {
-			fmt.Printf(" %s%3d%s (%3d) |", color.TEXT_GREEN, res.RunError, color.TEXT_RESET, res.Job.RunError)
+		if res.CompilerOutput == res.TestJob.CompilerOutput {
+			fmt.Printf("%s\n", color.Green("✔"))
 		} else {
-			fmt.Printf(" %s%3d%s (%3d) |", color.TEXT_RED, res.RunError, color.TEXT_RESET, res.Job.RunError)
+			msg := color.Red("✗")
+			fmt.Printf("%s. Expected %s\n", msg, res.TestJob.CompilerOutput)
 			failure = true
 		}
 
-		// Check build output
-		if res.Job.CompilerOutput == "" {
-			fmt.Printf("       n/a |")
-		} else if res.CompilerOutput == res.Job.CompilerOutput {
-			fmt.Printf("     %sMatch%s |", color.TEXT_GREEN, color.TEXT_RESET)
+		fmt.Printf("  RunError:\n    ")
+		// Check run errors
+		if res.RunError == res.TestJob.RunError {
+			fmt.Printf("%s    (%d)\n", color.Green("✔"), res.TestJob.RunError)
 		} else {
-			fmt.Printf("  %sMismatch%s |", color.TEXT_RED, color.TEXT_RESET)
+			msg := color.Red("✗")
+			fmt.Printf("%s. Expected %d\n", msg, res.TestJob.RunError)
 			failure = true
 		}
 
-		// Check run output
-		if res.Job.RunOutput == "" {
-			fmt.Printf("       n/a |")
-		} else if res.RunOutput == res.Job.RunOutput {
-			fmt.Printf("     %sMatch%s |", color.TEXT_GREEN, color.TEXT_RESET)
+		fmt.Printf("  ExpectedOutput:\n    ")
+		// Check run errors
+		if res.ExpectedOutput == res.TestJob.ExpectedOutput {
+			fmt.Printf("%s\n", color.Green("✔"))
 		} else {
-			fmt.Printf("  %sMismatch%s |", color.TEXT_RED, color.TEXT_RESET)
+			msg := color.Red("✗")
+			fmt.Printf("%s. Expected %s\n", msg, res.TestJob.ExpectedOutput)
 			failure = true
 		}
 
 		// Output result
-		if failure {
-			fmt.Printf(" %sFail%s\n", color.TEXT_RED, color.TEXT_RESET)
-		} else {
-			fmt.Printf(" %sSucc%s\n", color.TEXT_GREEN, color.TEXT_RESET)
+		if !failure {
 			numSucceses++
+			fmt.Printf("\n%sTest Passed%s\n", color.TEXT_GREEN, color.TEXT_RESET)
+		} else {
+			fmt.Printf("\n%sTest Failed%s\n", color.TEXT_RED, color.TEXT_RESET)
 		}
 		numTests++
+
+		fmt.Printf("\n\n")
 	}
 
-	fmt.Printf("\nTotal: %d / %d tests ran succesfully\n", numSucceses, numTests)
+	fmt.Printf("\nTotal: %d / %d tests ran succesfully\n\n", numSucceses, numTests)
 	if numSucceses < numTests {
 		return 1
 	}
@@ -245,9 +247,6 @@ func runCommand(out io.Writer, input string, cmd string, args []string) (int, er
 
 	// Output handling
 	ow := out
-	if *showOutput {
-		ow = io.MultiWriter(out, os.Stdout)
-	}
 	command.Stdout, command.Stderr = ow, ow
 
 	// Disable coloring for matching compiler output

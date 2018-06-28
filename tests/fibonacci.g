@@ -1,3 +1,6 @@
+# Name = "fibonacci"
+# ExpectedOutput = "832040"
+
 func fib(int n) int {
 	if n < 2 {
 		return n;
@@ -8,6 +11,6 @@ func fib(int n) int {
 func main(int argc) int {
 	int a;
 	a <- 30;
-	printf("%d\n", fib(a));
+	printf("%d", fib(a));
 	return 0;
 }

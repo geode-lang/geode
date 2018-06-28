@@ -1,3 +1,6 @@
+# Name = "while"
+# ExpectedOutput = "255"
+
 func main int {
 	int i := 0;
 	while i < 255 {

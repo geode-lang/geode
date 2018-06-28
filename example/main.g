@@ -1,4 +1,4 @@
 func main int {
-	printf("%d\n", 3);
-	return 0;
+	printf("Hello\n");
+	return exp(3, 3);
 }
