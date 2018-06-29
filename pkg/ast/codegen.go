@@ -544,17 +544,20 @@ func (n blockNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return c.CurrentBlock()
 }
 
-// Function Node Statement Code Generation
-func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
-
+func (n functionNode) Arguments() ([]*types.Param, []types.Type) {
 	funcArgs := make([]*types.Param, 0)
 	argTypes := make([]types.Type, 0)
 	for _, arg := range n.Args {
 		p := ir.NewParam(arg.Name, arg.Type)
 		funcArgs = append(funcArgs, p)
 		argTypes = append(argTypes, p.Type())
-
 	}
+	return funcArgs, argTypes
+}
+
+func (n functionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
+
+	funcArgs, argTypes := n.Arguments()
 	// We need to do some special checks if the function is main. It's special.
 	// For instance, it must return int type.
 	if n.Name == "main" {
@@ -569,9 +572,12 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	}
 
 	function := c.Module.NewFunction(name, n.ReturnType, funcArgs...)
-	// spew.Dump(function)
 
 	c.FN = function
+
+	if n.Variadic && !n.External {
+		log.Fatal("Function '%s' is variadic and has a body. This only allowed for external functions.\n", n.Name)
+	}
 
 	function.Sig.Variadic = n.Variadic
 
@@ -579,6 +585,30 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	scopeItem := NewFunctionScopeItem(name, function, PublicVisibility)
 	scopeItem.SetMangled(!n.Nomangle)
 	c.Scope.Add(scopeItem)
+
+	return function
+}
+
+// Function Node Statement Code Generation
+func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
+
+	_, argTypes := n.Arguments()
+	// function := n.Declare(scope, c)
+	// fmt.Println(scope.Vals)
+	name := n.Name
+	if !n.Nomangle {
+		name = MangleFunctionName(n.Name, argTypes...)
+	}
+
+	declared := c.Scope.FindFunctions(name)
+	if len(declared) != 1 {
+		log.Fatal("Unable to find function declaration for '%s'\n", name)
+	}
+
+	// fmt.Println(c.Scope.Vals)
+
+	function := declared[0].Value().(*ir.Function)
+	c.FN = function
 
 	// If the function is external (has ... at the end) we don't build a block
 	if !n.External {
@@ -595,10 +625,11 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		// Gen the body of the function
 		n.Body.Codegen(scope, c)
 		if c.CurrentBlock().Term == nil {
-			log.Warn("Function %s is missing a return statement in the root block. Defaulting to 0\n", n.Name)
+			log.Warn("Function %s is missing a return statement in the root block. Defaulting to 0\n", name)
 			v := createTypeCast(c, constant.NewInt(0, types.I64), n.ReturnType)
 			c.CurrentBlock().NewRet(v)
 		}
+		c.PopBlock()
 	}
 
 	return function

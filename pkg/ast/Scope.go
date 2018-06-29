@@ -38,8 +38,14 @@ func (s *Scope) Find(name string) (ScopeItem, bool) {
 func (s *Scope) FindFunctions(name string) []FunctionScopeItem {
 	funcs := make([]FunctionScopeItem, 0)
 
+	// First check the name without unmangling it
+	fnc, found := s.Vals[name]
+	if found {
+		return append(funcs, fnc.(FunctionScopeItem))
+	}
+
 	unMangled := UnmangleFunctionName(name)
-	fnc, found := s.Vals[unMangled]
+	fnc, found = s.Vals[unMangled]
 	if found {
 		return append(funcs, fnc.(FunctionScopeItem))
 	}

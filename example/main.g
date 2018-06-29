@@ -1,11 +1,17 @@
-func foo (float a, int b) float {
-	return float(printf("%d\n", int(a)));
-}
 
-func foo (int a) int {
-	return printf("%d\n", a);
-}
+
+# class Foo {
+	
+# }
+
 
 func main int {
-	return int(foo(1.1, 1));
+	return f2i(1.1);
 }
+
+func f2i(float a) int {
+	return int(a);
+}
+# func print(int a) int {
+# 	return printf("Integer: %d\n", a);
+# }

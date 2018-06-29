@@ -61,9 +61,19 @@ func (m *Module) Compile() chan *Compiler {
 			m.Inject(dep)
 		}
 
+		// First we *Need* to go through and declare all the functions. This is because
 		for _, node := range m.Nodes {
+			if node.Kind() == nodeFunction {
+				node.(functionNode).Declare(m.Compiler.Scope.SpawnChild(), m.Compiler)
+			}
+			// node.Codegen(m.Compiler.Scope.SpawnChild(), m.Compiler)
+		}
+
+		for _, node := range m.Nodes {
+			// node.Codegen(m.Compiler.Scope, m.Compiler)
 			node.Codegen(m.Compiler.Scope.SpawnChild(), m.Compiler)
 		}
+
 		compilers <- m.Compiler
 		close(compilers)
 	}()
