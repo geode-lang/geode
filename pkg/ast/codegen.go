@@ -61,12 +61,14 @@ func (n ifNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		}
 	})
 
-	endBlk = parentFunc.NewBlock(mangleName(namePrefix + "merge"))
+	endBlk = parentFunc.NewBlock(mangleName(namePrefix + "end"))
 	c.PushBlock(endBlk)
-
+	// We need to make sure these blocks have terminators.
+	// in order to do that, we branch to the end block
 	branchIfNoTerminator(thenBlk, endBlk)
 	branchIfNoTerminator(thenGenBlk, endBlk)
 	branchIfNoTerminator(elseBlk, endBlk)
+
 	if elseGenBlk != nil {
 		branchIfNoTerminator(elseGenBlk, endBlk)
 	}
@@ -103,13 +105,14 @@ func (n forNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	bodyBlk = parentFunc.NewBlock(namePrefix + "body")
 	c.runInBlock(bodyBlk, func() {
 		bodyGenBlk = n.Body.Codegen(scope, c).(*ir.BasicBlock)
+
 		c.runInBlock(bodyGenBlk, func() {
 			n.Step.Codegen(scope, c)
 		})
 		branchIfNoTerminator(bodyBlk, condBlk)
 		branchIfNoTerminator(bodyGenBlk, condBlk)
 	})
-	endBlk = parentFunc.NewBlock(namePrefix + "exit")
+	endBlk = parentFunc.NewBlock(namePrefix + "end")
 	c.PushBlock(endBlk)
 	condBlk.NewCondBr(predicate, bodyBlk, endBlk)
 	return endBlk
@@ -247,61 +250,6 @@ func createTypeCast(c *Compiler, in value.Value, to types.Type) value.Value {
 	return nil
 }
 
-func createAdd(blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
-	if types.IsInt(t) {
-		return blk.NewAdd(left, right)
-	}
-	if types.IsFloat(t) {
-		return blk.NewFAdd(left, right)
-	}
-	log.Fatal("Creation of add instruction failed. `%s + %s`\n", left.Type(), right.Type())
-	return nil
-}
-
-func createSub(blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
-	if types.IsInt(t) {
-		return blk.NewSub(left, right)
-	}
-	if types.IsFloat(t) {
-		return blk.NewFSub(left, right)
-	}
-	log.Fatal("Creation of sub instruction failed. `%s - %s`\n", left.Type(), right.Type())
-	return nil
-}
-
-func createMul(blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
-	if types.IsInt(t) {
-		return blk.NewMul(left, right)
-	}
-	if types.IsFloat(t) {
-		return blk.NewFMul(left, right)
-	}
-	log.Fatal("Creation of mul instruction failed. `%s * %s`\n", left.Type(), right.Type())
-	return nil
-}
-
-func createDiv(blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
-	if types.IsInt(t) {
-		return blk.NewSDiv(left, right)
-	}
-	if types.IsFloat(t) {
-		return blk.NewFDiv(left, right)
-	}
-	log.Fatal("Creation of div instruction failed. `%s ÷ %s`\n", left.Type(), right.Type())
-	return nil
-}
-
-func createRem(blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
-	if types.IsInt(t) {
-		return blk.NewSRem(left, right)
-	}
-	if types.IsFloat(t) {
-		return blk.NewFRem(left, right)
-	}
-	log.Fatal("Creation of rem instruction failed. `%s % %s`\n", left.Type(), right.Type())
-	return nil
-}
-
 func createCmp(blk *ir.BasicBlock, i ir.IntPred, f ir.FloatPred, t types.Type, left, right value.Value) value.Value {
 	if types.IsInt(t) {
 		return blk.NewICmp(i, left, right)
@@ -312,6 +260,20 @@ func createCmp(blk *ir.BasicBlock, i ir.IntPred, f ir.FloatPred, t types.Type, l
 	log.Fatal("Creation of rem instruction failed. `%s % %s`\n", left.Type(), right.Type())
 	return nil
 }
+
+// CreateBinaryOp produces a geode binary op (just a wrapper around llir/llvm's binary instructions)
+func CreateBinaryOp(intstr, fltstr string, blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
+	fmt.Println(intstr, fltstr)
+	var inst *GeodeBinaryInstr
+	if types.IsInt(t) {
+		inst = NewGeodeBinaryInstr(intstr, left, right)
+	} else {
+		inst = NewGeodeBinaryInstr(fltstr, left, right)
+	}
+	blk.AppendInst(inst)
+	return inst
+}
+
 func (n binaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	// Generate the left and right nodes
 	l := n.Left.Codegen(scope, c)
@@ -329,15 +291,15 @@ func (n binaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	switch n.OP {
 	case "+":
-		return createAdd(blk, t, l, r)
+		return CreateBinaryOp("add", "fadd", blk, t, l, r)
 	case "-":
-		return createSub(blk, t, l, r)
+		return CreateBinaryOp("sub", "fsub", blk, t, l, r)
 	case "*":
-		return createMul(blk, t, l, r)
+		return CreateBinaryOp("mul", "fmul", blk, t, l, r)
 	case "/":
-		return createDiv(blk, t, l, r)
+		return CreateBinaryOp("div", "fdiv", blk, t, l, r)
 	case "%":
-		return createRem(blk, t, l, r)
+		return CreateBinaryOp("srem", "frem", blk, t, l, r)
 	case "=":
 		return createCmp(blk, ir.IntEQ, ir.FloatOEQ, t, l, r)
 	case "!=":
