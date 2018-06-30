@@ -187,7 +187,8 @@ func RunTests(testDirectory string) int {
 			fmt.Printf("%s    (%d)\n", color.Green("✔"), res.TestJob.CompilerError)
 		} else {
 			msg := color.Red("✗")
-			fmt.Printf("%s. Expected %d\n", msg, res.TestJob.CompilerError)
+			fmt.Printf("%s. Expected %d\n    ", msg, res.TestJob.CompilerError)
+			fmt.Printf("Got %d\n", res.CompilerError)
 			failure = true
 		}
 
@@ -197,7 +198,8 @@ func RunTests(testDirectory string) int {
 			fmt.Printf("%s\n", color.Green("✔"))
 		} else {
 			msg := color.Red("✗")
-			fmt.Printf("%s. Expected %s\n", msg, res.TestJob.CompilerOutput)
+			fmt.Printf("%s. Expected %s\n    ", msg, res.TestJob.CompilerOutput)
+			fmt.Printf("Got %s\n", res.CompilerOutput)
 			failure = true
 		}
 
@@ -207,7 +209,8 @@ func RunTests(testDirectory string) int {
 			fmt.Printf("%s    (%d)\n", color.Green("✔"), res.TestJob.RunError)
 		} else {
 			msg := color.Red("✗")
-			fmt.Printf("%s. Expected %d\n", msg, res.TestJob.RunError)
+			fmt.Printf("%s. Expected %d\n    ", msg, res.TestJob.RunError)
+			fmt.Printf("Got %d\n", res.RunError)
 			failure = true
 		}
 
@@ -217,7 +220,8 @@ func RunTests(testDirectory string) int {
 			fmt.Printf("%s\n", color.Green("✔"))
 		} else {
 			msg := color.Red("✗")
-			fmt.Printf("%s. Expected %s\n", msg, res.TestJob.ExpectedOutput)
+			fmt.Printf("%s. Expected %s\n    ", msg, res.TestJob.ExpectedOutput)
+			fmt.Printf("Got %s\n", res.ExpectedOutput)
 			failure = true
 		}
 
