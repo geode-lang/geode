@@ -263,7 +263,6 @@ func createCmp(blk *ir.BasicBlock, i ir.IntPred, f ir.FloatPred, t types.Type, l
 
 // CreateBinaryOp produces a geode binary op (just a wrapper around llir/llvm's binary instructions)
 func CreateBinaryOp(intstr, fltstr string, blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
-	fmt.Println(intstr, fltstr)
 	var inst *GeodeBinaryInstr
 	if types.IsInt(t) {
 		inst = NewGeodeBinaryInstr(intstr, left, right)
