@@ -14,7 +14,6 @@ PLATFORMS="$PLATFORMS freebsd/amd64"
 PLATFORMS="$PLATFORMS netbsd/amd64"
 PLATFORMS="$PLATFORMS openbsd/amd64"
 PLATFORMS="$PLATFORMS dragonfly/amd64"
-PLATFORMS="$PLATFORMS plan9/amd64 plan9/386"
 PLATFORMS="$PLATFORMS solaris/amd64"
 
 
@@ -44,5 +43,5 @@ for PLATFORM in $PLATFORMS; do
   if [[ "${GOOS}" == "windows" ]]; then BIN_FILENAME="${BIN_FILENAME}.exe"; fi
   CMD="GOOS=${GOOS} GOARCH=${GOARCH} go build -o ${BIN_FILENAME} $@"
   printf "%.20s %22s\n" "${GOOS}-${GOARCH}" "build/${GOOS}/${GOARCH}"
-  eval $CMD
+  eval $CMD || exit 1
 done
