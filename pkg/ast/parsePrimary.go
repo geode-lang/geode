@@ -5,11 +5,12 @@ import (
 )
 
 func (p *Parser) parsePrimary() Node {
+
 	// fmt.Println(lexer.GetTokenName(p.token.Type))
 	switch p.token.Type {
 
 	case lexer.TokIdent:
-		return p.parseIdentifierExpr()
+		return p.parseIdentifierExpr(false)
 	case lexer.TokNumber:
 		return p.parseNumericExpr()
 	case lexer.TokLeftParen:

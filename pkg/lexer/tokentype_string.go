@@ -4,9 +4,9 @@ package lexer
 
 import "strconv"
 
-const _TokenType_name = "TokErrorTokWhitespaceTokCharTokStringTokNumberTokElipsisTokOperTokOperatorStartTokStarTokPlusTokMinusTokDivTokExpTokLTTokLTETokGTTokGTETokOperatorEndTokSemiColonTokDefereferenceTokReferenceTokAssignmentTokEqualityTokRightParenTokLeftParenTokRightCurlyTokLeftCurlyTokRightBraceTokLeftBraceTokRightArrowTokLeftArrowTokForTokWhileTokIfTokElseTokReturnTokFuncDefnTokTypeTokCommaTokIdentTokComment"
+const _TokenType_name = "TokErrorTokWhitespaceTokCharTokStringTokNumberTokElipsisTokOperTokPtrTokOperatorStartTokStarTokPlusTokMinusTokDivTokExpTokLTTokLTETokGTTokGTETokOperatorEndTokSemiColonTokDefereferenceTokReferenceTokAssignmentTokEqualityTokRightParenTokLeftParenTokRightCurlyTokLeftCurlyTokRightBraceTokLeftBraceTokRightArrowTokLeftArrowTokForTokWhileTokIfTokElseTokReturnTokFuncDefnTokClassDefnTokLetTokTypeTokCommaTokIdentTokComment"
 
-var _TokenType_index = [...]uint16{0, 8, 21, 28, 37, 46, 56, 63, 79, 86, 93, 101, 107, 113, 118, 124, 129, 135, 149, 161, 177, 189, 202, 213, 226, 238, 251, 263, 276, 288, 301, 313, 319, 327, 332, 339, 348, 359, 366, 374, 382, 392}
+var _TokenType_index = [...]uint16{0, 8, 21, 28, 37, 46, 56, 63, 69, 85, 92, 99, 107, 113, 119, 124, 130, 135, 141, 155, 167, 183, 195, 208, 219, 232, 244, 257, 269, 282, 294, 307, 319, 325, 333, 338, 345, 354, 365, 377, 383, 390, 398, 406, 416}
 
 func (i TokenType) String() string {
 	if i < 0 || i >= TokenType(len(_TokenType_index)-1) {

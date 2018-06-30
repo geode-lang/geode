@@ -1,14 +1,39 @@
 package ast
 
 import (
-	"github.com/llir/llvm/ir/types"
 	"github.com/nickwanninger/geode/pkg/lexer"
-	"github.com/nickwanninger/geode/pkg/typesystem"
 )
 
-func (p *Parser) parseType() (t types.Type, ptr bool) {
-	p.requires(lexer.TokType)
-	t = typesystem.GlobalTypeMap.GetType(p.token.Value)
+func validTypeReferenceToken(t lexer.Token) bool {
+
+	allowed := map[string]bool{
+		"*": true,
+		// "[": true,
+		// "]": true,
+	}
+	_, ok := allowed[t.Value]
+	return ok
+
+}
+
+func (p *Parser) atType() bool {
+	offset := 1
+	for validTypeReferenceToken(p.peek(offset)) {
+		offset++
+	}
+
+	if p.peek(offset).Type == lexer.TokIdent {
+		return true
+	}
+
+	return false
+}
+
+func (p *Parser) parseType() (t GeodeTypeRef) {
+	p.requires(lexer.TokIdent)
+
+	t.Name = p.token.Value
+	// t = typesystem.GlobalTypeMap.GetType(p.token.Value)
 	p.next()
 
 	for {
@@ -23,7 +48,7 @@ func (p *Parser) parseType() (t types.Type, ptr bool) {
 		// }
 
 		if p.token.Is(lexer.TokOper) && p.token.Value == "*" {
-			t = types.NewPointer(t)
+			t.PointerLevel++
 			p.next()
 			continue
 		}
@@ -31,5 +56,5 @@ func (p *Parser) parseType() (t types.Type, ptr bool) {
 		break
 
 	}
-	return t, ptr
+	return t
 }

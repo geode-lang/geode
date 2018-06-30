@@ -28,6 +28,7 @@ func (s *Sourcefile) Hash() uint32 {
 	return h.Sum32()
 }
 
+// LoadFile -
 func (s *Sourcefile) LoadFile(path string) error {
 	s.Path = path
 	bytes, err := ioutil.ReadFile(path)

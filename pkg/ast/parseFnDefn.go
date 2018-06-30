@@ -2,7 +2,6 @@ package ast
 
 import (
 	"github.com/nickwanninger/geode/pkg/lexer"
-	"github.com/nickwanninger/geode/pkg/typesystem"
 )
 
 func (p *Parser) parseFnDefn() functionNode {
@@ -31,7 +30,7 @@ func (p *Parser) parseFnDefn() functionNode {
 		for {
 
 			// If there is an arg
-			if p.token.Is(lexer.TokType) {
+			if p.token.Is(lexer.TokIdent) {
 				fn.Args = append(fn.Args, p.parseVariableDefn(false))
 			}
 
@@ -57,10 +56,10 @@ func (p *Parser) parseFnDefn() functionNode {
 
 	}
 
-	if p.token.Is(lexer.TokType) {
-		fn.ReturnType, _ = p.parseType()
+	if p.token.Is(lexer.TokIdent) {
+		fn.ReturnType = p.parseType()
 	} else {
-		fn.ReturnType = typesystem.GlobalTypeMap.GetType("void")
+		fn.ReturnType = GeodeTypeRef{false, 0, "void"}
 	}
 
 	if p.token.Is(lexer.TokLeftCurly) {

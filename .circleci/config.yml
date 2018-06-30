@@ -20,7 +20,7 @@ jobs:
     working_directory: /go/src/github.com/nickwanninger/geode
     steps:
       - checkout
-
-      # specify any bash command here prefixed with `run: `
+      # install dependencies
       - run: go get -t -d -v ./...
+      # test the building by using all supported architectures as targets
       - run: ./release.sh

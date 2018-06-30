@@ -4,7 +4,13 @@ import (
 	"github.com/nickwanninger/geode/pkg/lexer"
 )
 
-func (p *Parser) parseIdentifierExpr() Node {
+func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
+
+	if allowVariableDefn && p.atType() {
+
+		return p.parseVariableDefn(true)
+	}
+
 	name := p.token.Value
 	p.next()
 
@@ -33,6 +39,7 @@ func (p *Parser) parseIdentifierExpr() Node {
 	}
 
 	if p.token.Is(lexer.TokLeftParen) {
+
 		// it was a paren, so we need to parse it as if it were a function call
 		n := functionCallNode{}
 		n.Name = name
@@ -43,6 +50,7 @@ func (p *Parser) parseIdentifierExpr() Node {
 			case lexer.TokComma:
 				p.next()
 			default:
+
 				arg := p.parseExpression()
 				if arg == nil {
 					return nil

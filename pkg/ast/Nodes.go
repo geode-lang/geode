@@ -164,7 +164,7 @@ const (
 
 type variableNode struct {
 	NodeType
-	Type         types.Type
+	Type         GeodeTypeRef
 	HasValue     bool
 	Name         string
 	IsPointer    bool
@@ -195,7 +195,7 @@ type functionNode struct {
 	External   bool
 	Variadic   bool
 	Nomangle   bool
-	ReturnType types.Type
+	ReturnType GeodeTypeRef
 }
 
 func (n functionNode) NameString() string                { return "functionNode" }
@@ -240,3 +240,18 @@ type classNode struct {
 
 func (n classNode) NameString() string                { return "classNode" }
 func (n classNode) InferType(scope *Scope) types.Type { return types.Void }
+
+// GeodeTypeRef -
+type GeodeTypeRef struct {
+	Array        bool
+	PointerLevel int
+	Name         string
+}
+
+// BuildPointerType will take some type and apply a level of nested pointers
+func (r GeodeTypeRef) BuildPointerType(t types.Type) types.Type {
+	for i := 0; i < r.PointerLevel; i++ {
+		t = types.NewPointer(t)
+	}
+	return t
+}

@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nickwanninger/geode/pkg/typesystem"
-
 	"github.com/davecgh/go-spew/spew"
 	"github.com/timtadh/lexmachine"
 	"github.com/timtadh/lexmachine/machines"
@@ -58,13 +56,6 @@ var Tokens = []TokenInfoRelation{
 
 	{TokRightArrow, `->`},
 	{TokLeftArrow, `<-`},
-	// The main lexer won't work correctly and will just look these up later
-	{TokIf, ""},
-	{TokElse, ""},
-	{TokReturn, ""},
-	{TokFuncDefn, ""},
-
-	{TokType, ""},
 
 	{TokComma, `,`},
 
@@ -147,9 +138,9 @@ func NewLexer() *LexState {
 
 	getToken := func(tokenType TokenType) lexmachine.Action {
 		return func(s *lexmachine.Scanner, m *machines.Match) (interface{}, error) {
-			if typesystem.GlobalTypeMap.GetType(string(m.Bytes)) != nil {
-				return s.Token(int(TokType), string(m.Bytes), m), nil
-			}
+			// if typesystem.GlobalTypeMap.GetType(string(m.Bytes)) != nil {
+			// 	return s.Token(int(TokType), string(m.Bytes), m), nil
+			// }
 
 			kw, isKwInMap := keyWordMap[string(m.Bytes)]
 			if isKwInMap {
@@ -171,11 +162,6 @@ func NewLexer() *LexState {
 	s.Tokens = make(chan Token)
 	s.lexer = lexer
 	return s
-}
-
-// GetTokenID -
-func GetTokenID(t int) int {
-	return t
 }
 
 // DumpTokens takes a channel of tokens and prints all tokens it recieves,

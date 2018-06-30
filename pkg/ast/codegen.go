@@ -296,7 +296,7 @@ func (n binaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	case "*":
 		return CreateBinaryOp("mul", "fmul", blk, t, l, r)
 	case "/":
-		return CreateBinaryOp("div", "fdiv", blk, t, l, r)
+		return CreateBinaryOp("sdiv", "fdiv", blk, t, l, r)
 	case "%":
 		return CreateBinaryOp("srem", "frem", blk, t, l, r)
 	case "=":
@@ -470,7 +470,8 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		}
 		alloc = v.Value().(*ir.InstAlloca)
 	} else if n.RefType == ReferenceDefine {
-		alloc = createBlockAlloca(f, n.Type, name)
+		ty := typesystem.GlobalTypeMap.GetType(n.Type.Name)
+		alloc = createBlockAlloca(f, ty, name)
 
 		scItem := NewVariableScopeItem(n.Name, alloc, PrivateVisibility)
 		scope.Add(scItem)
@@ -511,11 +512,12 @@ func (n classNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	fields := make([]types.Type, 0)
 
 	for _, f := range n.Variables {
-		t := f.Type
+		t := f.Type.Name
+		ty := typesystem.GlobalTypeMap.GetType(t)
 		// t.SetName(f.Name)
 		// fmt.Println(f)
 		// t.SetName("HELLO")
-		fields = append(fields, t)
+		fields = append(fields, ty)
 	}
 
 	structDefn := types.NewStruct(fields...)
@@ -530,7 +532,9 @@ func (n functionNode) Arguments() ([]*types.Param, []types.Type) {
 	funcArgs := make([]*types.Param, 0)
 	argTypes := make([]types.Type, 0)
 	for _, arg := range n.Args {
-		p := ir.NewParam(arg.Name, arg.Type)
+		ty := typesystem.GlobalTypeMap.GetType(arg.Type.Name)
+		ty = arg.Type.BuildPointerType(ty)
+		p := ir.NewParam(arg.Name, ty)
 		funcArgs = append(funcArgs, p)
 		argTypes = append(argTypes, p.Type())
 	}
@@ -543,7 +547,7 @@ func (n functionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 	// We need to do some special checks if the function is main. It's special.
 	// For instance, it must return int type.
 	if n.Name == "main" {
-		if n.ReturnType != typesystem.GeodeI64.LLVMType {
+		if n.ReturnType.Name != "int" {
 			log.Fatal("Main function must return type int. Called for type '%s'\n", n.ReturnType)
 		}
 	}
@@ -552,8 +556,9 @@ func (n functionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 	if !n.Nomangle {
 		name = MangleFunctionName(n.Name, argTypes...)
 	}
-
-	function := c.Module.NewFunction(name, n.ReturnType, funcArgs...)
+	ty := typesystem.GlobalTypeMap.GetType(n.ReturnType.Name)
+	ty = n.ReturnType.BuildPointerType(ty)
+	function := c.Module.NewFunction(name, ty, funcArgs...)
 
 	c.FN = function
 
@@ -607,8 +612,9 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		// Gen the body of the function
 		n.Body.Codegen(scope, c)
 		if c.CurrentBlock().Term == nil {
+			ty := typesystem.GlobalTypeMap.GetType(n.ReturnType.Name)
 			// log.Warn("Function %s is missing a return statement in the root block. Defaulting to 0\n", n.Name)
-			v := createTypeCast(c, constant.NewInt(0, types.I64), n.ReturnType)
+			v := createTypeCast(c, constant.NewInt(0, types.I64), ty)
 			c.CurrentBlock().NewRet(v)
 		}
 		c.PopBlock()

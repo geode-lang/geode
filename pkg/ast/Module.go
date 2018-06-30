@@ -149,11 +149,8 @@ func NewModule(name string, src *lexer.Sourcefile) *Module {
 
 // RuntimeGeode is the source the runtime will use when compiling
 const RuntimeGeode string = `
-# This print function is a wrapper around printf
 func print(string format, ...) ...
 
-# Some overloading of the print method for 
-# different types. These are mangled
 func print(int a) -> print("%d\n", a);
 func print(float a) -> print("%f\n", a);
 
