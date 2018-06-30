@@ -1,5 +1,7 @@
-FROM ubuntu
-RUN mkdir -p /go
-ENV GOPATH /go
-RUN apt-get update -y && apt-get upgrade -y
-RUN apt-get install -y golang-go clang
+FROM circleci/golang:1.10
+FROM rsmmr/clang
+# RUN mkdir -p /go
+# ENV GOPATH /go
+
+CMD ["/bin/ls", "/bin"]
+
