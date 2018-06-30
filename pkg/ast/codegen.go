@@ -80,7 +80,7 @@ func (n ifNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 func (n forNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	// The name of the blocks is prefixed so we can determine which for loop a block is for.
-	namePrefix := fmt.Sprintf("for_%d_", n.Index)
+	namePrefix := fmt.Sprintf("for.%X.", n.Index)
 	parentBlock := c.CurrentBlock()
 	var predicate value.Value
 	var condBlk *ir.BasicBlock
@@ -89,7 +89,7 @@ func (n forNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	var endBlk *ir.BasicBlock
 	parentFunc := parentBlock.Parent
 
-	condBlk = parentFunc.NewBlock(mangleName(namePrefix + "cond"))
+	condBlk = parentFunc.NewBlock(namePrefix + "cond")
 
 	n.Init.Codegen(scope, c)
 
@@ -100,7 +100,7 @@ func (n forNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		one := constant.NewInt(1, types.I1)
 		predicate = condBlk.NewICmp(ir.IntEQ, one, createTypeCast(c, predicate, types.I1))
 	})
-	bodyBlk = parentFunc.NewBlock(mangleName(namePrefix + "body"))
+	bodyBlk = parentFunc.NewBlock(namePrefix + "body")
 	c.runInBlock(bodyBlk, func() {
 		bodyGenBlk = n.Body.Codegen(scope, c).(*ir.BasicBlock)
 		c.runInBlock(bodyGenBlk, func() {
@@ -109,7 +109,7 @@ func (n forNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		branchIfNoTerminator(bodyBlk, condBlk)
 		branchIfNoTerminator(bodyGenBlk, condBlk)
 	})
-	endBlk = parentFunc.NewBlock(mangleName(namePrefix + "exit"))
+	endBlk = parentFunc.NewBlock(namePrefix + "exit")
 	c.PushBlock(endBlk)
 	condBlk.NewCondBr(predicate, bodyBlk, endBlk)
 	return endBlk
@@ -392,7 +392,12 @@ func (n functionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	// 	log.Fatal("Variable '%s' is not of type funciton\n", name)
 	// }
 	// We finally have the function correctly
-	callee := functionOptions[0].Value().(*ir.Function)
+	fnScopeItem := functionOptions[0]
+	if !c.FunctionDefined(fnScopeItem.function) {
+		c.Module.AppendFunction(fnScopeItem.function)
+	}
+
+	callee := fnScopeItem.Value().(*ir.Function)
 	if callee == nil {
 		return codegenError(fmt.Sprintf("Unknown function %q referenced", name))
 	}
@@ -405,11 +410,14 @@ func (n functionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 // Return statement Code Generator
 func (n returnNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	var retVal value.Value
-	if n.Value != nil {
-		retVal = n.Value.Codegen(scope, c)
-		// retVal = createTypeCast(c, retVal, c.FN.Sig.Ret)
-	} else {
-		retVal = nil
+
+	if c.FN.Sig.Ret != types.Void {
+		if n.Value != nil {
+			retVal = n.Value.Codegen(scope, c)
+			// retVal = createTypeCast(c, retVal, c.FN.Sig.Ret)
+		} else {
+			retVal = nil
+		}
 	}
 
 	c.CurrentBlock().NewRet(retVal)
@@ -534,14 +542,27 @@ func (n blockNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	for _, node := range n.Nodes {
 		node.Codegen(blockScope, c)
 	}
-	// c.PopBlock()
-
-	// spew.Dump(c.CurrentBlock())
-
-	// if c.CurrentBlock().Term == nil {
-	// 	c.CurrentBlock().NewRet(constant.NewInt(0, types.Void))
-	// }
 	return c.CurrentBlock()
+}
+
+func (n classNode) Codegen(scope *Scope, c *Compiler) value.Value {
+
+	fields := make([]types.Type, 0)
+
+	for _, f := range n.Variables {
+		t := f.Type
+		// t.SetName(f.Name)
+		// fmt.Println(f)
+		// t.SetName("HELLO")
+		fields = append(fields, t)
+	}
+
+	structDefn := types.NewStruct(fields...)
+	// structDefn.Opaque = true
+	structDefn.SetName(n.Name)
+	c.Module.NewType(n.Name, structDefn)
+	// fmt.Println(t, structDefn)
+	return nil
 }
 
 func (n functionNode) Arguments() ([]*types.Param, []types.Type) {
@@ -625,7 +646,7 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		// Gen the body of the function
 		n.Body.Codegen(scope, c)
 		if c.CurrentBlock().Term == nil {
-			log.Warn("Function %s is missing a return statement in the root block. Defaulting to 0\n", name)
+			// log.Warn("Function %s is missing a return statement in the root block. Defaulting to 0\n", n.Name)
 			v := createTypeCast(c, constant.NewInt(0, types.I64), n.ReturnType)
 			c.CurrentBlock().NewRet(v)
 		}

@@ -25,10 +25,14 @@ func (p *Parser) parseVariableDefn(allowDefn bool) variableNode {
 		log.Fatal("Invalid variable declaration")
 	}
 
-	if allowDefn && p.token.Is(lexer.TokAssignment) {
-		n.HasValue = true
-		p.next()
-		n.Body = p.parseExpression()
+	if p.token.Is(lexer.TokAssignment) {
+		if allowDefn {
+			n.HasValue = true
+			p.next()
+			n.Body = p.parseExpression()
+		} else {
+			log.Fatal("Variable Initialization of '%s' is not allowed in it's context\n", n.Name)
+		}
 	}
 
 	return n

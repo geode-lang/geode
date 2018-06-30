@@ -11,6 +11,6 @@ func fib(int n) int {
 func main(int argc) int {
 	int a;
 	a <- 30;
-	printf("%d", fib(a));
+	print("%d", fib(a));
 	return 0;
 }

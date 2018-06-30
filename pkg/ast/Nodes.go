@@ -50,6 +50,7 @@ const (
 	nodeFnPrototype
 	nodeFunction
 	nodeFunctionCall
+	nodeClass
 
 	// Other
 	nodeBlock
@@ -228,3 +229,14 @@ type whileNode struct {
 
 func (n whileNode) NameString() string                { return "whileNode" }
 func (n whileNode) InferType(scope *Scope) types.Type { return types.Void }
+
+type classNode struct {
+	NodeType
+
+	Name      string
+	Methods   []functionNode
+	Variables []variableNode
+}
+
+func (n classNode) NameString() string                { return "classNode" }
+func (n classNode) InferType(scope *Scope) types.Type { return types.Void }

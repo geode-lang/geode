@@ -1,10 +1,13 @@
 package ast
 
 import (
+	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/nickwanninger/geode/pkg/util"
+	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
 // CompileTarget is a target to build a binary for
@@ -66,6 +69,13 @@ func (l *Linker) Run() {
 	linker := "clang"
 	linkArgs := make([]string, 0)
 
+	cLibOutput := "geodeclib.c"
+	writeErr := ioutil.WriteFile(cLibOutput, []byte(RuntimeC), 0666)
+	if writeErr != nil {
+		log.Fatal("Unable to write the runtime clib\n")
+	}
+	l.AddObject(cLibOutput)
+
 	linkArgs = append(linkArgs, "-lm", "-lc")
 
 	filename := l.output
@@ -75,13 +85,22 @@ func (l *Linker) Run() {
 	}
 
 	if l.target == ASMTarget {
+		// We want to only write intel syntax. AT&T Sucks
 		linkArgs = append(linkArgs, "-S", "-masm=intel")
-
+		// Compile each of the objects to a .s file.
 		for _, obj := range l.objectPaths {
-			ext := path.Ext(obj)
-			filename = obj[0:len(obj)-len(ext)] + ".s"
-			asmArgs := append(linkArgs, "-o", filename, obj)
-			util.RunCommand(linker, asmArgs...)
+			// We only want to leave user generated files in the filesystem
+			if strings.HasSuffix(obj, ".ll") && obj != "runtime.ll" {
+				// Pull the extension of the object file
+				ext := path.Ext(obj)
+				// Replace it with .s
+				filename = obj[0:len(obj)-len(ext)] + ".s"
+				// set the output to that of the .s file
+				asmArgs := append(linkArgs, "-o", filename, obj)
+				// run the compile to asm
+				util.RunCommand(linker, asmArgs...)
+			}
+
 		}
 		return
 	}

@@ -6,6 +6,6 @@ func main int {
 	while i < 255 {
 		i <- i + 1;
 	}
-	printf("%d", i);
+	print("%d", i);
 	return 0;
 }

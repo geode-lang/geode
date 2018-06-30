@@ -69,6 +69,17 @@ func (c *Compiler) EmitModuleObject() string {
 	return filename
 }
 
+// FunctionDefined returns whether or not a function
+// with a name has been defined in the module's scope
+func (c *Compiler) FunctionDefined(fn *ir.Function) bool {
+	for _, defined := range c.Module.Funcs {
+		if defined == fn {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *Compiler) runInBlock(blk *ir.BasicBlock, fn func()) {
 	c.PushBlock(blk)
 	fn()

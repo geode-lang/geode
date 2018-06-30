@@ -96,7 +96,7 @@ func (m *Module) AddRuntime() {
 	if err != nil {
 		log.Fatal("Error creating runtime source structure\n")
 	}
-	rts.LoadString(RuntimeSource)
+	rts.LoadString(RuntimeGeode)
 	mod := NewModule("runtime", rts)
 	mod.IsRuntime = true
 	for _ = range mod.Parse() {
@@ -110,9 +110,8 @@ func (m *Module) AddRuntime() {
 func (m *Module) InjectExternalFunction(fn *ir.Function) {
 	ex := ir.NewFunction(fn.Name, fn.Sig.Ret, fn.Params()...)
 	ex.Sig.Variadic = fn.Sig.Variadic
-	m.Compiler.Module.AppendFunction(ex)
+	// m.Compiler.Module.AppendFunction(ex)
 	scopeItem := NewFunctionScopeItem(fn.Name, ex, PublicVisibility)
-
 	m.Compiler.Scope.Add(scopeItem)
 
 }
@@ -148,14 +147,56 @@ func NewModule(name string, src *lexer.Sourcefile) *Module {
 	return m
 }
 
-// RuntimeSource is the source the runtime will use when compiling
-const RuntimeSource string = `
-func nomangle printf(string format, ...) int ...
+// RuntimeGeode is the source the runtime will use when compiling
+const RuntimeGeode string = `
+
+# This print function is a wrapper around printf
+func print(string format, ...) ...
+
+# Some overloading of the print method for 
+# different types. These are mangled
+func print(int a) -> print("%d\n", a);
+func print(float a) -> print("%f\n", a);
+
+
+func readfile(string path) byte* ...
 
 func exp(int x, int n) int {
 	if n = 0 {
 		return 1;
 	}
 	return x * exp(x, n - 1);
+}
+`
+
+// RuntimeC is the implementation of some of the functions from
+// the runtime. Things that should just be implemented in c.
+const RuntimeC string = `
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+
+
+// Readfile just takes some path
+// and returns bytes containing
+// the content of the file.
+char* readfile(char* path) {
+	FILE *f = fopen(path, "rb");
+	fseek(f, 0, SEEK_END);
+	long fsize = ftell(f);
+	fseek(f, 0, SEEK_SET); // same as rewind(f);
+	char *string = malloc(fsize + 1);
+	fread(string, fsize, 1, f);
+	fclose(f);
+	string[fsize] = 0;
+	return string;
+}
+
+// the print function wrapper.
+void print(char *fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+	vprintf(fmt, args);
+	va_end(args);
 }
 `

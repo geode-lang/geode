@@ -82,6 +82,7 @@ var keyWordMap = map[string]TokenType{
 	"for":    TokFor,
 	"while":  TokWhile,
 	"func":   TokFuncDefn,
+	"class":  TokClassDefn,
 }
 
 var tokRegexMap map[string]TokenType

@@ -104,8 +104,9 @@ func (p *Parser) checkSemiColon() {
 }
 
 func (p *Parser) parseTopLevelStmt() Node {
-
 	switch p.token.Type {
+	case lexer.TokClassDefn:
+		return p.parseClassDefn()
 	case lexer.TokFuncDefn:
 		return p.parseFnDefn()
 		// case lexer.TokType:

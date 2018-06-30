@@ -2,6 +2,6 @@
 # ExpectedOutput      = "Hello, World\n"
 
 func main int {
-	printf("Hello, World\n");
+	print("Hello, World\n");
 	return 0;
 }

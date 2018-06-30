@@ -8,6 +8,6 @@ func main int {
 			i <- i + x * y;
 		}
 	}
-	printf("%d", i);
+	print("%d", i);
 	return 0;
 }

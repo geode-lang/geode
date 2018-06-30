@@ -7,26 +7,26 @@ func main(int argc) int {
 	if argc >= 2 {
 		a <- 2;
 		# then 0
-		printf("2 ");
+		print("2 ");
 		if argc >= 3 {
 			a <- 3;
-			printf("3 ");
+			print("3 ");
 			if argc >= 4 {
 				a <- 4;
-				printf("4 ");
+				print("4 ");
 				if argc >= 5 {
 					a <- 5;
-					printf("5 ");
+					print("5 ");
 					if argc >= 6 {
 						a <- 6;
-						printf("6 ");
-					} else {printf("5 end ");}
-				} else {printf("4 end ");}
-			} else {printf("3 end ");}
-		} else {printf("2 end ");}
+						print("6 ");
+					} else {print("5 end ");}
+				} else {print("4 end ");}
+			} else {print("3 end ");}
+		} else {print("2 end ");}
 		# merge 1
-	} else {printf("1 end ");}
+	} else {print("1 end ");}
 	# merge 0
-	printf("%d\n", a);
+	print("%d\n", a);
 	return 0;
 }

@@ -10,6 +10,6 @@ func foo(float a) float {
 }
 
 func main() int {
-	printf("%d %.1f", foo(1), foo(1.0));
+	print("%d %.1f", foo(1), foo(1.0));
 	return 0;
 }

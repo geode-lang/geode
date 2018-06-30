@@ -37,6 +37,8 @@ func (p *Parser) parseFnDefn() functionNode {
 
 			if p.token.Is(lexer.TokElipsis) {
 				fn.Variadic = true
+				// Variadic functions are external, or should be. This means they shouldn't be mangled
+				fn.Nomangle = true
 				p.next()
 			}
 
@@ -81,6 +83,8 @@ func (p *Parser) parseFnDefn() functionNode {
 		}
 	} else if p.token.Is(lexer.TokElipsis) {
 		fn.External = true
+		// External functions should not be mangled
+		fn.Nomangle = true
 		p.next()
 	}
 	return fn

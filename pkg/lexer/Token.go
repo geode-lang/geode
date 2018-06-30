@@ -63,6 +63,7 @@ const (
 	TokElse
 	TokReturn
 	TokFuncDefn
+	TokClassDefn
 
 	TokType
 

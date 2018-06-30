@@ -9,9 +9,8 @@ import (
 // Scope trees represent block scoping by having a root scope
 // and children scopes that point back to their parent scope.
 type Scope struct {
-	Parent   *Scope
-	Children []*Scope
-	Vals     map[string]ScopeItem
+	Parent *Scope
+	Vals   map[string]ScopeItem
 }
 
 // Add a value to this specific scope
@@ -21,7 +20,6 @@ func (s *Scope) Add(val ScopeItem) {
 
 // Find will traverse the scope tree to find some definition of a symbol
 func (s *Scope) Find(name string) (ScopeItem, bool) {
-
 	for _, v := range s.Vals {
 		u := v.Name()
 		if u == name {
@@ -71,8 +69,6 @@ func (s *Scope) SpawnChild() *Scope {
 	n := &Scope{}
 	n.Parent = s
 	n.Vals = make(map[string]ScopeItem)
-	n.Children = make([]*Scope, 0)
-	s.Children = append(s.Children, n)
 	return n
 }
 
