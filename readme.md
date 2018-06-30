@@ -1,5 +1,7 @@
 <div style="text-align:center"><img src="https://s3-us-west-2.amazonaws.com/nickwanninger/geode/masthead.png"/></div>
 
+[![CircleCI](https://circleci.com/gh/nickwanninger/geode/tree/master.svg?style=svg)](https://circleci.com/gh/nickwanninger/geode/tree/master)
+
 ## Installing
 
 Installing Geode is simple, just follow the steps below and install a few dependencies
@@ -34,8 +36,6 @@ Files can be any of the following:
 - A folder containing a main.g
 - A geode source file without the .g extension
 - A .g file
-
-
 
 ### Example fib.g
 

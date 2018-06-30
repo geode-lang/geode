@@ -17,10 +17,11 @@ jobs:
     #### expecting it in the form of
     ####   /go/src/github.com/circleci/go-tool
     ####   /go/src/bitbucket.org/circleci/go-tool
-    working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
+    working_directory: /go/src/github.com/nickwanninger/geode
     steps:
       - checkout
 
       # specify any bash command here prefixed with `run: `
-      - run: go install -v -gcflags="-N -l" github.com/nickwanninger/geode/...
+      - run: go get -t -d -v ./...
+      - run: go install ./...
       - run: /go/bin/geode test
