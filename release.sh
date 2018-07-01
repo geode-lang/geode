@@ -39,9 +39,9 @@ echo   "========================================"
 for PLATFORM in $PLATFORMS; do
   GOOS=${PLATFORM%/*}
   GOARCH=${PLATFORM#*/}
-  BIN_FILENAME="${OUTPUT}/${GOOS}/${GOARCH}/geode"
+  BIN_FILENAME="${OUTPUT}/geode-${GOOS}-${GOARCH}"
   if [[ "${GOOS}" == "windows" ]]; then BIN_FILENAME="${BIN_FILENAME}.exe"; fi
   CMD="GOOS=${GOOS} GOARCH=${GOARCH} go build -o ${BIN_FILENAME} $@"
-  printf "%.20s %22s\n" "${GOOS}-${GOARCH}" "build/${GOOS}/${GOARCH}"
+  printf "%.20s %22s\n" "${GOOS}-${GOARCH}" "build/${GOOS}-${GOARCH}"
   eval $CMD || exit 1
 done
