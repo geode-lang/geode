@@ -22,11 +22,11 @@ func NewSourcefile(name string) (*Sourcefile, error) {
 	return s, nil
 }
 
-// Hash - Get the has of the sourcefile
+// Hash - Get the hash of the sourcefile. This is a truncated sha1.
 func (s *Sourcefile) Hash() []byte {
 	h := sha1.New()
 	io.WriteString(h, s.String())
-	return h.Sum(nil)
+	return h.Sum(nil)[:6]
 }
 
 // LoadFile -

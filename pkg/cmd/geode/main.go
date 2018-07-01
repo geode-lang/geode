@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -17,7 +19,7 @@ import (
 
 // Some constants that represent the program in it's current compiled state
 const (
-	VERSION = "0.0.1"
+	VERSION = "0.0.2"
 	AUTHOR  = "Nick Wanninger"
 )
 
@@ -37,7 +39,12 @@ func main() {
 
 	case runCMD.FullCommand():
 		filename, _ := resolveFileName(*runInput)
-		context := NewContext(filename, "/tmp/geoderuntemp")
+		dir, err := ioutil.TempDir("", "geode")
+		if err != nil {
+			log.Fatal("Unable to produce tmp directory for `geode run` executable\n")
+		}
+		out := dir + "/exe"
+		context := NewContext(filename, out)
 		context.Build()
 		context.Run(*runArgs)
 
@@ -71,16 +78,8 @@ func resolveFileName(filename string) (string, error) {
 
 // Context contains information for this compilation
 type Context struct {
-	// Searchpaths []string
-
 	Input  string
 	Output string
-
-	// moduleLookup *ast.ModuleLookup
-	// modules      []*ast.Module
-	// depGraph     *ast.DependencyGraph
-
-	// modulesToRead []*ast.ModuleName
 }
 
 // NewContext constructs a new context and returns a pointer to it
@@ -106,12 +105,11 @@ func (c *Context) Build() {
 	if err != nil {
 		log.Fatal("Unable to read file %s into sourcefile structure: %s\n", c.Input, err)
 	}
-
 	path := strings.Split(c.Input, "/")
-	rootMod := ast.NewModule(path[len(path)-1], src)
-	modules := make([]*ast.Module, 0)
-	for mod := range rootMod.Parse() {
-		modules = append(modules, mod)
+	root := ast.NewPackage(path[len(path)-1], src)
+	pkgs := make([]*ast.Package, 0)
+	for pkg := range root.Parse() {
+		pkgs = append(pkgs, pkg)
 	}
 
 	// Construct a linker object
@@ -126,12 +124,33 @@ func (c *Context) Build() {
 	linker.SetOptimize(*optimize)
 
 	// Loop over the compilers and generate to .ll files
-	for c := range rootMod.Compile() {
-		obj := c.EmitModuleObject()
+	for c := range root.Compile() {
+		obj := c.Emit()
 		linker.AddObject(obj)
 	}
 	if *emitLLVM {
-		log.Debug("%s\n", rootMod.Compiler.GetLLVMIR())
+		log.Debug("%s\n", root)
+	}
+
+	gopath := os.Getenv("GOPATH")
+	clibpath := gopath + "/src/github.com/nickwanninger/geode/lib/"
+
+	var clibFiles []string
+
+	// clibFiles = append(clibFiles, clibpath+"lib.c")
+
+	err = filepath.Walk(clibpath, func(path string, info os.FileInfo, e error) error {
+		if filepath.Ext(path) == ".c" {
+			clibFiles = append(clibFiles, path)
+		}
+		return nil
+	})
+
+	if err != nil {
+		log.Fatal("Unable to scan for c libraries\n")
+	}
+	for _, path := range clibFiles {
+		linker.AddObject(path)
 	}
 
 	linker.Run()

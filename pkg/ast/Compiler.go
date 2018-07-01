@@ -1,23 +1,17 @@
 package ast
 
 import (
-	"fmt"
-	"io/ioutil"
-	"strings"
-	"time"
-
 	"github.com/llir/llvm/ir"
 )
 
-// Compiler contains all information to compile a program into a .o file.
+// Compiler contains all information to
+// compile a program from nodes to llvm ir
 type Compiler struct {
 	Name string
-	// Target             llvm.Target
-	// TargetMachine      llvm.TargetMachine
-	// TargetData         llvm.TargetData
+	// A reference to the scope in the package for easier access
 	Scope              *Scope
+	Package            *Package
 	Module             *ir.Module
-	GeodeModule        *Module
 	blocks             []*ir.BasicBlock
 	FN                 *ir.Function // current funciton being compiled
 	objectFilesEmitted []string
@@ -51,39 +45,6 @@ func (c *Compiler) PopBlock() *ir.BasicBlock {
 	return blk
 }
 
-// GetLLVMIR returns the llvm repr of the module
-func (c *Compiler) GetLLVMIR() string {
-	ir := ""
-	// We need to build up the IR that will be emitted
-	// so we can track this information later on.
-	ir += fmt.Sprintf("; ModuleID = %q\n", c.Name)
-	ir += fmt.Sprintf("; SourceHash = %x\n", c.GeodeModule.source.Hash())
-	ir += fmt.Sprintf("; UnixDate = %d\n", time.Now().Unix())
-	ir += fmt.Sprintf("source_filename = %q\n", c.GeodeModule.source.Path)
-
-	ir += "\n"
-	// Append the module information
-	ir += fmt.Sprintf("%s\n", c.Module.String())
-
-	return ir
-}
-
-// EmitModuleObject takes an llvm module and emits the object code
-func (c *Compiler) EmitModuleObject() string {
-	filename := strings.Replace(c.Name, ".g", "", -1) + ".ll"
-
-	llvmir := c.GetLLVMIR()
-
-	writeErr := ioutil.WriteFile(filename, []byte(llvmir), 0666)
-	if writeErr != nil {
-		panic(writeErr)
-	}
-
-	c.objectFilesEmitted = append(c.objectFilesEmitted, filename)
-
-	return filename
-}
-
 // FunctionDefined returns whether or not a function
 // with a name has been defined in the module's scope
 func (c *Compiler) FunctionDefined(fn *ir.Function) bool {
@@ -95,21 +56,21 @@ func (c *Compiler) FunctionDefined(fn *ir.Function) bool {
 	return false
 }
 
-func (c *Compiler) runInBlock(blk *ir.BasicBlock, fn func()) {
+func (c *Compiler) genInBlock(blk *ir.BasicBlock, fn func()) {
 	c.PushBlock(blk)
 	fn()
 	c.PopBlock()
 }
 
 // NewCompiler returns a pointer to a new Compiler object.
-func NewCompiler(moduleName string, geodeModule *Module) *Compiler {
+func NewCompiler(moduleName string, pkg *Package) *Compiler {
 	comp := &Compiler{}
-	comp.GeodeModule = geodeModule
+	comp.Package = pkg
 	// Initialize the module for this compiler.
 	comp.Module = ir.NewModule()
 	comp.Name = moduleName
 
-	comp.Scope = NewScope()
+	comp.Scope = pkg.Scope
 	comp.blocks = make([]*ir.BasicBlock, 0)
 	return comp
 }

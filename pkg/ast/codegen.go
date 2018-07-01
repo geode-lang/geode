@@ -13,11 +13,6 @@ import (
 	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
-func error(err string) value.Value {
-	log.Fatal(err)
-	return nil
-}
-
 // A global number to indicate which `name index` we are on. This way,
 // the mangler will never output the same name twice as this number is monotonic
 var nameNumber int
@@ -47,14 +42,14 @@ func (n ifNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	thenBlk := parentFunc.NewBlock(mangleName(namePrefix + "then"))
 
-	c.runInBlock(thenBlk, func() {
+	c.genInBlock(thenBlk, func() {
 		thenGenBlk = n.Then.Codegen(scope, c).(*ir.BasicBlock)
 	})
 
 	elseBlk := parentFunc.NewBlock(mangleName(namePrefix + "else"))
 	var elseGenBlk *ir.BasicBlock
 
-	c.runInBlock(elseBlk, func() {
+	c.genInBlock(elseBlk, func() {
 		// We only want to construct the else block if there is one.
 		if n.Else != nil {
 			elseGenBlk = n.Else.Codegen(scope, c).(*ir.BasicBlock)
@@ -97,16 +92,16 @@ func (n forNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	parentBlock.NewBr(condBlk)
 
-	c.runInBlock(condBlk, func() {
+	c.genInBlock(condBlk, func() {
 		predicate = n.Cond.Codegen(scope, c)
 		one := constant.NewInt(1, types.I1)
 		predicate = condBlk.NewICmp(ir.IntEQ, one, createTypeCast(c, predicate, types.I1))
 	})
 	bodyBlk = parentFunc.NewBlock(namePrefix + "body")
-	c.runInBlock(bodyBlk, func() {
+	c.genInBlock(bodyBlk, func() {
 		bodyGenBlk = n.Body.Codegen(scope, c).(*ir.BasicBlock)
 
-		c.runInBlock(bodyGenBlk, func() {
+		c.genInBlock(bodyGenBlk, func() {
 			n.Step.Codegen(scope, c)
 		})
 		branchIfNoTerminator(bodyBlk, condBlk)

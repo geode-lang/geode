@@ -1,13 +1,12 @@
 package ast
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/nickwanninger/geode/pkg/util"
-	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
 // CompileTarget is a target to build a binary for
@@ -59,8 +58,28 @@ func (l *Linker) SetOptimize(o bool) {
 // Cleanup removes all the
 func (l *Linker) Cleanup() {
 	for _, objFile := range l.objectPaths {
+
+		// We don't want to remove .c files
+		if filepath.Ext(objFile) == ".c" {
+			continue
+		}
+
 		os.Remove(objFile)
+
 	}
+}
+
+// type error interface {
+// 	Error() string
+// }
+
+// linkError is a trivial implementation of error.
+type linkError struct {
+	s string
+}
+
+func (e linkError) Error() string {
+	return e.s
 }
 
 // Run a list of objects through a linker and build
@@ -68,13 +87,6 @@ func (l *Linker) Cleanup() {
 func (l *Linker) Run() {
 	linker := "clang"
 	linkArgs := make([]string, 0)
-
-	cLibOutput := "geodeclib.c"
-	writeErr := ioutil.WriteFile(cLibOutput, []byte(RuntimeC), 0666)
-	if writeErr != nil {
-		log.Fatal("Unable to write the runtime clib\n")
-	}
-	l.AddObject(cLibOutput)
 
 	linkArgs = append(linkArgs, "-lm", "-lc")
 
