@@ -1,4 +1,6 @@
-func main(int*** a) int {
-	print("hello, world. %d\n", exp(3, 3));
-	return 0;
+func main(int argc, byte** argv) int {
+	for int i := 0; i < argc; i <- i + 1 {
+		print("%d: %s\n", i + 1, argv[i]);
+	}
+	return argc;
 }

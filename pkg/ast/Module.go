@@ -49,7 +49,7 @@ func (m *Module) Parse() chan *Module {
 func (m *Module) Compile() chan *Compiler {
 	compilers := make(chan *Compiler)
 	go func() {
-		m.Compiler = NewCompiler(m.Name)
+		m.Compiler = NewCompiler(m.Name, m)
 		if !m.IsRuntime {
 			m.AddRuntime()
 		}

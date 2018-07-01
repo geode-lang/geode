@@ -26,6 +26,7 @@ var Tokens = []TokenInfoRelation{
 
 	{TokElipsis, `\.\.\.`},
 
+	{TokOper, `&`},
 	{TokOper, `\*`},
 	{TokOper, `\+`},
 	{TokOper, `-`},

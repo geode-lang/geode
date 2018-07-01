@@ -1,7 +1,8 @@
 package lexer
 
 import (
-	"hash/fnv"
+	"crypto/sha1"
+	"io"
 	"io/ioutil"
 
 	"github.com/nickwanninger/geode/pkg/util/log"
@@ -22,10 +23,10 @@ func NewSourcefile(name string) (*Sourcefile, error) {
 }
 
 // Hash - Get the has of the sourcefile
-func (s *Sourcefile) Hash() uint32 {
-	h := fnv.New32a()
-	h.Write([]byte(string(s.Contents)))
-	return h.Sum32()
+func (s *Sourcefile) Hash() []byte {
+	h := sha1.New()
+	io.WriteString(h, s.String())
+	return h.Sum(nil)
 }
 
 // LoadFile -

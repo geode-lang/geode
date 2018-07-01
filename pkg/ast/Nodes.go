@@ -123,8 +123,8 @@ func (n forNode) InferType(scope *Scope) types.Type { return types.Void }
 type unaryNode struct {
 	NodeType
 
-	Name    string
-	Operand Node
+	Operator string
+	Operand  Node
 }
 
 func (n unaryNode) NameString() string                { return "unaryNode" }

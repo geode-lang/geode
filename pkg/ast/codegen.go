@@ -121,11 +121,23 @@ func (n forNode) Codegen(scope *Scope, c *Compiler) value.Value {
 func (n charNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
 
 func (n unaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
+
 	operandValue := n.Operand.Codegen(scope, c)
 	if operandValue == nil {
 		log.Fatal("nil operand")
 	}
-	return nil
+
+	// handle reference operation
+	if n.Operator == "&" {
+		return operandValue
+	}
+	// handle dereference operation
+	if n.Operator == "*" {
+		return c.CurrentBlock().NewLoad(operandValue)
+	}
+
+	// fmt.Println(n.Name, operandValue)
+	return operandValue
 }
 
 func (n whileNode) Codegen(scope *Scope, c *Compiler) value.Value {
@@ -346,13 +358,6 @@ func (n functionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		log.Fatal("Unable to find function '%s' in scope of module '%s'\n", name, c.Name)
 	}
 
-	// if !found {
-	// 	log.Fatal("Unable to find function '%s' in scope of module '%s'\n", name, c.Name)
-	// }
-	// if scopeItem.Type() != ScopeItemFunctionType {
-	// 	log.Fatal("Variable '%s' is not of type funciton\n", name)
-	// }
-	// We finally have the function correctly
 	fnScopeItem := functionOptions[0]
 	if !c.FunctionDefined(fnScopeItem.function) {
 		c.Module.AppendFunction(fnScopeItem.function)
@@ -471,6 +476,7 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		alloc = v.Value().(*ir.InstAlloca)
 	} else if n.RefType == ReferenceDefine {
 		ty := typesystem.GlobalTypeMap.GetType(n.Type.Name)
+		ty = n.Type.BuildPointerType(ty)
 		alloc = createBlockAlloca(f, ty, name)
 
 		scItem := NewVariableScopeItem(n.Name, alloc, PrivateVisibility)

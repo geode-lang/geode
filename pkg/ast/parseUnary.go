@@ -4,22 +4,24 @@ package ast
 
 func (p *Parser) parseUnary() Node {
 
-	// if p.token.Is(lexer.TokType) {
-	// 	return p.parseTypeCast()
-	// }
+	ptrOps := map[string]bool{
+		// "&": true,
+		// "*": true,
+	}
 
-	_, isBinaryOp := p.binaryOpPrecedence[p.token.Value]
-	if !isBinaryOp {
+	// _, isBinaryOp := p.binaryOpPrecedence[p.token.Value]
+	_, isPtrOp := ptrOps[p.token.Value]
+	if !isPtrOp {
 		return p.parsePrimary()
 	}
 
-	name := p.token.Value
+	op := p.token.Value
 	p.next()
 	operand := p.parseUnary()
 	if operand != nil {
 		n := unaryNode{}
 		n.NodeType = nodeUnary
-		n.Name = name
+		n.Operator = op
 		n.Operand = operand
 		return n
 	}
