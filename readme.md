@@ -80,3 +80,29 @@ func main int {
 	return 0;
 }
 ```
+
+### Linking
+
+If you want, you can link to an external c file to use functions from that. For example
+
+foo.c:
+
+```c
+int fourtytwo() {
+	return 42;
+}
+```
+
+foo.g:
+
+```go
+link "foo.c"
+
+func fourtytwo() int ...
+
+func main int -> fourtytwo();
+```
+
+Notice the `...`? That is the way of telling geode, "this function is external, and has
+no body". If you do this, the function must be defined via a linkage. Otherwise the compiler
+will crash
