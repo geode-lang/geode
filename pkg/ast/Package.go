@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -11,6 +12,15 @@ import (
 	"github.com/nickwanninger/geode/pkg/lexer"
 	"github.com/nickwanninger/geode/pkg/util/log"
 )
+
+// RuntimePackage is the global runtime package
+var RuntimePackage *Package
+var dependencyMap map[string]*Package
+
+func init() {
+	RuntimePackage = GetRuntime()
+	dependencyMap = make(map[string]*Package)
+}
 
 // Package is a wrapper around a module. It is able
 // to compile and emit code, as well as lex and parse it.
@@ -26,6 +36,7 @@ type Package struct {
 	Compiler           *Compiler
 	IsRuntime          bool
 	objectFilesEmitted []string
+	Compiled           bool
 }
 
 // NewPackage returns a pointer to a new package
@@ -78,9 +89,39 @@ func (p *Package) Hash() []byte {
 	return p.Source.Hash()
 }
 
-// AddDep appends a dependency
-func (p *Package) AddDep(pkg *Package) {
+// AddDepPackage appends a dependency from a pacakge
+func (p *Package) AddDepPackage(pkg *Package) {
+	// Here I check for circular dependencies, which are not allowed
+	sourceHash := p.Source.HashName()
+	for _, dep := range pkg.Dependencies {
+		if dep.Source.HashName() == sourceHash {
+			log.Fatal("Circular dependency detected: %s <-> %s\n", pkg.Name, p.Name)
+		}
+	}
 	p.Dependencies = append(p.Dependencies, pkg)
+}
+
+// LoadDep appends a dependency from a path
+func (p *Package) LoadDep(depPath string) {
+	filename := path.Base(depPath)
+	depSource, err := lexer.NewSourcefile(filename)
+	if err != nil {
+		log.Fatal("Error creating dependency source structure\n")
+	}
+	depSource.ResolveFile(depPath)
+
+	pkgName := fmt.Sprintf("%s_%x", filename, depSource.Hash())
+
+	if pkg, ok := dependencyMap[depSource.HashName()]; ok {
+		p.AddDepPackage(pkg)
+		return
+	}
+
+	depPkg := NewPackage(pkgName, depSource)
+	for _ = range depPkg.Parse() {
+	}
+	dependencyMap[depPkg.Source.HashName()] = depPkg
+	p.AddDepPackage(depPkg)
 }
 
 // InjectExternalFunction injects the function without the body, just the sig
@@ -101,7 +142,7 @@ func (p *Package) Inject(c *Package) {
 		if v.Visibility() == PublicVisibility {
 
 			if v.Type() == ScopeItemFunctionType {
-
+				// fmt.Println(p.Name, v.Name())
 				p.InjectExternalFunction(v.Value().(*ir.Function))
 			} else {
 				p.Scope.Add(v)
@@ -133,8 +174,8 @@ func (p *Package) Parse() chan *Package {
 	return chn
 }
 
-// AddRuntime builds the runtime and injects it into the module
-func (p *Package) AddRuntime() {
+// GetRuntime builds a runtime
+func GetRuntime() *Package {
 	rts, err := lexer.NewSourcefile("runtime")
 	if err != nil {
 		log.Fatal("Error creating runtime source structure\n")
@@ -144,32 +185,43 @@ func (p *Package) AddRuntime() {
 	rt := NewPackage("runtime", rts)
 	rt.IsRuntime = true
 	for _ = range rt.Parse() {
-
 	}
 
-	p.AddDep(rt)
+	return rt
 }
 
 // Compile returns a codegen-ed compiler instance
 func (p *Package) Compile() chan *Package {
 	packages := make(chan *Package)
+
 	go func() {
 		p.Compiler = NewCompiler(p.Name, p)
+
 		if !p.IsRuntime {
-			p.AddRuntime()
+			p.AddDepPackage(RuntimePackage)
+		}
+		// Go through all nodes and handle the ones that are dependencies
+		for _, node := range p.Nodes {
+			if node.Kind() == nodeDependency {
+				node.(dependencyNode).Handle(p.Compiler)
+			}
 		}
 
 		for _, dep := range p.Dependencies {
-			for pkg := range dep.Compile() {
-				packages <- pkg
+			if !dep.Compiled {
+				dep.Compiled = true
+				for pkg := range dep.Compile() {
+					packages <- pkg
+				}
 			}
 			p.Inject(dep)
 		}
+		p.Compiled = true
 
-		// First we *Need* to go through and declare all the functions. This is because
+		// First we *Need* to go through and declare all the functions
 		for _, node := range p.Nodes {
 			if node.Kind() == nodeFunction {
-				node.(functionNode).Declare(p.Compiler.Scope.SpawnChild(), p.Compiler)
+				node.(functionNode).Declare(p.Scope.SpawnChild(), p.Compiler)
 			}
 			// node.Codegen(p.Compiler.Scope.SpawnChild(), p.Compiler)
 		}

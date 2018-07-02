@@ -2,8 +2,11 @@ package lexer
 
 import (
 	"crypto/sha1"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
+	"strings"
 
 	"github.com/nickwanninger/geode/pkg/util/log"
 )
@@ -29,6 +32,10 @@ func (s *Sourcefile) Hash() []byte {
 	return h.Sum(nil)[:6]
 }
 
+func (s *Sourcefile) HashName() string {
+	return fmt.Sprintf("%s_%x", s.Name, s.Hash())
+}
+
 // LoadFile -
 func (s *Sourcefile) LoadFile(path string) error {
 	s.Path = path
@@ -38,6 +45,15 @@ func (s *Sourcefile) LoadFile(path string) error {
 	}
 	s.LoadBytes(bytes)
 	return nil
+}
+
+// ResolveFile resolves a filename and loads it
+func (s *Sourcefile) ResolveFile(path string) error {
+	p, e := resolveFileName(path)
+	if e != nil {
+		log.Fatal("Unable to resolve path '%s'\n", path)
+	}
+	return s.LoadFile(p)
 }
 
 // LoadString takes a string and loads it
@@ -58,4 +74,26 @@ func (s *Sourcefile) String() string {
 // Bytes returns the source as a byte array
 func (s *Sourcefile) Bytes() []byte {
 	return []byte(string(s.Contents))
+}
+
+// if the filename passed in is a folder, look in that folder for a main.g
+// if the filename is not, look for a file matching that filename, but with a .g extension
+func resolveFileName(filename string) (string, error) {
+	// Grab the stats of the file
+	stats, err := os.Stat(filename)
+
+	// If there was an error (file doesnt exist)
+	if err != nil {
+		// Try resolving the filename with .g extension
+		if !strings.HasSuffix(filename, ".g") {
+			return resolveFileName(filename + ".g")
+		}
+		// There was no file by that name, so we fail
+		return "", fmt.Errorf("fatal error: No such file or directory %s", filename)
+	}
+	if stats.IsDir() {
+		return resolveFileName(filename + "/main.g")
+	}
+
+	return filename, nil
 }

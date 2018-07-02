@@ -66,6 +66,8 @@ const (
 	TokClassDefn
 	TokLet
 
+	TokDependency
+
 	TokType
 
 	TokComma

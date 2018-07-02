@@ -12,13 +12,14 @@ func init() {
 	// fmt.Println("hello")
 }
 
-const functionmangleprefix = "__geode_"
+const functionmangleprefix = "__geode"
 
 // MangleFunctionName will mangle a function name like how cpp does :)
 func MangleFunctionName(origName string, argTypes ...types.Type) string {
+
 	name := fmt.Sprintf("%s", origName)
 
-	if len(argTypes) > 0 {
+	if len(argTypes) >= 0 {
 		name += functionmangleprefix
 	}
 	for _, arg := range argTypes {

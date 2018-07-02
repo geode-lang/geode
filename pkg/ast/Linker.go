@@ -34,9 +34,22 @@ func NewLinker(output string) *Linker {
 	return l
 }
 
+// HasObject returns if the linker already has a path
+func (l *Linker) HasObject(path string) bool {
+	for _, p := range l.objectPaths {
+		if p == path {
+			return true
+		}
+	}
+	return false
+}
+
 // AddObject appends an object path to a linker
 func (l *Linker) AddObject(path string) {
-	l.objectPaths = append(l.objectPaths, path)
+	if !l.HasObject(path) {
+		l.objectPaths = append(l.objectPaths, path)
+	}
+
 }
 
 // SetTarget sets the target output format of the linker
@@ -69,18 +82,6 @@ func (l *Linker) Cleanup() {
 	}
 }
 
-// type error interface {
-// 	Error() string
-// }
-
-// linkError is a trivial implementation of error.
-type linkError struct {
-	s string
-}
-
-func (e linkError) Error() string {
-	return e.s
-}
 
 // Run a list of objects through a linker and build
 // into a single outfile with the given target

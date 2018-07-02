@@ -51,6 +51,7 @@ const (
 	nodeFunction
 	nodeFunctionCall
 	nodeClass
+	nodeDependency
 
 	// Other
 	nodeBlock
@@ -140,6 +141,14 @@ type binaryNode struct {
 
 func (n binaryNode) NameString() string                { return "binaryNode" }
 func (n binaryNode) InferType(scope *Scope) types.Type { return types.Void }
+
+type dependencyNode struct {
+	NodeType
+	Paths []string
+}
+
+func (n dependencyNode) NameString() string                { return "dependencyNode" }
+func (n dependencyNode) InferType(scope *Scope) types.Type { return types.Void }
 
 // type variableReferenceNode struct {
 // 	NodeType

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -13,6 +12,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/nickwanninger/geode/pkg/ast"
 	"github.com/nickwanninger/geode/pkg/lexer"
+	"github.com/nickwanninger/geode/pkg/util"
 	"github.com/nickwanninger/geode/pkg/util/log"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -26,6 +26,11 @@ const (
 var startTime time.Time
 
 func main() {
+
+	_, clangError := util.RunCommand("clang", "--version")
+	if clangError != nil {
+		log.Fatal("Unable to find a clang install in your path. Please install clang and add it to your path\n")
+	}
 	spew.Config.DisableMethods = true
 	startTime = time.Now()
 
@@ -33,18 +38,16 @@ func main() {
 
 	switch command {
 	case buildCMD.FullCommand():
-		filename, _ := resolveFileName(*buildInput)
-		context := NewContext(filename, *buildOutput)
+		context := NewContext(*buildInput, *buildOutput)
 		context.Build()
 
 	case runCMD.FullCommand():
-		filename, _ := resolveFileName(*runInput)
 		dir, err := ioutil.TempDir("", "geode")
 		if err != nil {
 			log.Fatal("Unable to produce tmp directory for `geode run` executable\n")
 		}
 		out := dir + "/exe"
-		context := NewContext(filename, out)
+		context := NewContext(*runInput, out)
 		context.Build()
 		context.Run(*runArgs)
 
@@ -52,28 +55,6 @@ func main() {
 		RunTests(*testDir)
 	}
 
-}
-
-// if the filename passed in is a folder, look in that folder for a main.g
-// if the filename is not, look for a file matching that filename, but with a .g extension
-func resolveFileName(filename string) (string, error) {
-	// Grab the stats of the file
-	stats, err := os.Stat(filename)
-
-	// If there was an error (file doesnt exist)
-	if err != nil {
-		// Try resolving the filename with .g extension
-		if !strings.HasSuffix(filename, ".g") {
-			return resolveFileName(filename + ".g")
-		}
-		// There was no file by that name, so we fail
-		return "", fmt.Errorf("fatal error: No such file or directory %s", filename)
-	}
-	if stats.IsDir() {
-		return resolveFileName(filename + "/main.g")
-	}
-
-	return filename, nil
 }
 
 // Context contains information for this compilation
@@ -101,7 +82,7 @@ func (c *Context) Build() {
 	if err != nil {
 		log.Fatal("Unable to construct a source file.\n")
 	}
-	err = src.LoadFile(c.Input)
+	err = src.ResolveFile(c.Input)
 	if err != nil {
 		log.Fatal("Unable to read file %s into sourcefile structure: %s\n", c.Input, err)
 	}

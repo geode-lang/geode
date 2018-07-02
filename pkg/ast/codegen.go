@@ -3,6 +3,8 @@ package ast
 import (
 	"fmt"
 	"os"
+	"path"
+	"path/filepath"
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
@@ -27,6 +29,20 @@ func branchIfNoTerminator(blk *ir.BasicBlock, to *ir.BasicBlock) {
 		blk.NewBr(to)
 	}
 }
+
+func (n dependencyNode) Handle(c *Compiler) value.Value {
+
+	abs, _ := filepath.Abs(c.Package.Source.Path)
+	dir := path.Dir(abs)
+	for _, dp := range n.Paths {
+		depPath := path.Join(dir, dp)
+		c.Package.LoadDep(depPath)
+	}
+
+	return nil
+}
+
+func (n dependencyNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
 
 func (n ifNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	predicate := n.If.Codegen(scope, c)
@@ -347,6 +363,7 @@ func (n functionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	name := MangleFunctionName(n.Name, argTypes...)
 	functionOptions := c.Scope.FindFunctions(name)
 	funcCount := len(functionOptions)
+
 	if funcCount > 1 {
 		log.Fatal("Too many options for function call '%s'\n", name)
 	} else if funcCount == 0 {

@@ -68,13 +68,14 @@ var Tokens = []TokenInfoRelation{
 }
 
 var keyWordMap = map[string]TokenType{
-	"return": TokReturn,
-	"if":     TokIf,
-	"else":   TokElse,
-	"for":    TokFor,
-	"while":  TokWhile,
-	"func":   TokFuncDefn,
-	"class":  TokClassDefn,
+	"return":  TokReturn,
+	"if":      TokIf,
+	"else":    TokElse,
+	"for":     TokFor,
+	"while":   TokWhile,
+	"func":    TokFuncDefn,
+	"class":   TokClassDefn,
+	"include": TokDependency,
 }
 
 var tokRegexMap map[string]TokenType
