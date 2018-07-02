@@ -17,7 +17,6 @@ the $GOPATH.
 Geode is a heavy work in progress with apis that will change. Extended use is
 not recommended at this stage.
 
-
 ## Installing
 
 Installing Geode is simple, just follow the steps below and install a few dependencies
@@ -53,9 +52,22 @@ Files can be any of the following:
 - A geode source file without the .g extension
 - A .g file
 
+### helloworld.g
+
+```go
+include "std::io"
+
+func main int {
+	print("Hello, world\n");
+	return 0;
+}
+```
+
 ### Example fib.g
 
 ```go
+include "std::io"
+
 func fib(int n) int {
 	if n < 2 {
 		return n;

@@ -34,9 +34,16 @@ func (n dependencyNode) Handle(c *Compiler) value.Value {
 
 	abs, _ := filepath.Abs(c.Package.Source.Path)
 	dir := path.Dir(abs)
+
 	for _, dp := range n.Paths {
+
 		depPath := path.Join(dir, dp)
-		c.Package.LoadDep(depPath)
+		if n.CLinkage {
+			c.Package.AddClinkage(depPath)
+		} else {
+			c.Package.LoadDep(depPath)
+		}
+
 	}
 
 	return nil

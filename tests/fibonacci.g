@@ -1,5 +1,6 @@
 # Name = "fibonacci"
 # ExpectedOutput = "832040"
+include "std::io"
 
 func fib(int n) int {
 	if n < 2 {

@@ -32,6 +32,7 @@ func (s *Sourcefile) Hash() []byte {
 	return h.Sum(nil)[:6]
 }
 
+// HashName returns the name and the hash.
 func (s *Sourcefile) HashName() string {
 	return fmt.Sprintf("%s_%x", s.Name, s.Hash())
 }
@@ -49,7 +50,7 @@ func (s *Sourcefile) LoadFile(path string) error {
 
 // ResolveFile resolves a filename and loads it
 func (s *Sourcefile) ResolveFile(path string) error {
-	p, e := resolveFileName(path)
+	p, e := ResolveFileName(path, ".g")
 	if e != nil {
 		log.Fatal("Unable to resolve path '%s'\n", path)
 	}
@@ -76,23 +77,23 @@ func (s *Sourcefile) Bytes() []byte {
 	return []byte(string(s.Contents))
 }
 
-// if the filename passed in is a folder, look in that folder for a main.g
+// ResolveFileName - if the filename passed in is a folder, look in that folder for a main.g
 // if the filename is not, look for a file matching that filename, but with a .g extension
-func resolveFileName(filename string) (string, error) {
+func ResolveFileName(filename, suffix string) (string, error) {
 	// Grab the stats of the file
 	stats, err := os.Stat(filename)
 
 	// If there was an error (file doesnt exist)
 	if err != nil {
 		// Try resolving the filename with .g extension
-		if !strings.HasSuffix(filename, ".g") {
-			return resolveFileName(filename + ".g")
+		if !strings.HasSuffix(filename, suffix) {
+			return ResolveFileName(filename+suffix, suffix)
 		}
 		// There was no file by that name, so we fail
 		return "", fmt.Errorf("fatal error: No such file or directory %s", filename)
 	}
 	if stats.IsDir() {
-		return resolveFileName(filename + "/main.g")
+		return ResolveFileName(filename+"/main.g", suffix)
 	}
 
 	return filename, nil

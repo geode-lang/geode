@@ -144,7 +144,8 @@ func (n binaryNode) InferType(scope *Scope) types.Type { return types.Void }
 
 type dependencyNode struct {
 	NodeType
-	Paths []string
+	Paths    []string
+	CLinkage bool
 }
 
 func (n dependencyNode) NameString() string                { return "dependencyNode" }

@@ -14,11 +14,10 @@ import (
 )
 
 // RuntimePackage is the global runtime package
-var RuntimePackage *Package
+// var RuntimePackage *Package
 var dependencyMap map[string]*Package
 
 func init() {
-	RuntimePackage = GetRuntime()
 	dependencyMap = make(map[string]*Package)
 }
 
@@ -37,6 +36,7 @@ type Package struct {
 	IsRuntime          bool
 	objectFilesEmitted []string
 	Compiled           bool
+	CLinkages          []string
 }
 
 // NewPackage returns a pointer to a new package
@@ -101,10 +101,24 @@ func (p *Package) AddDepPackage(pkg *Package) {
 	p.Dependencies = append(p.Dependencies, pkg)
 }
 
+// AddClinkage - takes an absolute path to a c file, and adds it to the link list
+func (p *Package) AddClinkage(libPath string) {
+	p.CLinkages = append(p.CLinkages, libPath)
+}
+
 // LoadDep appends a dependency from a path
 func (p *Package) LoadDep(depPath string) {
 	filename := path.Base(depPath)
+
+	if strings.HasPrefix(filename, "std::") {
+		filename = strings.Replace(filename, "std::", "", -1)
+		gopath := os.Getenv("GOPATH")
+		// Join up the new filename to the standard library source location
+		depPath = path.Join(gopath, "/src/github.com/nickwanninger/geode/lib/", filename)
+	}
+
 	depSource, err := lexer.NewSourcefile(filename)
+
 	if err != nil {
 		log.Fatal("Error creating dependency source structure\n")
 	}
@@ -174,21 +188,21 @@ func (p *Package) Parse() chan *Package {
 	return chn
 }
 
-// GetRuntime builds a runtime
-func GetRuntime() *Package {
-	rts, err := lexer.NewSourcefile("runtime")
-	if err != nil {
-		log.Fatal("Error creating runtime source structure\n")
-	}
-	gopath := os.Getenv("GOPATH")
-	rts.LoadFile(gopath + "/src/github.com/nickwanninger/geode/lib/lib.g")
-	rt := NewPackage("runtime", rts)
-	rt.IsRuntime = true
-	for _ = range rt.Parse() {
-	}
+// // GetRuntime builds a runtime
+// func GetRuntime() *Package {
+// 	rts, err := lexer.NewSourcefile("runtime")
+// 	if err != nil {
+// 		log.Fatal("Error creating runtime source structure\n")
+// 	}
+// 	gopath := os.Getenv("GOPATH")
+// 	rts.LoadFile(gopath + "/src/github.com/nickwanninger/geode/lib/lib.g")
+// 	rt := NewPackage("runtime", rts)
+// 	rt.IsRuntime = true
+// 	for _ = range rt.Parse() {
+// 	}
 
-	return rt
-}
+// 	return rt
+// }
 
 // Compile returns a codegen-ed compiler instance
 func (p *Package) Compile() chan *Package {
@@ -197,9 +211,9 @@ func (p *Package) Compile() chan *Package {
 	go func() {
 		p.Compiler = NewCompiler(p.Name, p)
 
-		if !p.IsRuntime {
-			p.AddDepPackage(RuntimePackage)
-		}
+		// if !p.IsRuntime {
+		// 	p.AddDepPackage(RuntimePackage)
+		// }
 		// Go through all nodes and handle the ones that are dependencies
 		for _, node := range p.Nodes {
 			if node.Kind() == nodeDependency {

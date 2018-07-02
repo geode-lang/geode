@@ -1,5 +1,6 @@
 # Name = "Overload"
 # ExpectedOutput = "2 2.0"
+include "std::io"
 
 func foo(int a) int {
 	return a * 2;

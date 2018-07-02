@@ -1,6 +1,7 @@
 # Name = "Conditional nesting"
 # RunArgs = ["1", "2", "3"]
 # ExpectedOutput = "2 3 4 4 end 4\n"
+include "std::io"
 
 func main(int argc) int {
 	int a := 1;

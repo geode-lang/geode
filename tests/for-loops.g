@@ -1,5 +1,6 @@
 # Name = "For Loops"
 # ExpectedOutput = "1057046400"
+include "std::io"
 
 func main int {
 	int i := 0;

@@ -1,5 +1,6 @@
 # Name = "while"
 # ExpectedOutput = "255"
+include "std::io"
 
 func main int {
 	int i := 0;

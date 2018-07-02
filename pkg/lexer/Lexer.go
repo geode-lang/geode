@@ -76,6 +76,7 @@ var keyWordMap = map[string]TokenType{
 	"func":    TokFuncDefn,
 	"class":   TokClassDefn,
 	"include": TokDependency,
+	"link":    TokDependency,
 }
 
 var tokRegexMap map[string]TokenType

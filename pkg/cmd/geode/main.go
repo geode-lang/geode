@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -108,30 +107,16 @@ func (c *Context) Build() {
 	for c := range root.Compile() {
 		obj := c.Emit()
 		linker.AddObject(obj)
+		for _, link := range c.CLinkages {
+			linker.AddObject(link)
+		}
 	}
 	if *emitLLVM {
 		log.Debug("%s\n", root)
 	}
 
-	gopath := os.Getenv("GOPATH")
-	clibpath := gopath + "/src/github.com/nickwanninger/geode/lib/"
-
-	var clibFiles []string
-
-	// clibFiles = append(clibFiles, clibpath+"lib.c")
-
-	err = filepath.Walk(clibpath, func(path string, info os.FileInfo, e error) error {
-		if filepath.Ext(path) == ".c" {
-			clibFiles = append(clibFiles, path)
-		}
-		return nil
-	})
-
 	if err != nil {
 		log.Fatal("Unable to scan for c libraries\n")
-	}
-	for _, path := range clibFiles {
-		linker.AddObject(path)
 	}
 
 	linker.Run()

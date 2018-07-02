@@ -7,10 +7,13 @@ import (
 )
 
 func (p *Parser) parseDependencyStmt() Node {
-	p.requires(lexer.TokDependency)
-	p.next()
 	d := dependencyNode{}
 	d.NodeType = nodeDependency
+	p.requires(lexer.TokDependency)
+	if p.token.Value == "link" {
+		d.CLinkage = true
+	}
+	p.next()
 
 	d.Paths = make([]string, 0)
 
