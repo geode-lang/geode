@@ -1,6 +1,6 @@
-include "std::print"
+include "std::io"
 
-func main int {	
+func main int {
 	print("hello, world\n");
 	return 0;
 }

@@ -14,10 +14,11 @@ import (
 )
 
 // RuntimePackage is the global runtime package
-// var RuntimePackage *Package
+var RuntimePackage *Package
 var dependencyMap map[string]*Package
 
 func init() {
+	RuntimePackage = GetRuntime()
 	dependencyMap = make(map[string]*Package)
 }
 
@@ -188,21 +189,21 @@ func (p *Package) Parse() chan *Package {
 	return chn
 }
 
-// // GetRuntime builds a runtime
-// func GetRuntime() *Package {
-// 	rts, err := lexer.NewSourcefile("runtime")
-// 	if err != nil {
-// 		log.Fatal("Error creating runtime source structure\n")
-// 	}
-// 	gopath := os.Getenv("GOPATH")
-// 	rts.LoadFile(gopath + "/src/github.com/nickwanninger/geode/lib/lib.g")
-// 	rt := NewPackage("runtime", rts)
-// 	rt.IsRuntime = true
-// 	for _ = range rt.Parse() {
-// 	}
+// GetRuntime builds a runtime
+func GetRuntime() *Package {
+	rts, err := lexer.NewSourcefile("runtime")
+	if err != nil {
+		log.Fatal("Error creating runtime source structure\n")
+	}
+	gopath := os.Getenv("GOPATH")
+	rts.LoadFile(gopath + "/src/github.com/nickwanninger/geode/lib/runtime.g")
+	rt := NewPackage("runtime", rts)
+	rt.IsRuntime = true
+	for _ = range rt.Parse() {
+	}
 
-// 	return rt
-// }
+	return rt
+}
 
 // Compile returns a codegen-ed compiler instance
 func (p *Package) Compile() chan *Package {
@@ -211,9 +212,9 @@ func (p *Package) Compile() chan *Package {
 	go func() {
 		p.Compiler = NewCompiler(p.Name, p)
 
-		// if !p.IsRuntime {
-		// 	p.AddDepPackage(RuntimePackage)
-		// }
+		if !p.IsRuntime {
+			p.AddDepPackage(RuntimePackage)
+		}
 		// Go through all nodes and handle the ones that are dependencies
 		for _, node := range p.Nodes {
 			if node.Kind() == nodeDependency {

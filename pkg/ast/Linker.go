@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/nickwanninger/geode/pkg/util"
+	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
 // CompileTarget is a target to build a binary for
@@ -82,7 +83,6 @@ func (l *Linker) Cleanup() {
 	}
 }
 
-
 // Run a list of objects through a linker and build
 // into a single outfile with the given target
 func (l *Linker) Run() {
@@ -124,5 +124,10 @@ func (l *Linker) Run() {
 	// set the output filename
 	linkArgs = append(linkArgs, "-o", filename)
 
-	util.RunCommand(linker, linkArgs...)
+	out, err := util.RunCommand(linker, linkArgs...)
+	if err != nil {
+		log.Fatal("failed to run command `%s %s`: `%s`\n\n%s",
+			linker, strings.Join(linkArgs, " "),
+			err.Error(), string(out))
+	}
 }
