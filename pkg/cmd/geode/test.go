@@ -173,7 +173,6 @@ func RunTests(testDirectory string) int {
 	numSucceses := 0
 	numTests := 0
 
-	fmt.Printf("\n\n")
 	// fmt.Printf("Test name              | Build error | Run error | B. output | R. output | Res  \n")
 	// fmt.Printf("-----------------------|-------------|-----------|-----------|-----------|------\n")
 	for res := range results {
@@ -182,43 +181,40 @@ func RunTests(testDirectory string) int {
 		fmt.Printf("%s\n", res.TestJob.Name)
 
 		// Check build errors
-		fmt.Printf("  CompilerError:\n    ")
+
 		if (res.TestJob.CompilerError == -1 && res.CompilerError != 0) || (res.CompilerError == res.TestJob.CompilerError) {
-			fmt.Printf("%s    (%d)\n", color.Green("✔"), res.TestJob.CompilerError)
 		} else {
+			fmt.Printf("  CompilerError:\n    ")
 			msg := color.Red("✗")
 			fmt.Printf("%s. Expected %d\n    ", msg, res.TestJob.CompilerError)
 			fmt.Printf("Got %d\n", res.CompilerError)
 			failure = true
 		}
 
-		fmt.Printf("  CompilerOutput:\n    ")
 		// Check run errors
 		if res.CompilerOutput == res.TestJob.CompilerOutput {
-			fmt.Printf("%s\n", color.Green("✔"))
 		} else {
+			fmt.Printf("  CompilerOutput:\n    ")
 			msg := color.Red("✗")
 			fmt.Printf("%s. Expected %s\n    ", msg, res.TestJob.CompilerOutput)
 			fmt.Printf("Got %s\n", res.CompilerOutput)
 			failure = true
 		}
 
-		fmt.Printf("  RunError:\n    ")
 		// Check run errors
 		if res.RunError == res.TestJob.RunError {
-			fmt.Printf("%s    (%d)\n", color.Green("✔"), res.TestJob.RunError)
 		} else {
+			fmt.Printf("  RunError:\n    ")
 			msg := color.Red("✗")
 			fmt.Printf("%s. Expected %d\n    ", msg, res.TestJob.RunError)
 			fmt.Printf("Got %d\n", res.RunError)
 			failure = true
 		}
 
-		fmt.Printf("  ExpectedOutput:\n    ")
 		// Check run errors
 		if res.ExpectedOutput == res.TestJob.ExpectedOutput {
-			fmt.Printf("%s\n", color.Green("✔"))
 		} else {
+			fmt.Printf("  ExpectedOutput:\n    ")
 			msg := color.Red("✗")
 			fmt.Printf("%s. Expected %s\n    ", msg, res.TestJob.ExpectedOutput)
 			fmt.Printf("Got %s\n", res.ExpectedOutput)
@@ -228,16 +224,16 @@ func RunTests(testDirectory string) int {
 		// Output result
 		if !failure {
 			numSucceses++
-			fmt.Printf("\n%sTest Passed%s\n", color.TEXT_GREEN, color.TEXT_RESET)
+			fmt.Printf("%sTest Passed%s\n", color.TEXT_GREEN, color.TEXT_RESET)
 		} else {
-			fmt.Printf("\n%sTest Failed%s\n", color.TEXT_RED, color.TEXT_RESET)
+			fmt.Printf("%sTest Failed%s\n", color.TEXT_RED, color.TEXT_RESET)
 		}
 		numTests++
 
-		fmt.Printf("\n\n")
+		fmt.Printf("\n")
 	}
 
-	fmt.Printf("\nTotal: %d / %d tests ran succesfully\n\n", numSucceses, numTests)
+	fmt.Printf("Total: %d / %d tests ran succesfully\n\n", numSucceses, numTests)
 	if numSucceses < numTests {
 		return 1
 	}
