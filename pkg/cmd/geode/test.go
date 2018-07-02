@@ -173,8 +173,6 @@ func RunTests(testDirectory string) int {
 	numSucceses := 0
 	numTests := 0
 
-	// fmt.Printf("Test name              | Build error | Run error | B. output | R. output | Res  \n")
-	// fmt.Printf("-----------------------|-------------|-----------|-----------|-----------|------\n")
 	for res := range results {
 		failure := false
 
