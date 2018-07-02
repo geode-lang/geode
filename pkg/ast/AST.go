@@ -34,6 +34,8 @@ func Parse(tokens chan lexer.Token) <-chan Node {
 			"<=": 10,
 			">":  10,
 			">=": 10,
+			">>": 15,
+			"<<": 15,
 			"+":  20,
 			"-":  20,
 			"*":  40,

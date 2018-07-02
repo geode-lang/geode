@@ -12,7 +12,7 @@ func init() {
 	// fmt.Println("hello")
 }
 
-const functionmangleprefix = "__geode"
+const functionmangleprefix = ".geode"
 
 // MangleFunctionName will mangle a function name like how cpp does :)
 func MangleFunctionName(origName string, argTypes ...types.Type) string {

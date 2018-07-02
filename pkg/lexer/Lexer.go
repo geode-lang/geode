@@ -35,6 +35,8 @@ var Tokens = []TokenInfoRelation{
 	{TokOper, `%`},
 	{TokOper, `!=`},
 	{TokOper, `=`},
+	{TokOper, `<<`},
+	{TokOper, `>>`},
 	{TokOper, `<`},
 	{TokOper, `<=|≤`},
 	{TokOper, `>`},

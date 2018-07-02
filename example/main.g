@@ -1,6 +1,8 @@
 include "std::io"
 
 func main int {
-	print("hello, world\n");
-	return 0;
+	int a := 2;
+	return a << 1;
 }
+
+func foo int -> 3;

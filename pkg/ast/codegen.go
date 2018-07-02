@@ -329,12 +329,17 @@ func (n binaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		return CreateBinaryOp("sdiv", "fdiv", blk, t, l, r)
 	case "%":
 		return CreateBinaryOp("srem", "frem", blk, t, l, r)
+	case ">>":
+		return CreateBinaryOp("lshr", "lshr", blk, t, l, r)
+	case "<<":
+		return CreateBinaryOp("shl", "shl", blk, t, l, r)
 	case "=":
 		return createCmp(blk, ir.IntEQ, ir.FloatOEQ, t, l, r)
 	case "!=":
 		return createCmp(blk, ir.IntNE, ir.FloatONE, t, l, r)
 	case ">":
 		return createCmp(blk, ir.IntSGT, ir.FloatOGT, t, l, r)
+
 	case ">=":
 		return createCmp(blk, ir.IntSGE, ir.FloatOGE, t, l, r)
 	case "<":
