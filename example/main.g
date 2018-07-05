@@ -1,8 +1,10 @@
 include "std::io"
+# include "std::mem"
+
 
 func main int {
-	int a := 2;
-	return a << 1;
+	for int i := 0; i >= 0; i <- i + 1 {
+		byte* foo := malloc(300);
+	}
+	return 42;
 }
-
-func foo int -> 3;

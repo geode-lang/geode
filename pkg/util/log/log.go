@@ -34,8 +34,6 @@ func init() {
 	enableAll = false
 }
 
-type anything interface{}
-
 func log(msg string) {
 	fmt.Printf("%s", msg)
 

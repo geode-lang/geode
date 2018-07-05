@@ -143,9 +143,6 @@ func NewLexer() *LexState {
 
 	getToken := func(tokenType TokenType) lexmachine.Action {
 		return func(s *lexmachine.Scanner, m *machines.Match) (interface{}, error) {
-			// if typesystem.GlobalTypeMap.GetType(string(m.Bytes)) != nil {
-			// 	return s.Token(int(TokType), string(m.Bytes), m), nil
-			// }
 
 			kw, isKwInMap := keyWordMap[string(m.Bytes)]
 			if isKwInMap {

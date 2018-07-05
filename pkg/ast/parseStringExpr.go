@@ -14,7 +14,7 @@ func UnescapeString(str string) []byte {
 }
 
 func (p *Parser) parseStringExpr() Node {
-	n := stringNode{}
+	n := StringNode{}
 	n.NodeType = nodeString
 	escaped, err := strconv.Unquote(p.token.Value)
 	if err != nil {

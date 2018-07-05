@@ -3,7 +3,6 @@ package ast
 import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	"github.com/nickwanninger/geode/pkg/typesystem"
 )
 
 // NodeType -
@@ -57,48 +56,75 @@ const (
 	nodeBlock
 )
 
-type intNode struct {
+// IntNode is an integer literal
+type IntNode struct {
 	NodeType
 	Value int64
 }
 
-func (n intNode) NameString() string                { return "intNode" }
-func (n intNode) InferType(scope *Scope) types.Type { return types.I64 }
+// NameString implements Node.NameString
+func (n IntNode) NameString() string { return "IntNode" }
 
-type floatNode struct {
+// InferType implements Node.InferType
+func (n IntNode) InferType(scope *Scope) types.Type { return types.I64 }
+
+//
+//
+// FloatNode is a float literla
+type FloatNode struct {
 	NodeType
 	Value float64
 }
 
-func (n floatNode) NameString() string                { return "floatNode" }
-func (n floatNode) InferType(scope *Scope) types.Type { return types.Double }
+// NameString implements Node.NameString
+func (n FloatNode) NameString() string { return "FloatNode" }
 
-type stringNode struct {
+// InferType implements Node.InferType
+func (n FloatNode) InferType(scope *Scope) types.Type { return types.Double }
+
+//
+//
+// StringNode is a string literal
+type StringNode struct {
 	NodeType
 	Value string
 }
 
-func (n stringNode) NameString() string                { return "stringNode" }
-func (n stringNode) InferType(scope *Scope) types.Type { return types.NewPointer(types.I8) }
+// NameString implements Node.NameString
+func (n StringNode) NameString() string { return "StringNode" }
 
-type charNode struct {
+// InferType implements Node.InferType
+func (n StringNode) InferType(scope *Scope) types.Type { return types.NewPointer(types.I8) }
+
+// CharNode is a char literal
+// TODO: get parsing working for this.
+type CharNode struct {
 	NodeType
 	Value int8
 }
 
-func (n charNode) NameString() string                { return "charNode" }
-func (n charNode) InferType(scope *Scope) types.Type { return types.I8 }
+// NameString implements Node.NameString
+func (n CharNode) NameString() string { return "CharNode" }
 
-type castNode struct {
+// InferType implements Node.InferType
+func (n CharNode) InferType(scope *Scope) types.Type { return types.I8 }
+
+// CastNode is a type cast "function" call. TODO: Replace this with normal function calls and check
+// in the function call codegen function
+type CastNode struct {
 	NodeType
 	From Node
 	To   string
 }
 
-func (n castNode) NameString() string                { return "castNode" }
-func (n castNode) InferType(scope *Scope) types.Type { return typesystem.GlobalTypeMap.GetType(n.To) }
+// NameString implements Node.NameString
+func (n CastNode) NameString() string { return "CastNode" }
 
-type ifNode struct {
+// InferType implements Node.InferType
+func (n CastNode) InferType(scope *Scope) types.Type { return scope.FindType(n.To).Type }
+
+// IfNode is an if statement representation
+type IfNode struct {
 	NodeType
 	If    Node
 	Then  Node
@@ -106,10 +132,15 @@ type ifNode struct {
 	Index int
 }
 
-func (n ifNode) NameString() string                { return "ifNode" }
-func (n ifNode) InferType(scope *Scope) types.Type { return types.Void }
+// NameString implements Node.NameString
+func (n IfNode) NameString() string { return "IfNode" }
 
-type forNode struct {
+// InferType implements Node.InferType
+func (n IfNode) InferType(scope *Scope) types.Type { return types.Void }
+
+//
+// ForNode is a for loop structure representation
+type ForNode struct {
 	NodeType
 	Index int
 	Init  Node
@@ -118,20 +149,34 @@ type forNode struct {
 	Body  Node
 }
 
-func (n forNode) NameString() string                { return "forNode" }
-func (n forNode) InferType(scope *Scope) types.Type { return types.Void }
+// NameString implements Node.NameString
+func (n ForNode) NameString() string { return "ForNode" }
 
-type unaryNode struct {
+// InferType implements Node.InferType
+func (n ForNode) InferType(scope *Scope) types.Type { return types.Void }
+
+//
+// UnaryNode is a unary operation representation.
+// Example:
+//     * !a
+//     * &value
+//
+type UnaryNode struct {
 	NodeType
 
 	Operator string
 	Operand  Node
 }
 
-func (n unaryNode) NameString() string                { return "unaryNode" }
-func (n unaryNode) InferType(scope *Scope) types.Type { return n.Operand.InferType(scope) }
+// NameString implements Node.NameString
+func (n UnaryNode) NameString() string { return "UnaryNode" }
 
-type binaryNode struct {
+// InferType implements Node.InferType
+func (n UnaryNode) InferType(scope *Scope) types.Type { return n.Operand.InferType(scope) }
+
+//
+// BinaryNode is a binary operation representation
+type BinaryNode struct {
 	NodeType
 
 	OP    string
@@ -139,40 +184,50 @@ type binaryNode struct {
 	Right Node
 }
 
-func (n binaryNode) NameString() string                { return "binaryNode" }
-func (n binaryNode) InferType(scope *Scope) types.Type { return types.Void }
+// NameString implements Node.NameString
+func (n BinaryNode) NameString() string { return "BinaryNode" }
 
-type dependencyNode struct {
+// InferType implements Node.InferType
+func (n BinaryNode) InferType(scope *Scope) types.Type { return types.Void }
+
+// DependencyNode is a way of representing the need to include
+// a dependency or multiple dependencies. It also works to link
+// a c program as well. Paths contains a list of paths to the dependencies
+// that the user entered into the statement. These paths are not resolved
+// and may not contain a geode source file.
+//
+// Example:
+//    Paths = ["std:io"]
+//    CLinkage = false
+///
+type DependencyNode struct {
 	NodeType
 	Paths    []string
 	CLinkage bool
 }
 
-func (n dependencyNode) NameString() string                { return "dependencyNode" }
-func (n dependencyNode) InferType(scope *Scope) types.Type { return types.Void }
+// NameString implements Node.NameString
+func (n DependencyNode) NameString() string { return "DependencyNode" }
 
-// type variableReferenceNode struct {
-// 	NodeType
-// 	Index     int
-// 	IndexExpr Node
-// 	Name      string
-// }
-
-// func (n variableReferenceNode) NameString() string                { return "variableReferenceNode" }
-// func (n variableReferenceNode) InferType(scope *Scope) types.Type { return types.Void }
+// InferType implements Node.InferType
+func (n DependencyNode) InferType(scope *Scope) types.Type { return types.Void }
 
 // ReferenceType is how we go about accessing a variable. Do we just
 // want the value, or do we want to assign to it
 type ReferenceType int
 
-// The different ways you can access a variableNode
+// The different ways you can access a VariableNode
 const (
 	ReferenceDefine ReferenceType = iota
 	ReferenceAssign
 	ReferenceAccess
+	ReferenceDereference
 )
 
-type variableNode struct {
+// VariableNode is a generic variable statement representation
+// this contains a reference type inside it that tellst the
+// code generator what kind of variable statement to build
+type VariableNode struct {
 	NodeType
 	Type         GeodeTypeRef
 	HasValue     bool
@@ -185,51 +240,79 @@ type variableNode struct {
 	Body         Node
 }
 
-func (n variableNode) NameString() string                { return "variableNode" }
-func (n variableNode) InferType(scope *Scope) types.Type { return types.Void }
+// NameString implements Node.NameString
+func (n VariableNode) NameString() string { return "VariableNode" }
 
-type returnNode struct {
+// InferType implements Node.InferType
+func (n VariableNode) InferType(scope *Scope) types.Type { return types.Void }
+
+// ReturnNode is how functions return values from any block
+// A return node contains the value (another Node) that will be
+// codegenned and used in a `NewRet()` call on the parent function
+type ReturnNode struct {
 	NodeType
 	Value Node
 }
 
-func (n returnNode) NameString() string                { return "returnNode" }
-func (n returnNode) InferType(scope *Scope) types.Type { return types.Void }
+// NameString implements Node.NameString
+func (n ReturnNode) NameString() string { return "ReturnNode" }
 
-type functionNode struct {
+// InferType implements Node.InferType
+func (n ReturnNode) InferType(scope *Scope) types.Type { return types.Void }
+
+// FunctionNode is the representation of some function. It has methods
+// on it to declare the function as well as codegen. A function has
+// a list of VariableNodes for arguments and a single block for a body,
+// all of which are codegenned.
+type FunctionNode struct {
 	NodeType
 
 	Name       string
-	Args       []variableNode
-	Body       blockNode
+	Args       []VariableNode
+	Body       BlockNode
 	External   bool
 	Variadic   bool
 	Nomangle   bool
 	ReturnType GeodeTypeRef
 }
 
-func (n functionNode) NameString() string                { return "functionNode" }
-func (n functionNode) InferType(scope *Scope) types.Type { return types.Void }
+// NameString implements Node.NameString
+func (n FunctionNode) NameString() string { return "FunctionNode" }
 
-type functionCallNode struct {
+// InferType implements Node.InferType
+func (n FunctionNode) InferType(scope *Scope) types.Type { return types.Void }
+
+// FunctionCallNode is a function call, example: `foo(a, b, c)`. This would be:
+//    Name = "foo"
+//    Args = [a, b, c]    <- these are Node references
+type FunctionCallNode struct {
 	NodeType
 
 	Name string
 	Args []Node
 }
 
-func (n functionCallNode) NameString() string                { return "functionCallNode" }
-func (n functionCallNode) InferType(scope *Scope) types.Type { return types.Void }
+// NameString implements Node.NameString
+func (n FunctionCallNode) NameString() string { return "FunctionCallNode" }
 
-type blockNode struct {
+// InferType implements Node.InferType
+func (n FunctionCallNode) InferType(scope *Scope) types.Type { return types.Void }
+
+// BlockNode is a block statement. A block statement is just an array of Nodes
+// that run in sequence.
+type BlockNode struct {
 	NodeType
 	Nodes []Node
 }
 
-func (n blockNode) NameString() string                { return "blockNode" }
-func (n blockNode) InferType(scope *Scope) types.Type { return types.Void }
+// NameString implements Node.NameString
+func (n BlockNode) NameString() string { return "BlockNode" }
 
-type whileNode struct {
+// InferType implements Node.InferType
+func (n BlockNode) InferType(scope *Scope) types.Type { return types.Void }
+
+// WhileNode is a while loop representationvbnm,bvbnm
+type WhileNode struct {
 	NodeType
 
 	If    Node
@@ -237,19 +320,26 @@ type whileNode struct {
 	Index int
 }
 
-func (n whileNode) NameString() string                { return "whileNode" }
-func (n whileNode) InferType(scope *Scope) types.Type { return types.Void }
+// NameString implements Node.NameString
+func (n WhileNode) NameString() string { return "WhileNode" }
 
-type classNode struct {
+// InferType implements Node.InferType
+func (n WhileNode) InferType(scope *Scope) types.Type { return types.Void }
+
+// ClassNode -
+type ClassNode struct {
 	NodeType
 
 	Name      string
-	Methods   []functionNode
-	Variables []variableNode
+	Methods   []FunctionNode
+	Variables []VariableNode
 }
 
-func (n classNode) NameString() string                { return "classNode" }
-func (n classNode) InferType(scope *Scope) types.Type { return types.Void }
+// NameString implements Node.NameString
+func (n ClassNode) NameString() string { return "ClassNode" }
+
+// InferType implements Node.InferType
+func (n ClassNode) InferType(scope *Scope) types.Type { return types.Void }
 
 // GeodeTypeRef -
 type GeodeTypeRef struct {

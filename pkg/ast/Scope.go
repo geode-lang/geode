@@ -2,15 +2,23 @@ package ast
 
 import (
 	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nickwanninger/geode/pkg/util/log"
 )
+
+func init() {
+	// gob.Register(Scope{})
+	// gob.Register(FunctionScopeItem{})
+	// gob.Register(VariableScopeItem{})
+}
 
 // Scope trees represent block scoping by having a root scope
 // and children scopes that point back to their parent scope.
 type Scope struct {
 	Parent *Scope
 	Vals   map[string]ScopeItem
+	Types  *map[string]*TypeDef
 }
 
 // Add a value to this specific scope
@@ -64,11 +72,37 @@ func (s *Scope) FindFunctions(name string) []FunctionScopeItem {
 
 }
 
+// FindType returns the type stored with a name in this scope
+func (s *Scope) FindType(name string) *TypeDef {
+
+	v, ok := (*s.Types)[name]
+	if !ok {
+		if s.Parent == nil {
+			log.Fatal("Unable to find type with name '%s' in scope\n", name)
+		}
+		return s.Parent.FindType(name)
+	}
+	return v
+}
+
+// InjectPrimitives injects primitve types like int, byte, etc
+func (s *Scope) InjectPrimitives() {
+	NewTypeDef("byte", types.I8, 1).InjectInto(s)
+	NewTypeDef("i16", types.I16, 2).InjectInto(s)
+	NewTypeDef("i32", types.I32, 3).InjectInto(s)
+	NewTypeDef("int", types.I64, 4).InjectInto(s)
+	NewTypeDef("big", types.NewInt(255), 100).InjectInto(s)
+	NewTypeDef("float", types.Double, 11).InjectInto(s)
+	NewTypeDef("string", types.NewPointer(types.I8), 0).InjectInto(s)
+	NewTypeDef("void", types.Void, 0).InjectInto(s)
+}
+
 // SpawnChild takes a parent scope and creates a new variable scope for scoped variable access.
 func (s *Scope) SpawnChild() *Scope {
 	n := &Scope{}
 	n.Parent = s
 	n.Vals = make(map[string]ScopeItem)
+	n.Types = s.Types
 	return n
 }
 
@@ -77,6 +111,8 @@ func NewScope() *Scope {
 	n := &Scope{}
 	n.Parent = nil
 	n.Vals = make(map[string]ScopeItem)
+	typemap := make(map[string]*TypeDef)
+	n.Types = &typemap
 	return n
 }
 
@@ -211,53 +247,23 @@ func NewVariableScopeItem(name string, value value.Value, vis Visibility) Variab
 	return item
 }
 
-//
-//
-// TypeScopeItem implements ScopeItem.
-// This is used so we can store functions in the scope (mainly in the root scope)
-type TypeScopeItem struct {
-	value   value.Value
-	vis     Visibility
-	name    string
-	mangled bool
+// TypeDef is a storage for types in the scope. They are stored seperately from variables.
+type TypeDef struct {
+	Type types.Type
+	Name string
+	Prec int
 }
 
-// Value implements ScopeItem.Value()
-func (item TypeScopeItem) Value() value.Value {
-	log.Error("Unable to get value from scope item type '%s'\n", item.Name())
-	return nil
-}
-
-// Type implements ScopeItem.Type()
-func (item TypeScopeItem) Type() ScopeItemType {
-	return ScopeItemTypeType
-}
-
-// Visibility implements ScopeItem.Visibility()
-func (item TypeScopeItem) Visibility() Visibility {
-	return item.vis
-}
-
-// Name implements ScopeItem.Name()
-func (item TypeScopeItem) Name() string {
-	return item.name
-}
-
-// Mangled implements ScopeItem.Mangled()
-func (item TypeScopeItem) Mangled() bool {
-	return item.mangled
-}
-
-// SetMangled implements ScopeItem.SetMangled()
-func (item TypeScopeItem) SetMangled(m bool) {
-	item.mangled = m
-}
-
-// NewTypeScopeItem constructs a function scope item
-func NewTypeScopeItem(name string, value value.Value, vis Visibility) TypeScopeItem {
-	item := TypeScopeItem{}
-	item.name = name
-	item.value = value
-	item.vis = vis
+// NewTypeDef constructs a function scope item
+func NewTypeDef(name string, t types.Type, prec int) *TypeDef {
+	item := &TypeDef{}
+	item.Name = name
+	item.Type = t
+	item.Prec = prec
 	return item
+}
+
+// InjectInto will inject the type into a given scope
+func (t *TypeDef) InjectInto(s *Scope) {
+	(*s.Types)[t.Name] = t
 }

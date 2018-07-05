@@ -5,8 +5,8 @@ import (
 	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
-func (p *Parser) parseVariableDefn(allowDefn bool) variableNode {
-	n := variableNode{}
+func (p *Parser) parseVariableDefn(allowDefn bool) VariableNode {
+	n := VariableNode{}
 	n.NodeType = nodeVariableDecl
 
 	if p.atType() {

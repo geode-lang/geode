@@ -2,7 +2,6 @@ package ast
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 
@@ -74,7 +73,6 @@ func (p *Parser) requires(t lexer.TokenType) {
 	if p.token.Is(t) {
 		return
 	}
-	panic(errors.New("OOOPS"))
 	p.Error("Required token '%s' is missing. Has '%s' instead.", t.String(), p.token.Type.String())
 
 }
@@ -105,7 +103,6 @@ func (p *Parser) checkSemiColon() {
 		fmt.Println(p.peek(-2).Value)
 		fmt.Println(p.peek(-1).Value)
 		fmt.Println(p.token.Value)
-		panic(nil)
 		p.Error("Missing Semicolon\n")
 
 	}

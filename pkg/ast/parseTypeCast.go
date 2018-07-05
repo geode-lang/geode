@@ -3,7 +3,7 @@ package ast
 import "github.com/nickwanninger/geode/pkg/lexer"
 
 func (p *Parser) parseTypeCast() Node {
-	n := castNode{}
+	n := CastNode{}
 	n.NodeType = nodeCast
 	n.To = p.token.Value
 

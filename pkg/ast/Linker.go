@@ -72,13 +72,11 @@ func (l *Linker) SetOptimize(o bool) {
 // Cleanup removes all the
 func (l *Linker) Cleanup() {
 	for _, objFile := range l.objectPaths {
-
-		// We don't want to remove .c files
-		if filepath.Ext(objFile) == ".c" {
-			continue
+		ext := filepath.Ext(objFile)
+		// We only remove ll and s files.
+		if ext == ".ll" || ext == ".s" {
+			os.Remove(objFile)
 		}
-
-		os.Remove(objFile)
 
 	}
 }
@@ -117,6 +115,9 @@ func (l *Linker) Run() {
 		}
 		return
 	}
+
+	// gopath := os.Getenv("GOPATH")
+	// linkArgs = append(linkArgs, fmt.Sprintf("%s/src/github.com/nickwanninger/geode/lib/runtime.c", gopath))
 
 	// Append input files to the end of the command
 	linkArgs = append(linkArgs, l.objectPaths...)

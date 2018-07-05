@@ -5,7 +5,6 @@ import (
 )
 
 func validTypeReferenceToken(t lexer.Token) bool {
-
 	allowed := map[string]bool{
 		"*": true,
 		// "[": true,
@@ -33,7 +32,6 @@ func (p *Parser) parseType() (t GeodeTypeRef) {
 	p.requires(lexer.TokIdent)
 
 	t.Name = p.token.Value
-	// t = typesystem.GlobalTypeMap.GetType(p.token.Value)
 	p.next()
 
 	for {

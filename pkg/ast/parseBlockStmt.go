@@ -6,9 +6,9 @@ import (
 
 var blkidx = 0
 
-func (p *Parser) parseBlockStmt() blockNode {
+func (p *Parser) parseBlockStmt() BlockNode {
 	p.requires(lexer.TokLeftCurly)
-	blk := blockNode{}
+	blk := BlockNode{}
 	blk.NodeType = nodeBlock
 
 	for {

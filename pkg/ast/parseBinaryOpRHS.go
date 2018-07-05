@@ -30,7 +30,7 @@ func (p *Parser) parseBinaryOpRHS(exprPrec int, lhs Node) Node {
 				return nil
 			}
 		}
-		n := binaryNode{}
+		n := BinaryNode{}
 		n.NodeType = nodeBinary
 		n.OP = binOp
 		n.Left = lhs

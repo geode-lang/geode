@@ -8,7 +8,7 @@ var classIndex = 0
 
 func (p *Parser) parseClassDefn() Node {
 	p.requires(lexer.TokClassDefn)
-	n := classNode{}
+	n := ClassNode{}
 	n.NodeType = nodeClass
 
 	p.next()
@@ -18,14 +18,14 @@ func (p *Parser) parseClassDefn() Node {
 
 	p.next()
 	nodes := p.parseClassBody()
-	n.Variables = make([]variableNode, 0)
-	n.Methods = make([]functionNode, 0)
+	n.Variables = make([]VariableNode, 0)
+	n.Methods = make([]FunctionNode, 0)
 	for _, node := range nodes {
 		switch node.Kind() {
 		case nodeVariableDecl:
-			n.Variables = append(n.Variables, node.(variableNode))
+			n.Variables = append(n.Variables, node.(VariableNode))
 		case nodeFunction:
-			n.Methods = append(n.Methods, node.(functionNode))
+			n.Methods = append(n.Methods, node.(FunctionNode))
 		}
 	}
 
@@ -42,7 +42,8 @@ func (p *Parser) parseClassBody() []Node {
 
 	for {
 		p.next()
-		if p.token.Is(lexer.TokType) {
+
+		if p.atType() {
 			// No initializer is allowed in class variable defns
 			nodes = append(nodes, p.parseVariableDefn(false))
 			p.checkSemiColon()

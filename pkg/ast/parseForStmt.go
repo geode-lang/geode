@@ -8,7 +8,7 @@ var forStmtIndex = 0
 
 func (p *Parser) parseForStmt() Node {
 	p.requires(lexer.TokFor)
-	n := forNode{}
+	n := ForNode{}
 	n.NodeType = nodeFor
 	n.Index = forStmtIndex
 	forStmtIndex++

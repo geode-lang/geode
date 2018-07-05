@@ -48,8 +48,8 @@ func NewPackage(name string, source *lexer.Sourcefile) *Package {
 	p.Source = source
 	p.Nodes = make([]Node, 0)
 	p.Scope = NewScope()
+	p.Scope.InjectPrimitives()
 	p.Lexer = lexer.NewLexer()
-
 	return p
 }
 
@@ -196,7 +196,7 @@ func GetRuntime() *Package {
 		log.Fatal("Error creating runtime source structure\n")
 	}
 	gopath := os.Getenv("GOPATH")
-	rts.LoadFile(gopath + "/src/github.com/nickwanninger/geode/lib/runtime.g")
+	rts.LoadFile(gopath + "/src/github.com/nickwanninger/geode/lib/_runtime.g")
 	rt := NewPackage("runtime", rts)
 	rt.IsRuntime = true
 	for _ = range rt.Parse() {
@@ -218,7 +218,7 @@ func (p *Package) Compile() chan *Package {
 		// Go through all nodes and handle the ones that are dependencies
 		for _, node := range p.Nodes {
 			if node.Kind() == nodeDependency {
-				node.(dependencyNode).Handle(p.Compiler)
+				node.(DependencyNode).Handle(p.Compiler)
 			}
 		}
 
@@ -233,17 +233,27 @@ func (p *Package) Compile() chan *Package {
 		}
 		p.Compiled = true
 
-		// First we *Need* to go through and declare all the functions
+		// go through and generate all classes/types
+		for _, node := range p.Nodes {
+			if node.Kind() == nodeClass {
+				node.(ClassNode).Codegen(p.Compiler.Scope, p.Compiler)
+			}
+		}
+
+		// go through and declare all the functions
 		for _, node := range p.Nodes {
 			if node.Kind() == nodeFunction {
-				node.(functionNode).Declare(p.Scope.SpawnChild(), p.Compiler)
+				node.(FunctionNode).Declare(p.Scope.SpawnChild(), p.Compiler)
 			}
 			// node.Codegen(p.Compiler.Scope.SpawnChild(), p.Compiler)
 		}
 
 		for _, node := range p.Nodes {
-			// node.Codegen(p.Compiler.Scope, p.Compiler)
+			if node.Kind() == nodeClass {
+				continue
+			}
 			node.Codegen(p.Compiler.Scope.SpawnChild(), p.Compiler)
+
 		}
 
 		packages <- p

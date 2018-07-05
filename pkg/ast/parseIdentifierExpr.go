@@ -17,7 +17,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 	// Is the next value a paren? If it isnt it is a normal variable reference
 	if !p.token.Is(lexer.TokLeftParen) {
 
-		n := variableNode{}
+		n := VariableNode{}
 		n.Name = name
 		n.RefType = ReferenceAccess
 		n.HasValue = true
@@ -41,7 +41,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 	if p.token.Is(lexer.TokLeftParen) {
 
 		// it was a paren, so we need to parse it as if it were a function call
-		n := functionCallNode{}
+		n := FunctionCallNode{}
 		n.Name = name
 		n.NodeType = nodeFunctionCall
 

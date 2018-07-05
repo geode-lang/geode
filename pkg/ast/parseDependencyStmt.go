@@ -7,7 +7,7 @@ import (
 )
 
 func (p *Parser) parseDependencyStmt() Node {
-	d := dependencyNode{}
+	d := DependencyNode{}
 	d.NodeType = nodeDependency
 	p.requires(lexer.TokDependency)
 	if p.token.Value == "link" {

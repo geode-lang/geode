@@ -6,7 +6,7 @@ func (p *Parser) parseNumericExpr() Node {
 	t, val := p.token.InferType()
 
 	if t == typesystem.GeodeI64 {
-		n := intNode{}
+		n := IntNode{}
 		n.NodeType = nodeInt
 		n.Value = val.(int64)
 		p.next()
@@ -14,7 +14,7 @@ func (p *Parser) parseNumericExpr() Node {
 	}
 
 	if t == typesystem.GeodeF64 {
-		n := floatNode{}
+		n := FloatNode{}
 		n.NodeType = nodeFloat
 		n.Value = val.(float64)
 		p.next()
@@ -22,7 +22,7 @@ func (p *Parser) parseNumericExpr() Node {
 	}
 
 	if t == typesystem.GeodeI8 {
-		n := charNode{}
+		n := CharNode{}
 		n.NodeType = nodeChar
 		n.Value = val.(int8)
 		p.next()

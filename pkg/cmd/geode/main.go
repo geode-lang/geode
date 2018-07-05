@@ -32,7 +32,6 @@ func main() {
 	}
 	spew.Config.DisableMethods = true
 	startTime = time.Now()
-
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	switch command {
@@ -74,6 +73,11 @@ func NewContext(in string, out string) *Context {
 	return res
 }
 
+type foo struct {
+	A string
+	B int
+}
+
 // Build some context into a binary file
 func (c *Context) Build() {
 
@@ -86,11 +90,14 @@ func (c *Context) Build() {
 		log.Fatal("Unable to read file %s into sourcefile structure: %s\n", c.Input, err)
 	}
 	path := strings.Split(c.Input, "/")
-	root := ast.NewPackage(path[len(path)-1], src)
+	rootPackage := ast.NewPackage(path[len(path)-1], src)
 	pkgs := make([]*ast.Package, 0)
-	for pkg := range root.Parse() {
+	for pkg := range rootPackage.Parse() {
 		pkgs = append(pkgs, pkg)
 	}
+
+	// home, err := homedir.Dir()
+	// fmt.Println(home, err)
 
 	// Construct a linker object
 	target := ast.BinaryTarget
@@ -104,7 +111,8 @@ func (c *Context) Build() {
 	linker.SetOptimize(*optimize)
 
 	// Loop over the compilers and generate to .ll files
-	for c := range root.Compile() {
+	for c := range rootPackage.Compile() {
+
 		obj := c.Emit()
 		linker.AddObject(obj)
 		for _, link := range c.CLinkages {
@@ -112,7 +120,7 @@ func (c *Context) Build() {
 		}
 	}
 	if *emitLLVM {
-		log.Debug("%s\n", root)
+		log.Debug("%s\n", rootPackage)
 	}
 
 	if err != nil {

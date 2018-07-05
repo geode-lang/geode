@@ -4,10 +4,10 @@ import (
 	"github.com/nickwanninger/geode/pkg/lexer"
 )
 
-func (p *Parser) parseFnDefn() functionNode {
+func (p *Parser) parseFnDefn() FunctionNode {
 	p.next()
 
-	fn := functionNode{}
+	fn := FunctionNode{}
 	fn.NodeType = nodeFunction
 
 	if p.token.Type == lexer.TokIdent && p.token.Value == "nomangle" {
@@ -20,6 +20,7 @@ func (p *Parser) parseFnDefn() functionNode {
 	// The main function should never be mangled
 	if fn.Name == "main" {
 		fn.Nomangle = true
+		fn.Name = "__GEODE__main"
 	}
 
 	p.next()
@@ -66,13 +67,13 @@ func (p *Parser) parseFnDefn() functionNode {
 		fn.Body = p.parseBlockStmt()
 
 	} else if p.token.Is(lexer.TokRightArrow) {
-		fn.Body = blockNode{}
+		fn.Body = BlockNode{}
 		fn.Body.NodeType = nodeBlock
 		fn.Body.Nodes = make([]Node, 0)
 		p.next()
 
 		implReturnValue := p.parseExpression()
-		implReturn := returnNode{}
+		implReturn := ReturnNode{}
 		implReturn.Value = implReturnValue
 		fn.Body.Nodes = []Node{implReturn}
 		if p.token.Is(lexer.TokSemiColon) {

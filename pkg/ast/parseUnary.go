@@ -5,8 +5,8 @@ package ast
 func (p *Parser) parseUnary() Node {
 
 	ptrOps := map[string]bool{
-		// "&": true,
-		// "*": true,
+		"&": true,
+		"*": true,
 	}
 
 	// _, isBinaryOp := p.binaryOpPrecedence[p.token.Value]
@@ -15,11 +15,15 @@ func (p *Parser) parseUnary() Node {
 		return p.parsePrimary()
 	}
 
+	if p.token.Value == "&" {
+
+	}
+
 	op := p.token.Value
 	p.next()
 	operand := p.parseUnary()
 	if operand != nil {
-		n := unaryNode{}
+		n := UnaryNode{}
 		n.NodeType = nodeUnary
 		n.Operator = op
 		n.Operand = operand

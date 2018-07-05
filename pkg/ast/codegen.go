@@ -30,7 +30,8 @@ func branchIfNoTerminator(blk *ir.BasicBlock, to *ir.BasicBlock) {
 	}
 }
 
-func (n dependencyNode) Handle(c *Compiler) value.Value {
+// Handle will do ast-level handling for a dependency node
+func (n DependencyNode) Handle(c *Compiler) value.Value {
 
 	abs, _ := filepath.Abs(c.Package.Source.Path)
 	dir := path.Dir(abs)
@@ -49,9 +50,11 @@ func (n dependencyNode) Handle(c *Compiler) value.Value {
 	return nil
 }
 
-func (n dependencyNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
+// Codegen implements Node.Codegen for DependencyNode
+func (n DependencyNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
 
-func (n ifNode) Codegen(scope *Scope, c *Compiler) value.Value {
+// Codegen implements Node.Codegen for IfNode
+func (n IfNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	predicate := n.If.Codegen(scope, c)
 	one := constant.NewInt(1, types.I1)
 	// The name of the blocks is prefixed because
@@ -98,7 +101,8 @@ func (n ifNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return endBlk
 }
 
-func (n forNode) Codegen(scope *Scope, c *Compiler) value.Value {
+// Codegen implements Node.Codegen for ForNode
+func (n ForNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	// The name of the blocks is prefixed so we can determine which for loop a block is for.
 	namePrefix := fmt.Sprintf("for.%X.", n.Index)
 	parentBlock := c.CurrentBlock()
@@ -136,9 +140,11 @@ func (n forNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return endBlk
 }
 
-func (n charNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
+// Codegen implements Node.Codegen for CharNode
+func (n CharNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
 
-func (n unaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
+// Codegen implements Node.Codegen for UnaryNode
+func (n UnaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	operandValue := n.Operand.Codegen(scope, c)
 	if operandValue == nil {
@@ -158,7 +164,8 @@ func (n unaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return operandValue
 }
 
-func (n whileNode) Codegen(scope *Scope, c *Compiler) value.Value {
+// Codegen implements Node.Codegen for WhileNode
+func (n WhileNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	// The name of the blocks is prefixed because
 	namePrefix := fmt.Sprintf("while_%d_", n.Index)
@@ -303,7 +310,8 @@ func CreateBinaryOp(intstr, fltstr string, blk *ir.BasicBlock, t types.Type, lef
 	return inst
 }
 
-func (n binaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
+// Codegen implements Node.Codegen for BinaryNode
+func (n BinaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	// Generate the left and right nodes
 	l := n.Left.Codegen(scope, c)
 	r := n.Right.Codegen(scope, c)
@@ -351,13 +359,14 @@ func (n binaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	}
 }
 
-func (n castNode) Codegen(scope *Scope, c *Compiler) value.Value {
+// Codegen implements Node.Codegen for CastNode
+func (n CastNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	from := n.From.Codegen(scope, c)
 	return createTypeCast(c, from, n.InferType(scope))
 }
 
-// Function Call statement Code Generator
-func (n functionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
+// Codegen implements Node.Codegen for FunctionCallNode
+func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	// scopeItem, found := c.Scope.Find(n.Name)
 
@@ -397,8 +406,8 @@ func (n functionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return c.CurrentBlock().NewCall(callee, args...)
 }
 
-// Return statement Code Generator
-func (n returnNode) Codegen(scope *Scope, c *Compiler) value.Value {
+// Codegen implements Node.Codegen for ReturnNode
+func (n ReturnNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	var retVal value.Value
 
 	if c.FN.Sig.Ret != types.Void {
@@ -415,8 +424,8 @@ func (n returnNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return retVal
 }
 
-// Int Code Generator
-func (n intNode) Codegen(scope *Scope, c *Compiler) value.Value {
+// Codegen implements Node.Codegen for IntNode
+func (n IntNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	// return llvm.ConstInt(llvm.Int64Type(), , true)
 	return constant.NewInt(n.Value, types.I64)
 }
@@ -437,31 +446,21 @@ func canBeIndexed(val value.Value) bool {
 	return types.IsArray(val.Type()) || types.IsPointer(val.Type())
 }
 
-// String Constant Code Generator
-func (n stringNode) Codegen(scope *Scope, c *Compiler) value.Value {
+// Codegen implements Node.Codegen for StringNode
+func (n StringNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	str := c.Module.NewGlobalDef(mangleName(".str"), newCharArray(n.Value))
 	str.IsConst = true
 	zero := constant.NewInt(0, types.I32)
 	return constant.NewGetElementPtr(str, zero, zero)
 }
 
-// Float Constant Code Generator
-func (n floatNode) Codegen(scope *Scope, c *Compiler) value.Value {
+// Codegen implements Node.Codegen for FloatNode
+func (n FloatNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return constant.NewFloat(n.Value, types.Double)
 }
 
-// // Variable Reference Node Code Generator
-// func (n variableReferenceNode) Codegen(scope *Scope, c *Compiler) value.Value {
-// 	v, found := scope.Find(n.Name)
-// 	if !found {
-// 		fmt.Printf("unknown variable name `%s`\n", n.Name)
-// 		os.Exit(-1)
-// 	}
-// 	return c.CurrentBlock().NewLoad(v)
-// }
-
-// Variable Node Code Generator
-func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
+// Codegen implements Node.Codegen for VariableNode
+func (n VariableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	block := c.CurrentBlock()
 	f := block.Parent
 
@@ -469,7 +468,7 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	var alloc *ir.InstAlloca
 	var val value.Value
 
-	if n.RefType == ReferenceAccess {
+	if n.RefType == ReferenceAccess || n.RefType == ReferenceDereference {
 		v, found := scope.Find(name)
 		if !found {
 			fmt.Printf("unknown variable name `%s`\n", name)
@@ -477,6 +476,10 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		}
 
 		alloc = v.Value().(*ir.InstAlloca)
+
+		if n.RefType == ReferenceDereference {
+			return alloc
+		}
 
 		val = block.NewLoad(v.Value())
 
@@ -499,10 +502,9 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		}
 		alloc = v.Value().(*ir.InstAlloca)
 	} else if n.RefType == ReferenceDefine {
-		ty := typesystem.GlobalTypeMap.GetType(n.Type.Name)
+		ty := scope.FindType(n.Type.Name).Type
 		ty = n.Type.BuildPointerType(ty)
 		alloc = createBlockAlloca(f, ty, name)
-
 		scItem := NewVariableScopeItem(n.Name, alloc, PrivateVisibility)
 		scope.Add(scItem)
 	}
@@ -520,15 +522,17 @@ func (n variableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	} else {
 		// Default to 0 from issue:
 		// https://github.com/nickwanninger/geode/issues/5
-		val = createTypeCast(c, constant.NewInt(0, types.I64), alloc.Elem)
+		// val = createTypeCast(c, constant.NewInt(0, types.I64), alloc.Elem)
+		// val = nil
+		return nil
 	}
 	block.NewStore(val, alloc)
 
 	return nil
 }
 
-// Code Block Code Generator
-func (n blockNode) Codegen(scope *Scope, c *Compiler) value.Value {
+// Codegen implements Node.Codegen for BlockNode
+func (n BlockNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	blockScope := scope.SpawnChild()
 	// spew.Dump(n.Nodes)
 	for _, node := range n.Nodes {
@@ -537,20 +541,20 @@ func (n blockNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return c.CurrentBlock()
 }
 
-func (n classNode) Codegen(scope *Scope, c *Compiler) value.Value {
+// Codegen implements Node.Codegen for ClassNode
+func (n ClassNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	fields := make([]types.Type, 0)
 
 	for _, f := range n.Variables {
 		t := f.Type.Name
-		ty := typesystem.GlobalTypeMap.GetType(t)
-		// t.SetName(f.Name)
-		// fmt.Println(f)
-		// t.SetName("HELLO")
+		ty := scope.FindType(t).Type
 		fields = append(fields, ty)
 	}
 
 	structDefn := types.NewStruct(fields...)
+
+	NewTypeDef(n.Name, structDefn, -1).InjectInto(scope)
 	// structDefn.Opaque = true
 	structDefn.SetName(n.Name)
 	c.Module.NewType(n.Name, structDefn)
@@ -558,11 +562,12 @@ func (n classNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return nil
 }
 
-func (n functionNode) Arguments() ([]*types.Param, []types.Type) {
+// Arguments returns some FunctionNode's arguments
+func (n FunctionNode) Arguments(scope *Scope) ([]*types.Param, []types.Type) {
 	funcArgs := make([]*types.Param, 0)
 	argTypes := make([]types.Type, 0)
 	for _, arg := range n.Args {
-		ty := typesystem.GlobalTypeMap.GetType(arg.Type.Name)
+		ty := scope.FindType(arg.Type.Name).Type
 		ty = arg.Type.BuildPointerType(ty)
 		p := ir.NewParam(arg.Name, ty)
 		funcArgs = append(funcArgs, p)
@@ -571,9 +576,10 @@ func (n functionNode) Arguments() ([]*types.Param, []types.Type) {
 	return funcArgs, argTypes
 }
 
-func (n functionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
+// Declare declares some FunctionNode's sig
+func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 
-	funcArgs, argTypes := n.Arguments()
+	funcArgs, argTypes := n.Arguments(scope)
 	// We need to do some special checks if the function is main. It's special.
 	// For instance, it must return int type.
 	if n.Name == "main" {
@@ -586,7 +592,7 @@ func (n functionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 	if !n.Nomangle {
 		name = MangleFunctionName(n.Name, argTypes...)
 	}
-	ty := typesystem.GlobalTypeMap.GetType(n.ReturnType.Name)
+	ty := scope.FindType(n.ReturnType.Name).Type
 	ty = n.ReturnType.BuildPointerType(ty)
 	function := c.Module.NewFunction(name, ty, funcArgs...)
 
@@ -606,12 +612,11 @@ func (n functionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 	return function
 }
 
-// Function Node Statement Code Generation
-func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
+// Codegen implements Node.Codegen for FunctionNode
+func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
-	_, argTypes := n.Arguments()
-	// function := n.Declare(scope, c)
-	// fmt.Println(scope.Vals)
+	_, argTypes := n.Arguments(scope)
+
 	name := n.Name
 	if !n.Nomangle {
 		name = MangleFunctionName(n.Name, argTypes...)
@@ -642,7 +647,7 @@ func (n functionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		// Gen the body of the function
 		n.Body.Codegen(scope, c)
 		if c.CurrentBlock().Term == nil {
-			ty := typesystem.GlobalTypeMap.GetType(n.ReturnType.Name)
+			ty := scope.FindType(n.ReturnType.Name).Type
 			// log.Warn("Function %s is missing a return statement in the root block. Defaulting to 0\n", n.Name)
 			v := createTypeCast(c, constant.NewInt(0, types.I64), ty)
 			c.CurrentBlock().NewRet(v)
