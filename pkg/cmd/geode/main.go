@@ -112,7 +112,6 @@ func (c *Context) Build() {
 
 	// Loop over the compilers and generate to .ll files
 	for c := range rootPackage.Compile() {
-
 		obj := c.Emit()
 		linker.AddObject(obj)
 		for _, link := range c.CLinkages {
