@@ -230,10 +230,10 @@ static void tgc_mark(tgc_t *gc) {
   mark_stack(gc);
 
 }
-int gcsweep = 0;
+
+
 void tgc_sweep(tgc_t *gc) {
-  
-  // printf("Running gc %d\n", gcsweep++);
+
   size_t i, j, k, nj, nh;
   
   if (gc->nitems == 0) { return; }
@@ -287,6 +287,7 @@ void tgc_sweep(tgc_t *gc) {
   for (i = 0; i < gc->nfrees; i++) {
     if (gc->frees[i].ptr) {
       if (gc->frees[i].dtor) { gc->frees[i].dtor(gc->frees[i].ptr); }
+      // printf("Freeing");
       free(gc->frees[i].ptr);
     }
   }
@@ -414,6 +415,7 @@ void tgc_free(tgc_t *gc, void *ptr) {
 
 void *tgc_alloc_opt(tgc_t *gc, size_t size, int flags, void(*dtor)(void*)) {
   void *ptr = malloc(size);
+  memset(ptr, 0, size);
   if (ptr != NULL) {
     ptr = tgc_add(gc, ptr, size, flags, dtor);
   }

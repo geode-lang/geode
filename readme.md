@@ -17,6 +17,10 @@ the $GOPATH.
 Geode is a heavy work in progress with apis that will change. Extended use is
 not recommended at this stage.
 
+Geode has a super basic minimal garbage collector wrapping around `malloc` and `free`.
+In the backend, it is compiling ![tgc](https://github.com/orangeduck/tgc) into your geode program.
+The runtime will manage the setup and everything for you.
+
 ## Installing
 
 Installing Geode is simple, just follow the steps below and install a few dependencies
@@ -35,6 +39,9 @@ $ go get -u -v github.com/nickwanninger/geode/...
 ```
 
 This will build and install geode's executable binary to `$GOPATH/bin/`
+
+You might need to do some extra setup on windows to get the
+c stdlib working... Gonna have to google for that
 
 ## Example usage:
 
