@@ -100,8 +100,9 @@ func (l *Linker) Run() {
 		linkArgs = append(linkArgs, "-S", "-masm=intel")
 		// Compile each of the objects to a .s file.
 		for _, obj := range l.objectPaths {
+
 			// We only want to leave user generated files in the filesystem
-			if strings.HasSuffix(obj, ".ll") && obj != "runtime.ll" {
+			if strings.HasSuffix(obj, ".ll") && !strings.Contains(obj, "_runtime") {
 				// Pull the extension of the object file
 				ext := path.Ext(obj)
 				// Replace it with .s
@@ -115,9 +116,6 @@ func (l *Linker) Run() {
 		}
 		return
 	}
-
-	// gopath := os.Getenv("GOPATH")
-	// linkArgs = append(linkArgs, fmt.Sprintf("%s/src/github.com/nickwanninger/geode/lib/runtime.c", gopath))
 
 	// Append input files to the end of the command
 	linkArgs = append(linkArgs, l.objectPaths...)

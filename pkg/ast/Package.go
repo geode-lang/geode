@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	"time"
 
 	"github.com/llir/llvm/ir"
 	"github.com/nickwanninger/geode/pkg/lexer"
@@ -60,7 +59,7 @@ func (p *Package) String() string {
 	// so we can track this information later on.
 	ir += fmt.Sprintf("; ModuleID = %q\n", p.Name)
 	ir += fmt.Sprintf("; SourceHash = %x\n", p.Hash())
-	ir += fmt.Sprintf("; UnixDate = %d\n", time.Now().Unix())
+	// ir += fmt.Sprintf("; UnixDate = %d\n", time.Now().Unix())
 	ir += fmt.Sprintf("source_filename = %q\n", p.Source.Path)
 
 	ir += "\n"
@@ -70,11 +69,26 @@ func (p *Package) String() string {
 	return ir
 }
 
+// const buildDir = ".geode_build/"
+
 // Emit will emit the package as IR to a file for further compiling
-func (p *Package) Emit() string {
-	name := strings.Replace(p.Name, ".g", "", -1)
-	filename := fmt.Sprintf("%s.%x.ll", name, p.Hash())
+func (p *Package) Emit(buildDir string) string {
+	name := strings.Replace(p.Source.Name, ".g", "", -1)
+	filename := fmt.Sprintf("%s.ll", name)
+
+	pwd, _ := os.Getwd()
+	filename = strings.Replace(filename, pwd, "", -1)
 	ir := p.String()
+
+	buildFolder := path.Join(buildDir, path.Dir(filename))
+	// fmt.Println("Build Dir", buildFol
+
+	filename = path.Join(buildFolder, path.Base(filename))
+	// fmt.Println("outfile", filename)
+	// os.Exit(1)
+	// fmt.Println(buildFolder)
+
+	os.MkdirAll(buildFolder, os.ModePerm)
 
 	writeErr := ioutil.WriteFile(filename, []byte(ir), 0666)
 	if writeErr != nil {
@@ -108,10 +122,12 @@ func (p *Package) AddClinkage(libPath string) {
 }
 
 // LoadDep appends a dependency from a path
-func (p *Package) LoadDep(depPath string) {
+func (p *Package) LoadDep(depPath string) *Package {
 	filename := path.Base(depPath)
+	isStdlib := false
 
 	if strings.HasPrefix(filename, "std::") {
+		isStdlib = true
 		filename = strings.Replace(filename, "std::", "", -1)
 		gopath := os.Getenv("GOPATH")
 		// Join up the new filename to the standard library source location
@@ -125,11 +141,15 @@ func (p *Package) LoadDep(depPath string) {
 	}
 	depSource.ResolveFile(depPath)
 
-	pkgName := fmt.Sprintf("%s_%x", filename, depSource.Hash())
+	if isStdlib {
+		depSource.Name = path.Join("_stdlib", filename)
+	}
+
+	pkgName := fmt.Sprintf("%s", filename)
 
 	if pkg, ok := dependencyMap[depSource.HashName()]; ok {
 		p.AddDepPackage(pkg)
-		return
+		return pkg
 	}
 
 	depPkg := NewPackage(pkgName, depSource)
@@ -137,6 +157,7 @@ func (p *Package) LoadDep(depPath string) {
 	}
 	dependencyMap[depPkg.Source.HashName()] = depPkg
 	p.AddDepPackage(depPkg)
+	return depPkg
 }
 
 // InjectExternalFunction injects the function without the body, just the sig
@@ -213,7 +234,8 @@ func (p *Package) Compile() chan *Package {
 		p.Compiler = NewCompiler(p.Name, p)
 
 		if !p.IsRuntime {
-			p.AddDepPackage(RuntimePackage)
+			p.LoadDep("std::_runtime.g")
+			// p.AddDepPackage(RuntimePackage)
 		}
 		// Go through all nodes and handle the ones that are dependencies
 		for _, node := range p.Nodes {

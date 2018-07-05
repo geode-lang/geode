@@ -1,4 +1,5 @@
 include "std::io"
+include "./foo"
 # include "std::mem"
 
 
@@ -7,6 +8,5 @@ func main int {
 		byte* foo := malloc(300);
 		print("%p\n", foo);
 	}
-	
 	return 42;
 }

@@ -29,21 +29,22 @@ func NewSourcefile(name string) (*Sourcefile, error) {
 func (s *Sourcefile) Hash() []byte {
 	h := sha1.New()
 	io.WriteString(h, s.String())
-	return h.Sum(nil)[:6]
+	return h.Sum(nil)
 }
 
 // HashName returns the name and the hash.
 func (s *Sourcefile) HashName() string {
-	return fmt.Sprintf("%s_%x", s.Name, s.Hash())
+	return fmt.Sprintf("%s_%x", s.Name, s.Hash()[:2])
 }
 
 // LoadFile -
-func (s *Sourcefile) LoadFile(path string) error {
-	s.Path = path
-	bytes, err := ioutil.ReadFile(path)
+func (s *Sourcefile) LoadFile(src string) error {
+	s.Path = src
+	bytes, err := ioutil.ReadFile(src)
 	if err != nil {
-		log.Fatal("Unable to read file at path '%s'\n", path)
+		log.Fatal("Unable to read file at path '%s'\n", src)
 	}
+	s.Name = src
 	s.LoadBytes(bytes)
 	return nil
 }

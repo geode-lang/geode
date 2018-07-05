@@ -1,6 +1,5 @@
-link "./gc/tgc.c"
+link "./tgc/tgc.c"
 link "_runtime.c"
-# include "io.g"
 
 func __GEODE__alloca(int size) byte* ...
 func __GEODE__free(int size) byte* ...

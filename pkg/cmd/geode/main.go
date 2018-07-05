@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -110,9 +111,12 @@ func (c *Context) Build() {
 	linker.SetOutput(c.Output)
 	linker.SetOptimize(*optimize)
 
+	buildDir := fmt.Sprintf(".geode_build/")
+	os.RemoveAll(buildDir) // Clean up the build dir first
+
 	// Loop over the compilers and generate to .ll files
 	for c := range rootPackage.Compile() {
-		obj := c.Emit()
+		obj := c.Emit(buildDir)
 		linker.AddObject(obj)
 		for _, link := range c.CLinkages {
 			linker.AddObject(link)
@@ -128,7 +132,7 @@ func (c *Context) Build() {
 
 	linker.Run()
 
-	linker.Cleanup()
+	// linker.Cleanup()
 }
 
 // Run a context with a given set of arguments

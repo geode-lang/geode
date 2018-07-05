@@ -13,3 +13,5 @@ _string.go
 
 *.s
 *.ll
+
+.geode_build*
