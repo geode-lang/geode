@@ -55,6 +55,7 @@ func (s *Sourcefile) ResolveFile(path string) error {
 	if e != nil {
 		log.Fatal("Unable to resolve path '%s'\n", path)
 	}
+	s.Name = p
 	return s.LoadFile(p)
 }
 

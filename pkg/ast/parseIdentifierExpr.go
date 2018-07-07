@@ -11,8 +11,8 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 		return p.parseVariableDefn(true)
 	}
 
-	name := p.token.Value
-	p.next()
+	name := p.parseName()
+	// p.next()
 
 	// Is the next value a paren? If it isnt it is a normal variable reference
 	if !p.token.Is(lexer.TokLeftParen) {

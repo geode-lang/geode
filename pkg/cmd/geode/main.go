@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -35,20 +35,18 @@ func main() {
 	startTime = time.Now()
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
 
+	buildDir := fmt.Sprintf(".geode_build/")
+
 	switch command {
 	case buildCMD.FullCommand():
 		context := NewContext(*buildInput, *buildOutput)
-		context.Build()
+		context.Build(buildDir)
 
 	case runCMD.FullCommand():
-		dir, err := ioutil.TempDir("", "geode")
-		if err != nil {
-			log.Fatal("Unable to produce tmp directory for `geode run` executable\n")
-		}
-		out := dir + "/exe"
+		out := path.Join(buildDir, "a.out")
 		context := NewContext(*runInput, out)
-		context.Build()
-		context.Run(*runArgs)
+		context.Build(buildDir)
+		context.Run(*runArgs, buildDir)
 
 	case testCMD.FullCommand():
 		RunTests(*testDir)
@@ -74,13 +72,8 @@ func NewContext(in string, out string) *Context {
 	return res
 }
 
-type foo struct {
-	A string
-	B int
-}
-
 // Build some context into a binary file
-func (c *Context) Build() {
+func (c *Context) Build(buildDir string) {
 
 	src, err := lexer.NewSourcefile(c.Input)
 	if err != nil {
@@ -111,8 +104,7 @@ func (c *Context) Build() {
 	linker.SetOutput(c.Output)
 	linker.SetOptimize(*optimize)
 
-	buildDir := fmt.Sprintf(".geode_build/")
-	os.RemoveAll(buildDir) // Clean up the build dir first
+	// os.RemoveAll(buildDir) /z/ Clean up the build dir first
 
 	// Loop over the compilers and generate to .ll files
 	for c := range rootPackage.Compile() {
@@ -136,12 +128,14 @@ func (c *Context) Build() {
 }
 
 // Run a context with a given set of arguments
-func (c *Context) Run(args []string) {
+func (c *Context) Run(args []string, buildDir string) {
 	cmd := exec.Command(c.Output, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
+
+	os.RemoveAll(buildDir) // Clean up the build dir after running
 
 	// The program exited with a failed code. So we need to exit with that same code.
 	// This is because the run command should feel like just running the binary

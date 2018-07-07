@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
@@ -14,6 +15,17 @@ import (
 	"github.com/nickwanninger/geode/pkg/typesystem"
 	"github.com/nickwanninger/geode/pkg/util/log"
 )
+
+func parseName(combined string) (string, string) {
+	var namespace, name string
+	parts := strings.Split(combined, ":")
+	name = parts[len(parts)-1]
+	if len(parts) > 1 {
+		namespace = parts[0]
+	}
+
+	return namespace, name
+}
 
 // A global number to indicate which `name index` we are on. This way,
 // the mangler will never output the same name twice as this number is monotonic
@@ -29,6 +41,9 @@ func branchIfNoTerminator(blk *ir.BasicBlock, to *ir.BasicBlock) {
 		blk.NewBr(to)
 	}
 }
+
+// Codegen returns some NamespaceNode's arguments
+func (n NamespaceNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
 
 // Handle will do ast-level handling for a dependency node
 func (n DependencyNode) Handle(c *Compiler) value.Value {
@@ -160,7 +175,6 @@ func (n UnaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		return c.CurrentBlock().NewLoad(operandValue)
 	}
 
-	// fmt.Println(n.Name, operandValue)
 	return operandValue
 }
 
@@ -374,21 +388,31 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	argTypes := []types.Type{}
 	for _, arg := range n.Args {
 		a := arg.Codegen(scope, c)
-		// fmt.Println(a.Type())
+
 		args = append(args, a)
 		argTypes = append(argTypes, a.Type())
 		if args[len(args)-1] == nil {
 			return codegenError(fmt.Sprintf("Argument to function %q failed to generate code", n.Name))
 		}
 	}
-	name := MangleFunctionName(n.Name, argTypes...)
+
+	ns, nm := parseName(n.Name)
+
+	if ns == "" {
+		ns = c.Package.NamespaceName
+	}
+
+	completeName := fmt.Sprintf("%s:%s", ns, nm)
+
+	name := MangleFunctionName(completeName, argTypes...)
 	functionOptions := c.Scope.FindFunctions(name)
 	funcCount := len(functionOptions)
 
 	if funcCount > 1 {
 		log.Fatal("Too many options for function call '%s'\n", name)
 	} else if funcCount == 0 {
-		log.Fatal("Unable to find function '%s' in scope of module '%s'\n", name, c.Name)
+		_, bareName := parseName(UnmangleFunctionName(name))
+		log.Fatal("Unable to find function '%s' in scope of module '%s'\n", bareName, c.Package.NamespaceName)
 	}
 
 	fnScopeItem := functionOptions[0]
@@ -400,8 +424,6 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	if callee == nil {
 		return codegenError(fmt.Sprintf("Unknown function %q referenced", name))
 	}
-
-	// fmt.Println(n.Name, callee.Type())
 
 	return c.CurrentBlock().NewCall(callee, args...)
 }
@@ -579,19 +601,19 @@ func (n FunctionNode) Arguments(scope *Scope) ([]*types.Param, []types.Type) {
 // Declare declares some FunctionNode's sig
 func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 
-	funcArgs, argTypes := n.Arguments(scope)
+	funcArgs, _ := n.Arguments(scope)
+
+	name := n.Name
 	// We need to do some special checks if the function is main. It's special.
 	// For instance, it must return int type.
-	if n.Name == "main" {
+	if name == "main" {
 		if n.ReturnType.Name != "int" {
 			log.Fatal("Main function must return type int. Called for type '%s'\n", n.ReturnType)
 		}
+	} else {
+		name = n.MangledName(scope, c)
 	}
 
-	name := n.Name
-	if !n.Nomangle {
-		name = MangleFunctionName(n.Name, argTypes...)
-	}
 	ty := scope.FindType(n.ReturnType.Name).Type
 	ty = n.ReturnType.BuildPointerType(ty)
 	function := c.Module.NewFunction(name, ty, funcArgs...)
@@ -604,38 +626,67 @@ func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 
 	function.Sig.Variadic = n.Variadic
 
+	keyName := fmt.Sprintf("%s:%s", c.Package.NamespaceName, n.Name)
 	// fmt.Println(function.Name, function.Sig.Variadic)
-	scopeItem := NewFunctionScopeItem(name, function, PublicVisibility)
+	scopeItem := NewFunctionScopeItem(keyName, function, PublicVisibility)
 	scopeItem.SetMangled(!n.Nomangle)
 	c.Scope.Add(scopeItem)
 
 	return function
 }
 
+// MangledName will return the mangled name for a function node
+func (n FunctionNode) MangledName(scope *Scope, c *Compiler) string {
+	if n.Nomangle {
+		return n.Name
+	}
+	_, argTypes := n.Arguments(scope)
+	namespace, name := parseName(n.Name)
+	// fmt.Printf("Parsed, (%q, %q)\n", namespace, name)
+	if namespace == "" {
+		namespace = c.Package.NamespaceName
+	}
+
+	n.Name = fmt.Sprintf("%s:%s", namespace, name)
+	name = MangleFunctionName(n.Name, argTypes...)
+	return name
+}
+
 // Codegen implements Node.Codegen for FunctionNode
 func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
-	_, argTypes := n.Arguments(scope)
-
 	name := n.Name
-	if !n.Nomangle {
-		name = MangleFunctionName(n.Name, argTypes...)
+
+	if name != "main" {
+		name = n.MangledName(scope, c)
 	}
 
 	declared := c.Scope.FindFunctions(name)
 	if len(declared) != 1 {
 		log.Fatal("Unable to find function declaration for '%s'\n", name)
 	}
-
-	// fmt.Println(c.Scope.Vals)
-
 	function := declared[0].Value().(*ir.Function)
 	c.FN = function
 
 	// If the function is external (has ... at the end) we don't build a block
 	if !n.External {
-		name := mangleName("entry")
-		c.PushBlock(c.FN.NewBlock(name))
+		entryBlock := ir.NewBlock("entry")
+		c.FN.AppendBlock(entryBlock)
+		c.PushBlock(entryBlock)
+
+		if name == "main" {
+			// Find the prelude functions (init gc)
+			pFuncs := scope.Parent.FindFunctions("_GN_runtime$initgc")
+			if len(pFuncs) == 0 {
+				log.Fatal("Unable to find runtime function '_GN_runtime$initgc' in scope of main\n")
+			}
+
+			n := FunctionCallNode{}
+			n.NodeType = nodeFunctionCall
+
+			n.Name = "_runtime:initgc"
+			n.Codegen(scope, c)
+		}
 
 		for _, arg := range function.Params() {
 			alloc := c.CurrentBlock().NewAlloca(arg.Type())

@@ -42,6 +42,7 @@ var Tokens = []TokenInfoRelation{
 	{TokOper, `>`},
 	{TokOper, `>=|≥`},
 	{TokSemiColon, `;`},
+	{TokNamespaceAccess, `:`},
 
 	// {TokDefereference, `@`},
 	// {TokReference, `\*`},
@@ -79,6 +80,7 @@ var keyWordMap = map[string]TokenType{
 	"class":   TokClassDefn,
 	"include": TokDependency,
 	"link":    TokDependency,
+	"is":      TokNamespace,
 }
 
 var tokRegexMap map[string]TokenType
@@ -123,7 +125,12 @@ func (s *LexState) Lex(text []byte) error {
 			t := Token{}
 			t.SourceCode = &srcString
 			t.Pos = to.TC
-			t.buildEndPos(to.EndColumn, to.EndLine)
+			t.StartLine = to.StartLine
+			t.StartColumn = to.StartColumn
+			t.EndLine = to.EndLine
+			t.EndColumn = to.EndColumn
+
+			// t.buildEndPos(to.EndColumn, to.EndLine)
 			t.Type = TokenType(to.Type)
 			t.Value = string(to.Value.(string))
 			// t.SourceCode = &text

@@ -51,6 +51,7 @@ const (
 	nodeFunctionCall
 	nodeClass
 	nodeDependency
+	nodeNamespace
 
 	// Other
 	nodeBlock
@@ -340,6 +341,19 @@ func (n ClassNode) NameString() string { return "ClassNode" }
 
 // InferType implements Node.InferType
 func (n ClassNode) InferType(scope *Scope) types.Type { return types.Void }
+
+// NamespaceNode -
+type NamespaceNode struct {
+	NodeType
+
+	Name string
+}
+
+// NameString implements Node.NameString
+func (n NamespaceNode) NameString() string { return "NamespaceNode" }
+
+// InferType implements Node.InferType
+func (n NamespaceNode) InferType(scope *Scope) types.Type { return types.Void }
 
 // GeodeTypeRef -
 type GeodeTypeRef struct {

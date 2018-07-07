@@ -41,35 +41,34 @@ func (s *Scope) Find(name string) (ScopeItem, bool) {
 }
 
 // FindFunctions returns a list of functions that might match the name provided
-func (s *Scope) FindFunctions(name string) []FunctionScopeItem {
+func (s *Scope) FindFunctions(needle string) []FunctionScopeItem {
 	funcs := make([]FunctionScopeItem, 0)
 
-	// First check the name without unmangling it
-	fnc, found := s.Vals[name]
-	if found {
-		return append(funcs, fnc.(FunctionScopeItem))
-	}
+	unMangled := UnmangleFunctionName(needle)
+	_, name := parseName(unMangled)
 
-	unMangled := UnmangleFunctionName(name)
-	fnc, found = s.Vals[unMangled]
-	if found {
-		return append(funcs, fnc.(FunctionScopeItem))
+	possibleNames := []string{needle, unMangled, name}
+
+	for _, nm := range possibleNames {
+		fnc, found := s.Vals[nm]
+		if found {
+			return append(funcs, fnc.(FunctionScopeItem))
+		}
 	}
 
 	for _, v := range s.Vals {
 		if v.Type() == ScopeItemFunctionType {
 			fn := v.(FunctionScopeItem)
-			if fn.Name() == name {
+			if fn.Name() == needle {
 				funcs = append(funcs, fn)
 			}
 		}
 	}
 	if s.Parent != nil {
-		funcs = append(funcs, s.Parent.FindFunctions(name)...)
+		funcs = append(funcs, s.Parent.FindFunctions(needle)...)
 	}
 
 	return funcs
-
 }
 
 // FindType returns the type stored with a name in this scope
@@ -191,7 +190,7 @@ func (item FunctionScopeItem) SetMangled(m bool) {
 // NewFunctionScopeItem constructs a function scope item
 func NewFunctionScopeItem(name string, function *ir.Function, vis Visibility) FunctionScopeItem {
 	item := FunctionScopeItem{}
-	item.name = name
+	item.name = function.Name
 	item.function = function
 	item.vis = vis
 	return item

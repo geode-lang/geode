@@ -39,6 +39,7 @@ func Parse(tokens chan lexer.Token) <-chan Node {
 			"-":  20,
 			"*":  40,
 			"/":  40,
+			"%":  40,
 		},
 	}
 
@@ -73,8 +74,9 @@ func (p *Parser) requires(t lexer.TokenType) {
 	if p.token.Is(t) {
 		return
 	}
-	p.Error("Required token '%s' is missing. Has '%s' instead.", t.String(), p.token.Type.String())
 
+	p.token.SyntaxError()
+	p.Error("Required token '%s' is missing. Has '%s' instead.\n", t.String(), p.token.Type.String())
 }
 
 func (p *Parser) back() lexer.Token {
@@ -99,17 +101,13 @@ func (p *Parser) peek(o int) lexer.Token {
 }
 
 func (p *Parser) checkSemiColon() {
-	if !p.token.Is(lexer.TokSemiColon) {
-		fmt.Println(p.peek(-2).Value)
-		fmt.Println(p.peek(-1).Value)
-		fmt.Println(p.token.Value)
-		p.Error("Missing Semicolon\n")
-
-	}
+	p.requires(lexer.TokSemiColon)
 }
 
 func (p *Parser) parseTopLevelStmt() Node {
 	switch p.token.Type {
+	case lexer.TokNamespace:
+		return p.parseNamespace()
 	case lexer.TokDependency:
 		return p.parseDependencyStmt()
 	case lexer.TokClassDefn:
@@ -120,6 +118,7 @@ func (p *Parser) parseTopLevelStmt() Node {
 		// 	log.Debug("parseTopLevelStmt - TokFuncDefn\n")
 		// 	return p.parseVariableDefn(true)
 	}
+	p.token.SyntaxError()
 	p.Error("Invalid syntax in root")
 	return nil
 }

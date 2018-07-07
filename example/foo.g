@@ -1,4 +1,3 @@
+is foo
 
-func foo() int {
-	return 42;
-}
+func foo() int -> 3;

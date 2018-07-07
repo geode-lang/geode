@@ -15,15 +15,15 @@ func (p *Parser) parseFnDefn() FunctionNode {
 		p.next()
 	}
 
-	fn.Name = p.token.Value
+	fn.Name = p.parseName()
 
 	// The main function should never be mangled
 	if fn.Name == "main" {
 		fn.Nomangle = true
-		fn.Name = "__GEODE__main"
+		// fn.Name = "__GEODE__main"
 	}
 
-	p.next()
+	// p.next()
 
 	if p.token.Type == lexer.TokLeftParen {
 		p.next()

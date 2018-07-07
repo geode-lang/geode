@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -24,6 +25,8 @@ const (
 	TokElipsis
 	TokOper
 	TokPtr
+
+	TokNamespaceAccess
 
 	TokOperatorStart
 	TokStar
@@ -64,7 +67,7 @@ const (
 	TokReturn
 	TokFuncDefn
 	TokClassDefn
-	TokLet
+	TokNamespace
 
 	TokDependency
 
@@ -84,16 +87,25 @@ func TokenIsOperator(t TokenType) bool {
 
 // Token is a token in the program
 type Token struct {
-	SourceCode *string   `json:"-"`
-	Type       TokenType `json:"type,omitempty"`
-	Value      string    `json:"value,omitempty"`
-	Pos        int       `json:"start_pos"`
-	EndPos     int       `json:"end_pos"`
+	SourceCode  *string   `json:"-"`
+	Type        TokenType `json:"type,omitempty"`
+	Value       string    `json:"value,omitempty"`
+	Pos         int       `json:"start_pos"`
+	EndPos      int       `json:"end_pos"`
+	StartLine   int       `json:"start_line"`
+	StartColumn int       `json:"start_column"`
+	EndLine     int       `json:"end_line"`
+	EndColumn   int       `json:"end_column"`
 }
 
 // Is - returns if the token is a certain type as a string
-func (t Token) Is(a TokenType) bool {
-	return t.Type == a
+func (t Token) Is(types ...TokenType) bool {
+	for _, a := range types {
+		if t.Type == a {
+			return true
+		}
+	}
+	return false
 }
 
 func (t Token) String() string {
@@ -109,28 +121,33 @@ func (t Token) String() string {
 	return string(encoded)
 }
 
-func (t *Token) buildEndPos(endCol int, endRow int) {
+// SyntaxError returns a formatted syntax error
+func (t *Token) SyntaxError() {
+	src := strings.Replace(*t.SourceCode, "\t", "    ", -1)
+	fmt.Printf("\n=========================================================\n")
+	fmt.Printf("\nSyntax error!\n")
+	fmt.Printf("Value: %q\n", t.Value)
+	fmt.Printf("Line: %d\n", t.StartLine)
+	fmt.Printf("Column: %d\n", t.StartColumn)
 
-	src := *t.SourceCode
+	lines := strings.Split(src, "\n")
+	lineMargins := 3
+	fmt.Printf("\n       ...\n")
+	for i, line := range lines {
+		ln := i + 1
 
-	end := 0
-
-	row := 1
-	col := 1
-
-	for i, c := range src {
-		col++
-		if c == '\n' {
-			row++
-			col = 1
+		if ln >= t.StartLine-lineMargins && ln <= t.EndLine+lineMargins {
+			es := "  "
+			if ln >= t.StartLine && ln <= t.EndLine {
+				es = "->"
+			}
+			fmt.Printf("%3d %s %s\n", ln, es, line)
 		}
-		if row == endRow && col == endCol {
-			end = i
-			break
-		}
+
 	}
+	fmt.Printf("       ...\n")
+	fmt.Printf("\n=========================================================\n\n")
 
-	t.EndPos = end
 }
 
 // InferType takes some token and guesses the type

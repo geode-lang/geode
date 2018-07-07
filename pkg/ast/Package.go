@@ -37,6 +37,7 @@ type Package struct {
 	objectFilesEmitted []string
 	Compiled           bool
 	CLinkages          []string
+	NamespaceName      string
 }
 
 // NewPackage returns a pointer to a new package
@@ -59,6 +60,7 @@ func (p *Package) String() string {
 	// so we can track this information later on.
 	ir += fmt.Sprintf("; ModuleID = %q\n", p.Name)
 	ir += fmt.Sprintf("; SourceHash = %x\n", p.Hash())
+	ir += fmt.Sprintf("; Namespace = %s\n", p.NamespaceName)
 	// ir += fmt.Sprintf("; UnixDate = %d\n", time.Now().Unix())
 	ir += fmt.Sprintf("source_filename = %q\n", p.Source.Path)
 
@@ -81,12 +83,8 @@ func (p *Package) Emit(buildDir string) string {
 	ir := p.String()
 
 	buildFolder := path.Join(buildDir, path.Dir(filename))
-	// fmt.Println("Build Dir", buildFol
 
 	filename = path.Join(buildFolder, path.Base(filename))
-	// fmt.Println("outfile", filename)
-	// os.Exit(1)
-	// fmt.Println(buildFolder)
 
 	os.MkdirAll(buildFolder, os.ModePerm)
 
@@ -139,10 +137,11 @@ func (p *Package) LoadDep(depPath string) *Package {
 	if err != nil {
 		log.Fatal("Error creating dependency source structure\n")
 	}
+
 	depSource.ResolveFile(depPath)
 
 	if isStdlib {
-		depSource.Name = path.Join("_stdlib", filename)
+		depSource.Name = path.Join(".stdlib", filename)
 	}
 
 	pkgName := fmt.Sprintf("%s", filename)
@@ -161,7 +160,7 @@ func (p *Package) LoadDep(depPath string) *Package {
 }
 
 // InjectExternalFunction injects the function without the body, just the sig
-func (p *Package) InjectExternalFunction(fn *ir.Function) {
+func (p *Package) InjectExternalFunction(from *Package, fn *ir.Function) {
 	ex := ir.NewFunction(fn.Name, fn.Sig.Ret, fn.Params()...)
 	ex.Sig.Variadic = fn.Sig.Variadic
 	scopeItem := NewFunctionScopeItem(fn.Name, ex, PublicVisibility)
@@ -179,7 +178,7 @@ func (p *Package) Inject(c *Package) {
 
 			if v.Type() == ScopeItemFunctionType {
 				// fmt.Println(p.Name, v.Name())
-				p.InjectExternalFunction(v.Value().(*ir.Function))
+				p.InjectExternalFunction(c, v.Value().(*ir.Function))
 			} else {
 				p.Scope.Add(v)
 			}
@@ -235,8 +234,15 @@ func (p *Package) Compile() chan *Package {
 
 		if !p.IsRuntime {
 			p.LoadDep("std::_runtime.g")
-			// p.AddDepPackage(RuntimePackage)
 		}
+
+		// The first node *should* always be a namespace node
+		if p.Nodes[0].Kind() == nodeNamespace {
+			p.NamespaceName = p.Nodes[0].(NamespaceNode).Name
+		} else {
+			log.Fatal("%q missing namespace. It must be the first statement.\nEx: `is foo`\n", p.Name)
+		}
+
 		// Go through all nodes and handle the ones that are dependencies
 		for _, node := range p.Nodes {
 			if node.Kind() == nodeDependency {

@@ -9,7 +9,7 @@ func RunCommand(command string, args ...string) ([]byte, error) {
 	cmd := exec.Command(command, args...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, err
+		return out, err
 
 	}
 	return out, nil
