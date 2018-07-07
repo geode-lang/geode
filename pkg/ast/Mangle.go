@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/llir/llvm/ir/types"
@@ -21,12 +22,12 @@ func MangleFunctionName(origName string, argTypes ...types.Type) string {
 
 	name += strings.Replace(origName, ":", "$", -1)
 
-	// if len(argTypes) > 0 {
-	// 	name += "-"
-	// }
-	// for _, arg := range argTypes {
-	// 	name += fmt.Sprintf("%s", arg)
-	// }
+	if len(argTypes) > 0 {
+		name += "-"
+	}
+	for _, arg := range argTypes {
+		name += fmt.Sprintf("%s", arg)
+	}
 
 	return name
 }

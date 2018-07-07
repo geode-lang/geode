@@ -1,5 +1,6 @@
 # Name = "FizzBuzz"
 # ExpectedOutput = "FizzBuzz 1 2 Fizz 4 Buzz "
+is main
 include "std::io"
 
 func main int {
@@ -7,16 +8,16 @@ func main int {
 		int written := 0;
 		if i % 3 = 0 {
 			written <- 1;
-			print("Fizz");
+			io:print("Fizz");
 		}
 		if i % 5 = 0 {
 			written <- 1;
-			print("Buzz");
+			io:print("Buzz");
 		}
 		if written = 0 {
-			print("%d ", i);
+			io:print("%d ", i);
 		} else {
-			print(" ");	
+			io:print(" ");	
 		}
 	}
 	return 0;

@@ -1,5 +1,6 @@
 # Name = "For Loops"
 # ExpectedOutput = "1057046400"
+is main
 include "std::io"
 
 func main int {
@@ -9,6 +10,6 @@ func main int {
 			i <- i + x * y;
 		}
 	}
-	print("%d", i);
+	io:print("%d", i);
 	return 0;
 }

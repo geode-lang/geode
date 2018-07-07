@@ -1,5 +1,7 @@
 # Name = "Overload"
 # ExpectedOutput = "2 2.0"
+is main
+
 include "std::io"
 
 func foo(int a) int {
@@ -11,6 +13,6 @@ func foo(float a) float {
 }
 
 func main() int {
-	print("%d %.1f", foo(1), foo(1.0));
+	io:print("%d %.1f", foo(1), foo(1.0));
 	return 0;
 }

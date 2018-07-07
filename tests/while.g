@@ -1,5 +1,6 @@
 # Name = "while"
 # ExpectedOutput = "255"
+is main
 include "std::io"
 
 func main int {
@@ -7,6 +8,6 @@ func main int {
 	while i < 255 {
 		i <- i + 1;
 	}
-	print("%d", i);
+	io:print("%d", i);
 	return 0;
 }

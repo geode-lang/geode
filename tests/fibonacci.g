@@ -1,5 +1,6 @@
 # Name = "fibonacci"
 # ExpectedOutput = "832040"
+is main
 include "std::io"
 
 func fib(int n) int {
@@ -12,6 +13,6 @@ func fib(int n) int {
 func main(int argc) int {
 	int a;
 	a <- 30;
-	print("%d", fib(a));
+	io:print("%d", fib(a));
 	return 0;
 }
