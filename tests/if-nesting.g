@@ -4,6 +4,7 @@
 is main
 include "std::io"
 
+
 func main(int argc) int {
 	int a := 1;
 	if argc >= 2 {

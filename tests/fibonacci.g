@@ -3,6 +3,7 @@
 is main
 include "std::io"
 
+
 func fib(int n) int {
 	if n < 2 {
 		return n;

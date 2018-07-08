@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdarg.h>
 
 #define USE_GC
 
@@ -23,19 +24,10 @@ ___geodegcinit(void* stk) {
 
 
 char*
-__GEODE__alloca(int size) {
+rawmalloc(int size) {
 	#ifdef USE_GC
 	return tgc_alloc(&gc, size);
 	#else
 	return (char*)malloc(size);
-	#endif
-}
-
-void
-__GEODE_free(char* ptr) {
-	#ifdef USE_GC
-	return tgc_free(&gc, ptr);
-	#else
-	return free(ptr);
 	#endif
 }

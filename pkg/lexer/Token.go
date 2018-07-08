@@ -87,15 +87,15 @@ func TokenIsOperator(t TokenType) bool {
 
 // Token is a token in the program
 type Token struct {
-	SourceCode  *string   `json:"-"`
-	Type        TokenType `json:"type,omitempty"`
-	Value       string    `json:"value,omitempty"`
-	Pos         int       `json:"start_pos"`
-	EndPos      int       `json:"end_pos"`
-	StartLine   int       `json:"start_line"`
-	StartColumn int       `json:"start_column"`
-	EndLine     int       `json:"end_line"`
-	EndColumn   int       `json:"end_column"`
+	source      *Sourcefile `json:"-"`
+	Type        TokenType   `json:"type,omitempty"`
+	Value       string      `json:"value,omitempty"`
+	Pos         int         `json:"start_pos"`
+	EndPos      int         `json:"end_pos"`
+	StartLine   int         `json:"start_line"`
+	StartColumn int         `json:"start_column"`
+	EndLine     int         `json:"end_line"`
+	EndColumn   int         `json:"end_column"`
 }
 
 // Is - returns if the token is a certain type as a string
@@ -123,7 +123,7 @@ func (t Token) String() string {
 
 // SyntaxError returns a formatted syntax error
 func (t *Token) SyntaxError() {
-	src := strings.Replace(*t.SourceCode, "\t", "    ", -1)
+	src := strings.Replace(t.source.String(), "\t", "    ", -1)
 	fmt.Printf("\n=========================================================\n")
 	fmt.Printf("\nSyntax error!\n")
 	fmt.Printf("Value: %q\n", t.Value)

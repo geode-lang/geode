@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-// the print function wrapper.
-void print(char *fmt, ...) {
+
+
+
+// the cprintf function wrapper.
+void cprintf(char *fmt, ...) {
 	va_list args;
 	va_start(args, fmt);
 	vprintf(fmt, args);

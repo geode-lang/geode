@@ -43,6 +43,8 @@ func Parse(tokens chan lexer.Token) <-chan Node {
 		},
 	}
 
+	// os.Exit(1)
+
 	// prime the next token for use by reading from the token channel (easier than handling in .next())
 
 	for t := range tokens {

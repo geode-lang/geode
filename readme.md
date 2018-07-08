@@ -62,8 +62,6 @@ Files can be any of the following:
 ### helloworld.g
 
 ```go
-include "std::io"
-
 func main int {
 	print("Hello, world\n");
 	return 0;
@@ -73,8 +71,6 @@ func main int {
 ### Example fib.g
 
 ```go
-include "std::io"
-
 func fib(int n) int {
 	if n < 2 {
 		return n;

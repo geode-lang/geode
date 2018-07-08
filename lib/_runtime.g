@@ -5,7 +5,8 @@ link "_runtime.c"
 
 func ___geodegcinit() ...
 
-
-func initgc() {
+func init() {
 	___geodegcinit();
 }
+
+

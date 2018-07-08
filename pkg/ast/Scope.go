@@ -41,6 +41,7 @@ func (s *Scope) Find(name string) (ScopeItem, bool) {
 }
 
 // FindFunctions returns a list of functions that might match the name provided
+// The needle can be any of the following: bare name, mangled name
 func (s *Scope) FindFunctions(needle string) []FunctionScopeItem {
 	funcs := make([]FunctionScopeItem, 0)
 

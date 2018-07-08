@@ -27,7 +27,7 @@ type Package struct {
 	fmt.Stringer
 
 	Name               string
-	Lexer              *lexer.LexState
+	Lexer              *lexer.Lexer
 	Source             *lexer.Sourcefile
 	Nodes              []Node
 	Dependencies       []*Package
@@ -193,9 +193,10 @@ func (p *Package) Parse() chan *Package {
 	chn := make(chan *Package)
 	go func() {
 		// Pull the source bytes out
-		srcBytes := p.Source.Bytes()
+		// srcBytes := p.Source.Bytes()
 		// go and lex the bytes
-		go p.Lexer.Lex(srcBytes) // run the lexer
+		go p.Lexer.Lex(p.Source) // run the lexer
+
 		// Parse the bytes into a channel of nodes
 		nodes := Parse(p.Lexer.Tokens)
 		// And append all those nodes to the package's nodes.

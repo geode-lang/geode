@@ -135,7 +135,7 @@ func (c *Context) Run(args []string, buildDir string) {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 
-	os.RemoveAll(buildDir) // Clean up the build dir after running
+	// os.RemoveAll(buildDir) // Clean up the build dir after running
 
 	// The program exited with a failed code. So we need to exit with that same code.
 	// This is because the run command should feel like just running the binary

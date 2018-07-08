@@ -225,28 +225,6 @@ const (
 	ReferenceDereference
 )
 
-// VariableNode is a generic variable statement representation
-// this contains a reference type inside it that tellst the
-// code generator what kind of variable statement to build
-type VariableNode struct {
-	NodeType
-	Type         GeodeTypeRef
-	HasValue     bool
-	Name         string
-	IsPointer    bool
-	RefType      ReferenceType
-	IndexExpr    Node
-	IsArray      bool
-	Reassignment bool
-	Body         Node
-}
-
-// NameString implements Node.NameString
-func (n VariableNode) NameString() string { return "VariableNode" }
-
-// InferType implements Node.InferType
-func (n VariableNode) InferType(scope *Scope) types.Type { return types.Void }
-
 // ReturnNode is how functions return values from any block
 // A return node contains the value (another Node) that will be
 // codegenned and used in a `NewRet()` call on the parent function
@@ -260,28 +238,6 @@ func (n ReturnNode) NameString() string { return "ReturnNode" }
 
 // InferType implements Node.InferType
 func (n ReturnNode) InferType(scope *Scope) types.Type { return types.Void }
-
-// FunctionNode is the representation of some function. It has methods
-// on it to declare the function as well as codegen. A function has
-// a list of VariableNodes for arguments and a single block for a body,
-// all of which are codegenned.
-type FunctionNode struct {
-	NodeType
-
-	Name       string
-	Args       []VariableNode
-	Body       BlockNode
-	External   bool
-	Variadic   bool
-	Nomangle   bool
-	ReturnType GeodeTypeRef
-}
-
-// NameString implements Node.NameString
-func (n FunctionNode) NameString() string { return "FunctionNode" }
-
-// InferType implements Node.InferType
-func (n FunctionNode) InferType(scope *Scope) types.Type { return types.Void }
 
 // FunctionCallNode is a function call, example: `foo(a, b, c)`. This would be:
 //    Name = "foo"
@@ -299,19 +255,6 @@ func (n FunctionCallNode) NameString() string { return "FunctionCallNode" }
 // InferType implements Node.InferType
 func (n FunctionCallNode) InferType(scope *Scope) types.Type { return types.Void }
 
-// BlockNode is a block statement. A block statement is just an array of Nodes
-// that run in sequence.
-type BlockNode struct {
-	NodeType
-	Nodes []Node
-}
-
-// NameString implements Node.NameString
-func (n BlockNode) NameString() string { return "BlockNode" }
-
-// InferType implements Node.InferType
-func (n BlockNode) InferType(scope *Scope) types.Type { return types.Void }
-
 // WhileNode is a while loop representationvbnm,bvbnm
 type WhileNode struct {
 	NodeType
@@ -326,21 +269,6 @@ func (n WhileNode) NameString() string { return "WhileNode" }
 
 // InferType implements Node.InferType
 func (n WhileNode) InferType(scope *Scope) types.Type { return types.Void }
-
-// ClassNode -
-type ClassNode struct {
-	NodeType
-
-	Name      string
-	Methods   []FunctionNode
-	Variables []VariableNode
-}
-
-// NameString implements Node.NameString
-func (n ClassNode) NameString() string { return "ClassNode" }
-
-// InferType implements Node.InferType
-func (n ClassNode) InferType(scope *Scope) types.Type { return types.Void }
 
 // NamespaceNode -
 type NamespaceNode struct {

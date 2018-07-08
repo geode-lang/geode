@@ -3,6 +3,7 @@
 is main
 include "std::io"
 
+
 func main int {
 	for int i := 0; i <= 5; i <- i + 1 {
 		int written := 0;

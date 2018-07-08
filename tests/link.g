@@ -2,8 +2,9 @@
 # ExpectedOutput = "42"
 is main
 
-include "std::io"
+
 link "link.c"
+include "std::io"
 
 func foo int ...
 

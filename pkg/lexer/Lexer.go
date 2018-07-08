@@ -94,17 +94,16 @@ func init() {
 	}
 }
 
-// LexState - an internal rep of the lexer
-type LexState struct {
+// Lexer - an internal rep of the lexer
+type Lexer struct {
 	lexer  *lexmachine.Lexer
 	Tokens chan Token
 	Done   bool
 }
 
 // Lex - takes a string and turns it into tokens
-func (s *LexState) Lex(text []byte) error {
-	srcString := string(text)
-	scanner, err := s.lexer.Scanner(text)
+func (s *Lexer) Lex(source *Sourcefile) error {
+	scanner, err := s.lexer.Scanner(source.Bytes())
 	if err != nil {
 		return err
 	}
@@ -123,7 +122,7 @@ func (s *LexState) Lex(text []byte) error {
 			to := *tk.(*lexmachine.Token)
 
 			t := Token{}
-			t.SourceCode = &srcString
+			t.source = source
 			t.Pos = to.TC
 			t.StartLine = to.StartLine
 			t.StartColumn = to.StartColumn
@@ -146,7 +145,7 @@ func (s *LexState) Lex(text []byte) error {
 }
 
 // NewLexer produces a new lexer and poluates it with the configuration
-func NewLexer() *LexState {
+func NewLexer() *Lexer {
 
 	getToken := func(tokenType TokenType) lexmachine.Action {
 		return func(s *lexmachine.Scanner, m *machines.Match) (interface{}, error) {
@@ -167,7 +166,7 @@ func NewLexer() *LexState {
 	for k, v := range tokRegexMap {
 		lexer.Add([]byte(k), getToken(v))
 	}
-	s := &LexState{}
+	s := &Lexer{}
 	s.Tokens = make(chan Token)
 	s.lexer = lexer
 	return s
