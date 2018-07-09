@@ -62,8 +62,11 @@ Files can be any of the following:
 ### helloworld.g
 
 ```go
+is main
+include "std::io"
+
 func main int {
-	print("Hello, world\n");
+	io:print("Hello, world\n");
 	return 0;
 }
 ```
@@ -71,6 +74,10 @@ func main int {
 ### Example fib.g
 
 ```go
+is main
+
+include "std::io"
+
 func fib(int n) int {
 	if n < 2 {
 		return n;
@@ -79,7 +86,7 @@ func fib(int n) int {
 }
 
 func main int {
-	print("%d\n", fib(30));
+	io:print("%d\n", fib(30));
 	return 0;
 }
 ```
