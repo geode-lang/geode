@@ -1,8 +1,11 @@
 is main
 
-func 유니코드테스트 void {}
+class Foo {
+	int a;
+	int b;
+}
 
-func main int 유니코드테스트 {
-	유니코드테스트();
+func main int {
+	Foo a;
 	return 0;
 }

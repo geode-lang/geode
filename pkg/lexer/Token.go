@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ark-lang/ark/src/util"
 	"github.com/nickwanninger/geode/pkg/typesystem"
+	"github.com/nickwanninger/geode/pkg/util/color"
 )
 
 // TokenIsOperator will return if a given token is an operator or not
@@ -47,17 +47,19 @@ func (t *Token) SyntaxError() {
 	// underline := util.Red(strings.Repeat("^", width))
 	// fmt.Println(underline)
 
-	lineMargins := 12
-
+	lineMargins := 2
 	src := t.source.String()
 
-	src = src[:t.Pos] + util.Red(src[t.Pos:t.EndPos]) + src[t.EndPos:]
+	// Highlight the source string at the error
+	src = src[:t.Pos] + color.Red(src[t.Pos:t.EndPos]) + src[t.EndPos:]
+	// Replace tabs with a fixed number of spaces
 	src = strings.Replace(src, "\t", "    ", -1)
 	lines := strings.Split(src, "\n")
 
+	// Start printing
 	fmt.Printf("\nSyntax error:\n")
-
-	fmt.Printf(util.Blue("   | %s:%d\n"), t.source.Path, t.Line)
+	fmt.Printf(color.Blue("   | %s:%d\n"), t.source.Path, t.Line)
+	fmt.Printf(color.Blue("   |\n"))
 	for i, line := range lines {
 		ln := i + 1
 
@@ -67,16 +69,12 @@ func (t *Token) SyntaxError() {
 			if ln == t.Line {
 				lineNumber = fmt.Sprintf("%2d", ln)
 			}
-			lineString = util.Blue(fmt.Sprintf("%s |", lineNumber))
+			lineString = color.Blue(fmt.Sprintf("%s |", lineNumber))
 			fmt.Printf("%s %s\n", lineString, line)
-
-			if ln == t.Line {
-				lineNumber = fmt.Sprintf("%2d", ln)
-			}
 		}
 
 	}
-	fmt.Printf("\n")
+	fmt.Printf(color.Blue("   |\n\n"))
 
 }
 
