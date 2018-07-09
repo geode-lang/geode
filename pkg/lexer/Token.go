@@ -1,83 +1,12 @@
 package lexer
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/ark-lang/ark/src/util"
 	"github.com/nickwanninger/geode/pkg/typesystem"
-)
-
-//go:generate stringer -type=TokenType $GOFILE
-
-// TokenType -
-type TokenType int
-
-// Assigning tokens integer values
-const (
-	TokError TokenType = iota
-	TokWhitespace
-	TokChar
-	TokString
-	TokNumber
-
-	TokElipsis
-	TokOper
-	TokPtr
-
-	TokNamespaceAccess
-
-	TokOperatorStart
-	TokStar
-	TokPlus
-	TokMinus
-	TokDiv
-	TokExp
-	TokLT
-	TokLTE
-	TokGT
-	TokGTE
-	TokOperatorEnd
-
-	TokSemiColon
-
-	TokDefereference
-	TokReference
-
-	TokAssignment
-	TokEquality
-
-	TokRightParen
-	TokLeftParen
-
-	TokRightCurly
-	TokLeftCurly
-
-	TokRightBrace
-	TokLeftBrace
-
-	TokRightArrow
-	TokLeftArrow
-
-	TokFor
-	TokWhile
-	TokIf
-	TokElse
-	TokReturn
-	TokFuncDefn
-	TokClassDefn
-	TokNamespace
-
-	TokDependency
-
-	TokType
-
-	TokComma
-
-	TokIdent
-
-	TokComment
 )
 
 // TokenIsOperator will return if a given token is an operator or not
@@ -87,15 +16,13 @@ func TokenIsOperator(t TokenType) bool {
 
 // Token is a token in the program
 type Token struct {
-	source      *Sourcefile `json:"-"`
-	Type        TokenType   `json:"type,omitempty"`
-	Value       string      `json:"value,omitempty"`
-	Pos         int         `json:"start_pos"`
-	EndPos      int         `json:"end_pos"`
-	StartLine   int         `json:"start_line"`
-	StartColumn int         `json:"start_column"`
-	EndLine     int         `json:"end_line"`
-	EndColumn   int         `json:"end_column"`
+	source *Sourcefile
+	Type   TokenType `json:"type,omitempty"`
+	Value  string    `json:"value,omitempty"`
+	Pos    int       `json:"start_pos"`
+	EndPos int       `json:"end_pos"`
+	Line   int       `json:"line"`
+	Column int       `json:"column"`
 }
 
 // Is - returns if the token is a certain type as a string
@@ -110,43 +37,46 @@ func (t Token) Is(types ...TokenType) bool {
 
 func (t Token) String() string {
 
-	m := make(map[string]interface{})
-	m["type"] = string(t.Type)
-	m["value"] = t.Value
-
-	encoded, err := json.MarshalIndent(t, "", "  ")
-	if err != nil {
-		panic(err)
-	}
-	return string(encoded)
+	return fmt.Sprintf("%q - %s", t.Value, t.Type.String())
 }
 
-// SyntaxError returns a formatted syntax error
+// SyntaxError prints a formatted syntax error
 func (t *Token) SyntaxError() {
-	src := strings.Replace(t.source.String(), "\t", "    ", -1)
-	fmt.Printf("\n=========================================================\n")
-	fmt.Printf("\nSyntax error!\n")
-	fmt.Printf("Value: %q\n", t.Value)
-	fmt.Printf("Line: %d\n", t.StartLine)
-	fmt.Printf("Column: %d\n", t.StartColumn)
+	// fmt.Println(t.Value)
+	// width := runewidth.StringWidth(t.Value)
+	// underline := util.Red(strings.Repeat("^", width))
+	// fmt.Println(underline)
 
+	lineMargins := 12
+
+	src := t.source.String()
+
+	src = src[:t.Pos] + util.Red(src[t.Pos:t.EndPos]) + src[t.EndPos:]
+	src = strings.Replace(src, "\t", "    ", -1)
 	lines := strings.Split(src, "\n")
-	lineMargins := 3
-	fmt.Printf("\n       ...\n")
+
+	fmt.Printf("\nSyntax error:\n")
+
+	fmt.Printf(util.Blue("   | %s:%d\n"), t.source.Path, t.Line)
 	for i, line := range lines {
 		ln := i + 1
 
-		if ln >= t.StartLine-lineMargins && ln <= t.EndLine+lineMargins {
-			es := "  "
-			if ln >= t.StartLine && ln <= t.EndLine {
-				es = "->"
+		if ln >= t.Line-lineMargins && ln <= t.Line+lineMargins {
+			lineString := ""
+			lineNumber := "  "
+			if ln == t.Line {
+				lineNumber = fmt.Sprintf("%2d", ln)
 			}
-			fmt.Printf("%3d %s %s\n", ln, es, line)
+			lineString = util.Blue(fmt.Sprintf("%s |", lineNumber))
+			fmt.Printf("%s %s\n", lineString, line)
+
+			if ln == t.Line {
+				lineNumber = fmt.Sprintf("%2d", ln)
+			}
 		}
 
 	}
-	fmt.Printf("       ...\n")
-	fmt.Printf("\n=========================================================\n\n")
+	fmt.Printf("\n")
 
 }
 

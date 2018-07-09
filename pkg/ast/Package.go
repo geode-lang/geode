@@ -27,7 +27,6 @@ type Package struct {
 	fmt.Stringer
 
 	Name               string
-	Lexer              *lexer.Lexer
 	Source             *lexer.Sourcefile
 	Nodes              []Node
 	Dependencies       []*Package
@@ -49,7 +48,6 @@ func NewPackage(name string, source *lexer.Sourcefile) *Package {
 	p.Nodes = make([]Node, 0)
 	p.Scope = NewScope()
 	p.Scope.InjectPrimitives()
-	p.Lexer = lexer.NewLexer()
 	return p
 }
 
@@ -195,10 +193,17 @@ func (p *Package) Parse() chan *Package {
 		// Pull the source bytes out
 		// srcBytes := p.Source.Bytes()
 		// go and lex the bytes
-		go p.Lexer.Lex(p.Source) // run the lexer
+		tokens := lexer.Lex(p.Source) // run the lexer
+		// lexer.DumpTokens(tokens)
+
+		// for _ = range tokens {
+		// 	// fmt.Println(t.String())
+		// }
+
+		// os.Exit(0)
 
 		// Parse the bytes into a channel of nodes
-		nodes := Parse(p.Lexer.Tokens)
+		nodes := Parse(tokens)
 		// And append all those nodes to the package's nodes.
 		for node := range nodes {
 			p.Nodes = append(p.Nodes, node)

@@ -11,7 +11,8 @@ import (
 	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
-// Sourcefile is a
+// Sourcefile is a wrapper around a rune array
+// from a file, along with some loading functions
 type Sourcefile struct {
 	Path     string
 	Name     string

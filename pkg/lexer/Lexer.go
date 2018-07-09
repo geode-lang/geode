@@ -3,74 +3,14 @@ package lexer
 import (
 	"encoding/json"
 	"fmt"
-	"os"
+	"strings"
+	"unicode"
+	"unicode/utf8"
 
-	"github.com/davecgh/go-spew/spew"
-	"github.com/timtadh/lexmachine"
-	"github.com/timtadh/lexmachine/machines"
+	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
-// TokenInfoRelation - allows a relationship between a token type and a certain regex
-type TokenInfoRelation struct {
-	token TokenType
-	regex string
-}
-
-// Tokens is a list of all tokens
-var Tokens = []TokenInfoRelation{
-	{TokError, ""},
-
-	{TokChar, `'.'`},
-	{TokString, `"([^\"]|(\\.))*"`},
-	{TokNumber, `[0-9]*\.?[0-9]+`},
-
-	{TokElipsis, `\.\.\.`},
-
-	{TokOper, `&`},
-	{TokOper, `\*`},
-	{TokOper, `\+`},
-	{TokOper, `-`},
-	{TokOper, `/`},
-	{TokOper, `\^`},
-	{TokOper, `%`},
-	{TokOper, `!=`},
-	{TokOper, `=`},
-	{TokOper, `<<`},
-	{TokOper, `>>`},
-	{TokOper, `<`},
-	{TokOper, `<=|≤`},
-	{TokOper, `>`},
-	{TokOper, `>=|≥`},
-	{TokSemiColon, `;`},
-	{TokNamespaceAccess, `:`},
-
-	// {TokDefereference, `@`},
-	// {TokReference, `\*`},
-
-	{TokAssignment, `:=`},
-
-	{TokRightParen, `\)`},
-	{TokLeftParen, `\(`},
-
-	{TokRightCurly, `}`},
-	{TokLeftCurly, `{`},
-
-	{TokLeftBrace, `\[`},
-	{TokRightBrace, `\]`},
-
-	{TokRightArrow, `->`},
-	{TokLeftArrow, `<-`},
-
-	{TokComma, `,`},
-
-	{TokIdent, `[a-zA-Z_][a-zA-Z0-9_]*`},
-
-	{TokComment, `\#[^\n]*`},
-	{TokComment, `{-.*-}`},
-	{TokWhitespace, `\s+`},
-}
-
-var keyWordMap = map[string]TokenType{
+var tokenTypeOverrides = map[string]TokenType{
 	"return":  TokReturn,
 	"if":      TokIf,
 	"else":    TokElse,
@@ -81,94 +21,328 @@ var keyWordMap = map[string]TokenType{
 	"include": TokDependency,
 	"link":    TokDependency,
 	"is":      TokNamespace,
+	"(":       TokLeftParen,
+	")":       TokRightParen,
+	"{":       TokLeftCurly,
+	"}":       TokRightCurly,
+	"[":       TokLeftBrace,
+	"]":       TokRightBrace,
+	"->":      TokRightArrow,
+	"<-":      TokLeftArrow,
+	";":       TokSemiColon,
+	":":       TokNamespaceAccess,
+	":=":      TokAssignment,
+	"...":     TokElipsis,
 }
 
-var tokRegexMap map[string]TokenType
-
-func init() {
-	tokRegexMap = make(map[string]TokenType)
-	for _, val := range Tokens {
-		if val.regex != "" {
-			tokRegexMap[val.regex] = val.token
-		}
-	}
-}
+// stateFn represents the state of the scanner as a function that returns the next state.
+type stateFn func(*Lexer) stateFn
 
 // Lexer - an internal rep of the lexer
 type Lexer struct {
-	lexer  *lexmachine.Lexer
-	Tokens chan Token
-	Done   bool
+	source     *Sourcefile
+	line       int
+	col        int
+	pos        int // current position in input
+	start      int // beginning position of the current token
+	width      int // width of last rune read from input
+	lineCount  int // number of lines seen in the current file
+	parenDepth int // nested layers of paren expressions
+	input      string
+	tokens     chan Token
 }
 
 // Lex - takes a string and turns it into tokens
-func (s *Lexer) Lex(source *Sourcefile) error {
-	scanner, err := s.lexer.Scanner(source.Bytes())
-	if err != nil {
-		return err
+func Lex(source *Sourcefile) chan Token {
+	l := NewLexer()
+	l.source = source
+	l.input = source.String()
+	go l.run()
+	return l.tokens
+}
+
+func (l *Lexer) run() {
+	for state := lexTopLevel; state != nil; {
+		state = state(l)
 	}
-	for tk, err, eof := scanner.Next(); !eof; tk, err, eof = scanner.Next() {
-		if ui, is := err.(*machines.UnconsumedInput); ui != nil && is {
-			e := err.(*machines.UnconsumedInput)
-			spew.Dump(e)
-			// scanner.TC = ui.FailTC
-			// fmt.Println(SyntaxError(e.FailLine, e.StartColumn, e.FailColumn-e.StartColumn-1, string(text), "Tokenize Failed"))
-			os.Exit(1)
-		} else if err != nil {
-			return err
-		} else {
+	close(l.tokens) // No more tokens will be delivered.
+}
 
-			// I don't like lexmachine's token, so I will convert it to my own
-			to := *tk.(*lexmachine.Token)
+func (l *Lexer) emit(typ TokenType) {
+	if typ != TokNoEmit {
 
-			t := Token{}
-			t.source = source
-			t.Pos = to.TC
-			t.StartLine = to.StartLine
-			t.StartColumn = to.StartColumn
-			t.EndLine = to.EndLine
-			t.EndColumn = to.EndColumn
+		tok := Token{}
+		tok.source = l.source
+		tok.Value = l.input[l.start:l.pos]
+		tok.Pos = int(l.start)
+		tok.EndPos = int(l.pos)
+		tok.Line = l.line
+		tok.Column = l.col
 
-			// t.buildEndPos(to.EndColumn, to.EndLine)
-			t.Type = TokenType(to.Type)
-			t.Value = string(to.Value.(string))
-			// t.SourceCode = &text
-			s.Tokens <- t
+		newTyp, override := tokenTypeOverrides[tok.Value]
+		if override {
+			typ = newTyp
+		}
+
+		tok.Type = typ
+		// fmt.Println(tok.String())
+		l.tokens <- tok
+	}
+
+	l.start = l.pos
+}
+
+// l.next() returns eof to signal end of file to a stateFn.
+const eof = -1
+
+// next returns the next rune from the input and advances the scan.
+// It returns the eof constant (-1) if the scanner is at the end of
+// the input.
+func (l *Lexer) next() rune {
+	r, width := utf8.DecodeRuneInString(l.input[l.pos:])
+	l.width = width
+	l.pos += l.width
+
+	if l.width == 0 {
+		return eof
+	}
+	if r == '\n' {
+		l.line++
+		l.col = 1
+	} else {
+		l.col += width
+	}
+	return r
+}
+
+// peek returns the next rune without moving the scan forward.
+func (l *Lexer) peek() rune {
+	r := l.next()
+	l.backup()
+	return r
+}
+
+// backup moves the scan back one rune.
+func (l *Lexer) backup() {
+	l.pos -= l.width
+	r, width := utf8.DecodeRuneInString(l.input[l.pos:])
+	l.width = width
+	if r == '\n' {
+		l.line--
+	}
+}
+
+// ignore skips the pending input before this point.
+func (l *Lexer) ignore() {
+	l.start = l.pos
+}
+
+// acceptRun consumes a run of runes from valid set.
+func (l *Lexer) acceptRun(valid string) {
+	l.acceptRunPredicate(func(r rune) bool {
+		return strings.IndexRune(valid, r) >= 0
+	})
+	l.backup()
+}
+
+func (l *Lexer) acceptRunPredicate(pred func(rune) bool) {
+	for {
+		if !pred(l.next()) {
+			break
 		}
 	}
+	l.backup()
+}
 
-	close(s.Tokens)
+func lexTopLevel(l *Lexer) stateFn {
+	// Either whitespace, an empty line, a comment,
+	// a number, a paren, identifier, or unary operator.
+	r := l.next()
+	// fmt.Printf("Rune: %#U\n", r)
+	switch {
+	case r == eof:
+		return nil
+	case strings.IndexRune("0123456789.", r) >= 0:
+		l.backup()
+		return lexNumber
+	case isAlphaNumeric(r):
+		l.backup()
+		return lexIdentifer
+	case r == '#':
+		return lexComment
+	case isSpace(r):
+		l.backup()
+		return lexSpace
+	case r == ';':
+		l.emit(TokSemiColon)
+		return lexTopLevel
+	case r == ',':
+		l.emit(TokComma)
+		return lexTopLevel
 
-	s.Done = true
+	case r == '(':
+		l.emit(TokLeftParen)
+		return lexTopLevel
+	case r == ')':
+		l.emit(TokRightParen)
+		return lexTopLevel
 
+	case r == '{':
+		l.emit(TokLeftCurly)
+		return lexTopLevel
+	case r == '}':
+		l.emit(TokRightCurly)
+		return lexTopLevel
+
+	case r == '[':
+		l.emit(TokLeftBrace)
+		return lexTopLevel
+	case r == ']':
+		l.emit(TokLeftBrace)
+		return lexTopLevel
+
+	case isOperator(r):
+		return lexSymbol
+	case r == '"':
+		// l.backup()
+		return lexStringLiteral
+	}
+	return l.fatal("unrecognized character: %#U\n", r)
+}
+
+// fatal is just a statefn wrapper around log.Fatal
+func (l *Lexer) fatal(format string, args ...interface{}) stateFn {
+	log.Fatal(format, args...)
 	return nil
 }
 
-// NewLexer produces a new lexer and poluates it with the configuration
-func NewLexer() *Lexer {
-
-	getToken := func(tokenType TokenType) lexmachine.Action {
-		return func(s *lexmachine.Scanner, m *machines.Match) (interface{}, error) {
-
-			kw, isKwInMap := keyWordMap[string(m.Bytes)]
-			if isKwInMap {
-				return s.Token(int(kw), string(m.Bytes), m), nil
-			}
-			if tokenType == TokWhitespace {
-				return nil, nil
-			}
-			return s.Token(int(tokenType), string(m.Bytes), m), nil
+func lexIdentifer(l *Lexer) stateFn {
+	for {
+		switch r := l.next(); {
+		case isAlphaNumeric(r):
+			// absorb
+		default:
+			l.backup()
+			l.emit(TokIdent)
+			return lexTopLevel
 		}
 	}
+}
 
-	lexer := lexmachine.NewLexer()
+func lexNumber(l *Lexer) stateFn {
+	l.acceptRun("0123456789.")
+	l.next()
+	l.emit(TokNumber)
+	return lexTopLevel
+}
 
-	for k, v := range tokRegexMap {
-		lexer.Add([]byte(k), getToken(v))
+func lexComment(l *Lexer) stateFn {
+	l.acceptRunPredicate(func(r rune) bool {
+		return r != '\n'
+	})
+	l.emit(TokComment)
+	return lexTopLevel
+}
+
+// lexSpace globs contiguous whitespace.
+func lexSpace(l *Lexer) stateFn {
+	l.acceptRunPredicate(isSpace)
+	l.ignore()
+	return lexTopLevel
+}
+
+func lexSymbol(l *Lexer) stateFn {
+	l.acceptRunPredicate(isOperator)
+	l.emit(TokOper)
+	return lexTopLevel
+}
+
+// globWhitespace globs contiguous whitespace. (Sometimes we
+// don't want to return to lexTopLevel after doing this.)
+func globWhitespace(l *Lexer) {
+
+}
+
+func lexStringLiteral(l *Lexer) stateFn {
+	for {
+		r := l.next()
+		// fmt.Printf("Rune: %#U\n", r)
+		if r == eof {
+			break
+		}
+
+		if r == '\\' {
+			// Skip escape ('\' and next char)
+			l.next()
+			// l.next()
+		}
+		if r == '"' {
+			// l.next()
+			l.emit(TokString)
+			return lexTopLevel
+		}
+		// l.next()
 	}
+	return l.fatal("Unclosed string literal\n")
+}
+
+//
+// Helper Functions
+//
+
+func isNumber(r rune) bool {
+	return unicode.IsDigit(r)
+}
+
+const operators = "&\\*+-/%:!=<>≤≥."
+
+func isOperator(r rune) bool {
+	return strings.IndexRune(operators, r) >= 0
+}
+
+func isSpace(r rune) bool {
+	return r == ' ' || r == '\t' || r == '\n' || r == '\r'
+}
+
+// isEOL reports whether r is an end-of-line character or an EOF.
+func isEOL(r rune) bool {
+	return r == '\n' || r == '\r' || r == eof
+}
+
+func isEOF(r rune) bool {
+	return r == 0
+}
+
+// isValidIdefRune reports if r may be part of an identifier name.
+func isAlphaNumeric(r rune) bool {
+	return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r)
+}
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+// NewLexer produces a new lexer and poluates it with the configuration
+func NewLexer() *Lexer {
 	s := &Lexer{}
-	s.Tokens = make(chan Token)
-	s.lexer = lexer
+	s.line = 1
+	s.col = 1
+	s.tokens = make(chan Token)
 	return s
 }
 
@@ -186,12 +360,12 @@ func DumpTokens(in chan Token) chan Token {
 				tokenMaps := make([]map[string]interface{}, 0)
 				for _, t := range tokens {
 					m := make(map[string]interface{})
-					m["type"] = t.Type.String()
+					// m["type"] = t.Type.String()
 					m["type_raw"] = t.Type
 					m["value"] = t.Value
 					m["start_pos"] = t.Pos
 					m["end_pos"] = t.EndPos
-					_, m["type_inference"] = t.InferType()
+					// _, m["type_inference"] = t.InferType()
 					tokenMaps = append(tokenMaps, m)
 				}
 				j, _ := json.MarshalIndent(tokenMaps, "", "   ")
