@@ -15,17 +15,23 @@ func (p *Parser) parseUnary() Node {
 		return p.parsePrimary()
 	}
 
-	if p.token.Value == "&" {
+	unaryOp := p.token.Value
 
-	}
-
-	op := p.token.Value
 	p.next()
 	operand := p.parseUnary()
+
+	if unaryOp == "&" {
+		if operand.Kind() == nodeVariable {
+			// Update operand's RefType if it is a nodeVariable
+			n := (operand).(VariableNode)
+			n.RefType = ReferenceAccessStackAddress
+			operand = n
+		}
+	}
 	if operand != nil {
 		n := UnaryNode{}
 		n.NodeType = nodeUnary
-		n.Operator = op
+		n.Operator = unaryOp
 		n.Operand = operand
 		return n
 	}

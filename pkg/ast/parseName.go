@@ -21,7 +21,7 @@ func (p *Parser) parseName() string {
 			log.Fatal("Invalid Name Reference")
 		}
 		p.next()
-		if p.token.Is(lexer.TokNamespaceAccess) {
+		if p.token.Is(lexer.TokNamespaceAccess, lexer.TokDot) {
 			name += p.token.Value
 			p.next()
 			continue

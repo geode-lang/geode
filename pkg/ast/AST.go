@@ -32,6 +32,7 @@ func NewQuickParser(source string) *Parser {
 // Parse creates and runs a new lexer, that returns the
 // chan that the nodes will be passed through with
 func Parse(tokens chan lexer.Token) <-chan Node {
+	// spew.Dump(QuickParseExpression("1 + 1"))
 	p := &Parser{
 		tokens:        make([]lexer.Token, 0),
 		topLevelNodes: make(chan Node, 100),

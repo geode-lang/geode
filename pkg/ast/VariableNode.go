@@ -40,7 +40,7 @@ func (n VariableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	var alloc *ir.InstAlloca
 	var val value.Value
 
-	if n.RefType == ReferenceAccess || n.RefType == ReferenceDereference {
+	if n.RefType == ReferenceAccessValue || n.RefType == ReferenceAccessStackAddress {
 		v, found := scope.Find(name)
 		if !found {
 			fmt.Printf("unknown variable name `%s`\n", name)
@@ -48,6 +48,10 @@ func (n VariableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		}
 
 		alloc = v.Value().(*ir.InstAlloca)
+
+		if n.RefType == ReferenceAccessStackAddress {
+			return alloc
+		}
 
 		if n.RefType == ReferenceDereference {
 			return alloc

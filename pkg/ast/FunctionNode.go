@@ -151,10 +151,7 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 }
 
 func createPrelude(scope *Scope, c *Compiler) {
-	// THIS IS A MEGA HACK BEFORE I HAVE VARIABLE POINTER REFERENCING (&)
-	c.CurrentBlock().AppendInst(NewLLVMIdent(types.NewPointer(types.I8), "%_stkptr = alloca i8"))
-	fn := QuickParseExpression("_runtime:init();").(FunctionCallNode)
-	call := fn.Codegen(scope, c).(*ir.InstCall)
-
-	call.Args = append(call.Args, NewLLVMIdent(types.NewPointer(types.I8), "%_stkptr"))
+	// Initialize the garbage collector at the first value allocted to the stack.
+	QuickParseIdentifier("byte _stkptr;").Codegen(scope, c)
+	QuickParseExpression("_runtime:init(&_stkptr);").Codegen(scope, c)
 }

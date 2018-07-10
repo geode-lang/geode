@@ -14,6 +14,7 @@ const (
 	TokString
 	TokNumber
 
+	TokDot
 	TokElipsis
 	TokOper
 	TokPtr

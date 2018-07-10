@@ -5,7 +5,7 @@ func (p *Parser) parseExpression() Node {
 	if lhs == nil {
 		return nil
 	}
-	return p.parseBinaryOpRHS(1, lhs) // TODO: check on this value wrt our : = and 0 val for not found instead of tut's -1
+	return p.parseBinaryOpRHS(1, lhs)
 }
 
 // QuickParseExpression takes a stream of tokens and lexes them into a single node

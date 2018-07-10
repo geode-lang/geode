@@ -223,7 +223,8 @@ type ReferenceType int
 const (
 	ReferenceDefine ReferenceType = iota
 	ReferenceAssign
-	ReferenceAccess
+	ReferenceAccessValue
+	ReferenceAccessStackAddress
 	ReferenceDereference
 )
 

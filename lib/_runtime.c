@@ -3,12 +3,10 @@
 
 #define USE_GC
 
-#ifdef USE_GC
+#include <stdlib.h>
+
 #include "./tgc/tgc.h"
 static tgc_t gc;
-#else
-#include <stdlib.h>
-#endif
 
 
 

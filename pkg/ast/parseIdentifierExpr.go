@@ -7,7 +7,6 @@ import (
 func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 
 	if allowVariableDefn && p.atType() {
-
 		return p.parseVariableDefn(true)
 	}
 
@@ -19,7 +18,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 
 		n := VariableNode{}
 		n.Name = name
-		n.RefType = ReferenceAccess
+		n.RefType = ReferenceAccessValue
 		n.HasValue = true
 		n.NodeType = nodeVariable
 		// fmt.Println(p.token)
@@ -38,7 +37,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 			// The left side is just a reference to the variable.
 			left := VariableNode{}
 			left.Name = name
-			left.RefType = ReferenceAccess
+			left.RefType = ReferenceAccessValue
 
 			// Parse the right side of the operator
 			p.next()
@@ -51,8 +50,6 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 			bopNode.OP = operator
 
 			n.Body = bopNode
-
-			// spew.Dump(n)
 		}
 
 		if p.token.Is(lexer.TokLeftBrace) {

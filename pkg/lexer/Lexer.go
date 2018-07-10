@@ -34,6 +34,7 @@ var tokenTypeOverrides = map[string]TokenType{
 	":":       TokNamespaceAccess,
 	":=":      TokAssignment,
 	"...":     TokElipsis,
+	".":       TokDot,
 
 	"<+-": TokCompoundAssignment,
 	"<--": TokCompoundAssignment,
