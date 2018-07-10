@@ -1,7 +1,7 @@
 # Name       = "Hello world"
 # ExpectedOutput      = "Hello, World\n"
 is main
-include "std::io"
+include "std:io"
 
 
 func main int {

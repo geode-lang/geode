@@ -122,9 +122,9 @@ func (p *Package) LoadDep(depPath string) *Package {
 	filename := path.Base(depPath)
 	isStdlib := false
 
-	if strings.HasPrefix(filename, "std::") {
+	if strings.HasPrefix(filename, "std:") {
 		isStdlib = true
-		filename = strings.Replace(filename, "std::", "", -1)
+		filename = strings.Replace(filename, "std:", "", -1)
 		gopath := os.Getenv("GOPATH")
 		// Join up the new filename to the standard library source location
 		depPath = path.Join(gopath, "/src/github.com/nickwanninger/geode/lib/", filename)
@@ -190,20 +190,10 @@ func (p *Package) Parse() chan *Package {
 
 	chn := make(chan *Package)
 	go func() {
-		// Pull the source bytes out
-		// srcBytes := p.Source.Bytes()
-		// go and lex the bytes
-		tokens := lexer.Lex(p.Source) // run the lexer
-		// lexer.DumpTokens(tokens)
 
-		// for _ = range tokens {
-		// 	// fmt.Println(t.String())
-		// }
-
-		// os.Exit(0)
-
-		// Parse the bytes into a channel of nodes
+		tokens := lexer.Lex(p.Source)
 		nodes := Parse(tokens)
+		log.Debug("Parsing package %s\n", p.Name)
 		// And append all those nodes to the package's nodes.
 		for node := range nodes {
 			p.Nodes = append(p.Nodes, node)
@@ -239,7 +229,9 @@ func (p *Package) Compile() chan *Package {
 		p.Compiler = NewCompiler(p.Name, p)
 
 		if !p.IsRuntime {
-			p.LoadDep("std::_runtime.g")
+			log.Debug("Injecting runtime into '%s'\n", p.Name)
+			// p.LoadDep("std:_runtime.g")
+			p.AddDepPackage(RuntimePackage)
 		}
 
 		// The first node *should* always be a namespace node

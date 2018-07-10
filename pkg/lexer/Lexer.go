@@ -41,6 +41,7 @@ type stateFn func(*Lexer) stateFn
 // Lexer - an internal rep of the lexer
 type Lexer struct {
 	source     *Sourcefile
+	tokenCount int // the number of tokens lexed/emitted
 	line       int
 	col        int
 	pos        int // current position in input
@@ -57,7 +58,7 @@ func Lex(source *Sourcefile) chan Token {
 	l := NewLexer()
 	l.source = source
 	l.input = source.String()
-	go l.run()
+	go log.Timed(fmt.Sprintf("Lex %s", source.Path), l.run)
 	return l.tokens
 }
 
@@ -65,10 +66,26 @@ func (l *Lexer) run() {
 	for state := lexTopLevel; state != nil; {
 		state = state(l)
 	}
+	log.Verbose("Lexer emitted %d tokens from %s\n", l.tokenCount, l.source.Path)
 	close(l.tokens) // No more tokens will be delivered.
 }
 
+// QuickLex takes a string and lexes it into a token array
+func QuickLex(str string) []Token {
+	source, _ := NewSourcefile("temp")
+	source.LoadString(str)
+
+	tokArr := make([]Token, 0)
+
+	for t := range Lex(source) {
+		tokArr = append(tokArr, t)
+	}
+
+	return tokArr
+}
+
 func (l *Lexer) emit(typ TokenType) {
+	l.tokenCount++
 	if typ != TokNoEmit {
 
 		tok := Token{}

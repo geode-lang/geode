@@ -1,7 +1,7 @@
 # Name = "arithmetic"
 # ExpectedOutput = "-1485"
 is main
-include "std::io"
+include "std:io"
 
 
 func main(int argc) int {

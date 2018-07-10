@@ -1,7 +1,7 @@
 # Name = "fibonacci"
 # ExpectedOutput = "832040"
 is main
-include "std::io"
+include "std:io"
 
 
 func fib(int n) int {

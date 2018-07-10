@@ -1,6 +1,7 @@
 package lexer
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 	"strings"
@@ -46,7 +47,7 @@ func (t *Token) SyntaxError() {
 	// width := runewidth.StringWidth(t.Value)
 	// underline := util.Red(strings.Repeat("^", width))
 	// fmt.Println(underline)
-
+	buf := &bytes.Buffer{}
 	lineMargins := 2
 	src := t.source.String()
 
@@ -57,9 +58,9 @@ func (t *Token) SyntaxError() {
 	lines := strings.Split(src, "\n")
 
 	// Start printing
-	fmt.Printf("\nSyntax error:\n")
-	fmt.Printf(color.Blue("   | %s:%d\n"), t.source.Path, t.Line)
-	fmt.Printf(color.Blue("   |\n"))
+	fmt.Fprintf(buf, "\nSyntax error:\n")
+	fmt.Fprintf(buf, color.Blue("   | %s:%d\n"), t.source.Path, t.Line)
+	fmt.Fprintf(buf, color.Blue("   |\n"))
 	for i, line := range lines {
 		ln := i + 1
 
@@ -70,11 +71,13 @@ func (t *Token) SyntaxError() {
 				lineNumber = fmt.Sprintf("%2d", ln)
 			}
 			lineString = color.Blue(fmt.Sprintf("%s |", lineNumber))
-			fmt.Printf("%s %s\n", lineString, line)
+			fmt.Fprintf(buf, "%s %s\n", lineString, line)
 		}
 
 	}
-	fmt.Printf(color.Blue("   |\n\n"))
+	fmt.Fprintf(buf, color.Blue("   |\n\n"))
+
+	fmt.Println(buf)
 
 }
 

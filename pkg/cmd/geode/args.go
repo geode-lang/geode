@@ -5,20 +5,23 @@ import (
 )
 
 var (
-	app         = kingpin.New("geode", "Compiler for the Geode Programming Language").Version(VERSION).Author(AUTHOR)
-	emitLLVM    = app.Flag("emit-llvm", "Leave LLVM IR in the filesystem").Short('S').Bool()
-	buildOutput = app.Flag("output", "Output binary name.").Short('o').Default("a.out").String()
-	optimize    = app.Flag("optimize", "Enable full optimization").Short('O').Bool()
+	app          = kingpin.New("geode", "Compiler for the Geode Programming Language").Version(VERSION).Author(AUTHOR)
+	emitLLVM     = app.Flag("emit-llvm", "Print the main file's llvm to stdout").Short('S').Bool()
+	buildOutput  = app.Flag("output", "Output binary name.").Short('o').Default("a.out").String()
+	optimize     = app.Flag("optimize", "Enable full optimization").Short('O').Bool()
+	printVerbose = app.Flag("verbose", "Enable verbose printing").Short('v').Bool()
 	// logLevel = app.Flag("loglevel", "Set the level of logging to show").Default("info").Enum("info", "verbose")
 
-	buildCMD   = app.Command("build", "Build an executable.")
-	buildInput = buildCMD.Arg("input", "Geode source file or package").Required().String()
-	emitASM    = buildCMD.Flag("asm", "Build to asm instead of a binary").Bool()
+	buildCMD   = app.Command("build", "Build an executable.").Alias("b").Default()
+	buildInput = buildCMD.Arg("input", "Geode source file or package").Default(".").String()
+	emitASM    = buildCMD.Flag("asm", "Set the target to .s asm files with intel syntax instead of a single binary.").Bool()
 
-	runCMD   = app.Command("run", "Build and run an executable, clean up afterwards")
+	runCMD   = app.Command("run", "Build and run an executable, clean up afterwards").Alias("r")
 	runInput = runCMD.Arg("input", "Geode source file or package").String()
 	runArgs  = runCMD.Arg("args", "Arguments to be passed into the program after building").Strings()
 
-	testCMD = app.Command("test", "Run tests")
+	testCMD = app.Command("test", "Run tests").Alias("t")
 	testDir = testCMD.Arg("dir", "Test Directory").Default("./tests").String()
+
+	cleanCMD = app.Command("clean", "Remove up the build directory")
 )

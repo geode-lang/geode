@@ -1,7 +1,7 @@
 # Name = "while"
 # ExpectedOutput = "255"
 is main
-include "std::io"
+include "std:io"
 
 func main int {
 	int i := 0;

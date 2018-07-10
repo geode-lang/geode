@@ -1,7 +1,7 @@
 # Name = "For Loops"
 # ExpectedOutput = "1057046400"
 is main
-include "std::io"
+include "std:io"
 
 
 func main int {

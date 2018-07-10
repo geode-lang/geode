@@ -64,3 +64,8 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 	}
 	return nil
 }
+
+// QuickParseIdentifier takes a stream of tokens and lexes them into a single node
+func QuickParseIdentifier(src string) Node {
+	return NewQuickParser(src).parseIdentifierExpr(true)
+}

@@ -2,7 +2,7 @@
 # ExpectedOutput = "යුනිකෝඩ්"
 is main
 
-include "std::io"
+include "std:io"
 
 
 func main int {

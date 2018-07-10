@@ -89,3 +89,8 @@ func (p *Parser) parseFnDefn() FunctionNode {
 	}
 	return fn
 }
+
+// QuickParseFunction takes a stream of tokens and lexes them into a single node
+func QuickParseFunction(src string) Node {
+	return NewQuickParser(src).parseFnDefn()
+}

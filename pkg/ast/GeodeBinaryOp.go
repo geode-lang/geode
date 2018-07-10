@@ -10,14 +10,6 @@ import (
 	"github.com/llir/llvm/ir/value"
 )
 
-/*
-type Instruction interface {
-	fmt.Stringer
-	GetParent() *BasicBlock
-	SetParent(parent *BasicBlock)
-}
-*/
-
 // GeodeBinaryInstr implements ir.Instruction
 // This will be easier than doing individual work
 // per operation

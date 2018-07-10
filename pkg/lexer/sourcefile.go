@@ -46,12 +46,14 @@ func (s *Sourcefile) LoadFile(src string) error {
 		log.Fatal("Unable to read file at path '%s'\n", src)
 	}
 	s.Name = src
+	log.Debug("Reading %s\n", src)
 	s.LoadBytes(bytes)
 	return nil
 }
 
 // ResolveFile resolves a filename and loads it
 func (s *Sourcefile) ResolveFile(path string) error {
+	log.Debug("Resolving filename %q\n", path)
 	p, e := ResolveFileName(path, ".g")
 	if e != nil {
 		log.Fatal("Unable to resolve path '%s'\n", path)
@@ -96,6 +98,7 @@ func ResolveFileName(filename, suffix string) (string, error) {
 		return "", fmt.Errorf("fatal error: No such file or directory %s", filename)
 	}
 	if stats.IsDir() {
+		log.Debug("Resolving: Looking in %s for main.g\n", filename)
 		return ResolveFileName(filename+"/main.g", suffix)
 	}
 

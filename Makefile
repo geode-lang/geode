@@ -2,7 +2,7 @@
 all: build
 
 build: clean
-	@go install -v -gcflags="-N -l" github.com/nickwanninger/geode/...
+	@go install github.com/nickwanninger/geode/...
 
 install: gen build
 	

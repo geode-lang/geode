@@ -13,21 +13,29 @@ static tgc_t gc;
 
 
 void
-___geodegcinit(void* stk) {
-	#ifdef USE_GC
-	// Initialize the garbage collector using argc as the base of the stack
-	// This is so the GC can find where to look in it's sweeps
-	tgc_start(&gc, &stk);
-	#endif
+___geodegcinit(char* stack_pointer) {
+	tgc_start(&gc, (void*)stack_pointer);
 }
 
 
 
 char*
-rawmalloc(int size) {
+gcmalloc(long size) {
 	#ifdef USE_GC
 	return tgc_alloc(&gc, size);
 	#else
 	return (char*)malloc(size);
 	#endif
+}
+
+
+char*
+rawmalloc(long size) {
+	return (char*)malloc(size);
+}
+
+
+void
+rawfree(char* ptr) {
+	free((void*)ptr);
 }

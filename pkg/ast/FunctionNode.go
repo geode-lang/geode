@@ -30,7 +30,9 @@ type FunctionNode struct {
 func (n FunctionNode) NameString() string { return "FunctionNode" }
 
 // InferType implements Node.InferType
-func (n FunctionNode) InferType(scope *Scope) types.Type { return types.Void }
+func (n FunctionNode) InferType(scope *Scope) types.Type {
+	return scope.FindType(n.ReturnType.Name).Type
+}
 
 // Arguments returns some FunctionNode's arguments
 func (n FunctionNode) Arguments(scope *Scope) ([]*types.Param, []types.Type) {
@@ -149,10 +151,10 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 }
 
 func createPrelude(scope *Scope, c *Compiler) {
-	// Create a FunctionCallNode that will be the runtime init caller
-	n := FunctionCallNode{}
-	n.NodeType = nodeFunctionCall
-	// Create a call to runtime init.
-	n.Name = "_runtime:init"
-	n.Codegen(scope, c)
+	// THIS IS A MEGA HACK BEFORE I HAVE VARIABLE POINTER REFERENCING (&)
+	c.CurrentBlock().AppendInst(NewLLVMIdent(types.NewPointer(types.I8), "%_stkptr = alloca i8"))
+	fn := QuickParseExpression("_runtime:init();").(FunctionCallNode)
+	call := fn.Codegen(scope, c).(*ir.InstCall)
+
+	call.Args = append(call.Args, NewLLVMIdent(types.NewPointer(types.I8), "%_stkptr"))
 }

@@ -27,20 +27,27 @@ var startTime time.Time
 
 func main() {
 
-	_, clangError := util.RunCommand("clang", "--version")
-	if clangError != nil {
-		log.Fatal("Unable to find a clang install in your path. Please install clang and add it to your path\n")
-	}
 	spew.Config.DisableMethods = true
 	startTime = time.Now()
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	buildDir := fmt.Sprintf(".geode_build/")
 
+	log.PrintVerbose = *printVerbose
+
+	clangVersion, clangError := util.RunCommand("clang", "--version")
+	if clangError != nil {
+		log.Fatal("Unable to find a clang install in your path. Please install clang and add it to your path\n")
+	}
+	log.Verbose("Clang Version: %s\n", clangVersion)
+	log.Verbose("Building to %s...\n", buildDir)
+
 	switch command {
 	case buildCMD.FullCommand():
-		context := NewContext(*buildInput, *buildOutput)
-		context.Build(buildDir)
+		log.Timed("Compilation", func() {
+			context := NewContext(*buildInput, *buildOutput)
+			context.Build(buildDir)
+		})
 
 	case runCMD.FullCommand():
 		out := path.Join(buildDir, "a.out")
@@ -50,8 +57,15 @@ func main() {
 
 	case testCMD.FullCommand():
 		RunTests(*testDir)
-	}
 
+	case cleanCMD.FullCommand():
+		util.RunCommand("rm", "-rf", buildDir)
+	}
+	duration := time.Since(startTime)
+	log.Verbose("Total time taken: %s\n", duration)
+	if duration >= time.Second {
+		log.Verbose("!! Compilation took more than one second. !!\n")
+	}
 }
 
 // Context contains information for this compilation
@@ -86,12 +100,12 @@ func (c *Context) Build(buildDir string) {
 	path := strings.Split(c.Input, "/")
 	rootPackage := ast.NewPackage(path[len(path)-1], src)
 	pkgs := make([]*ast.Package, 0)
+	primaryTree := make([]ast.Node, 0)
+
 	for pkg := range rootPackage.Parse() {
+		log.Debug("Added package %s\n", pkg.Name)
 		pkgs = append(pkgs, pkg)
 	}
-
-	// home, err := homedir.Dir()
-	// fmt.Println(home, err)
 
 	// Construct a linker object
 	target := ast.BinaryTarget
@@ -104,27 +118,28 @@ func (c *Context) Build(buildDir string) {
 	linker.SetOutput(c.Output)
 	linker.SetOptimize(*optimize)
 
-	// os.RemoveAll(buildDir) /z/ Clean up the build dir first
-
 	// Loop over the compilers and generate to .ll files
-	for c := range rootPackage.Compile() {
-		obj := c.Emit(buildDir)
-		linker.AddObject(obj)
-		for _, link := range c.CLinkages {
-			linker.AddObject(link)
+	log.Timed("llvm emission", func() {
+		for c := range rootPackage.Compile() {
+			log.Debug("Emitting pkg %s with namespace %s\n", c.Name, c.NamespaceName)
+			obj := c.Emit(buildDir)
+			primaryTree = append(primaryTree, c.Nodes...)
+			linker.AddObject(obj)
+			for _, link := range c.CLinkages {
+				log.Debug("Added c linkage %s\n", link)
+				linker.AddObject(link)
+			}
 		}
-	}
+	})
+
 	if *emitLLVM {
-		log.Debug("%s\n", rootPackage)
+		log.Printf("%s\n", rootPackage)
 	}
 
-	if err != nil {
-		log.Fatal("Unable to scan for c libraries\n")
-	}
+	log.Timed("Linking", func() {
+		linker.Run()
+	})
 
-	linker.Run()
-
-	// linker.Cleanup()
 }
 
 // Run a context with a given set of arguments

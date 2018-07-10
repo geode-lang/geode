@@ -4,7 +4,7 @@ is main
 
 
 link "link.c"
-include "std::io"
+include "std:io"
 
 func foo int ...
 

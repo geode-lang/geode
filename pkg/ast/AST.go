@@ -20,6 +20,15 @@ type Parser struct {
 	binaryOpPrecedence map[string]int // maps binary operators to the precidence determining the order of operations
 }
 
+// NewQuickParser is used to lex and build a parser from tokens quickly
+// for small lexing tasks
+func NewQuickParser(source string) *Parser {
+	p := &Parser{}
+	p.tokens = lexer.QuickLex(source)
+	p.move(0)
+	return p
+}
+
 // Parse creates and runs a new lexer, that returns the
 // chan that the nodes will be passed through with
 func Parse(tokens chan lexer.Token) <-chan Node {

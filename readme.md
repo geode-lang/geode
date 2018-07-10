@@ -63,7 +63,7 @@ Files can be any of the following:
 
 ```go
 is main
-include "std::io"
+include "std:io"
 
 func main int {
 	io:print("Hello, world\n");
@@ -76,7 +76,7 @@ func main int {
 ```go
 is main
 
-include "std::io"
+include "std:io"
 
 func fib(int n) int {
 	if n < 2 {
