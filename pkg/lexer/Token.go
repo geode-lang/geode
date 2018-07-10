@@ -26,7 +26,7 @@ type Token struct {
 	Column int       `json:"column"`
 }
 
-// Is - returns if the token is a certain type as a string
+// Is - returns if the given token is in the set of types given
 func (t Token) Is(types ...TokenType) bool {
 	for _, a := range types {
 		if t.Type == a {

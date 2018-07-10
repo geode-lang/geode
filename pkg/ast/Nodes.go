@@ -45,6 +45,8 @@ const (
 	nodeVariableDecl
 	nodeVariableReference
 
+	nodeCompoundAssignment
+
 	// non-expression statements
 	nodeFnPrototype
 	nodeFunction

@@ -52,6 +52,8 @@ const (
 	TokRightArrow
 	TokLeftArrow
 
+	TokCompoundAssignment
+
 	TokFor
 	TokWhile
 	TokIf

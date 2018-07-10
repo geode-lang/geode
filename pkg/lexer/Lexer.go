@@ -29,10 +29,16 @@ var tokenTypeOverrides = map[string]TokenType{
 	"]":       TokRightBrace,
 	"->":      TokRightArrow,
 	"<-":      TokLeftArrow,
+	"←":       TokLeftArrow,
 	";":       TokSemiColon,
 	":":       TokNamespaceAccess,
 	":=":      TokAssignment,
 	"...":     TokElipsis,
+
+	"<+-": TokCompoundAssignment,
+	"<--": TokCompoundAssignment,
+	"<*-": TokCompoundAssignment,
+	"</-": TokCompoundAssignment,
 }
 
 // stateFn represents the state of the scanner as a function that returns the next state.
@@ -311,7 +317,7 @@ func isNumber(r rune) bool {
 	return unicode.IsDigit(r)
 }
 
-const operators = "&\\*+-/%:!=<>≤≥."
+const operators = "&\\*+-/%:!=<>≤≥.←"
 
 func isOperator(r rune) bool {
 	return strings.IndexRune(operators, r) >= 0

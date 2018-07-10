@@ -30,6 +30,31 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 			return n
 		}
 
+		if p.token.Is(lexer.TokCompoundAssignment) {
+			operator := string(p.token.Value[1])
+
+			n.RefType = ReferenceAssign
+
+			// The left side is just a reference to the variable.
+			left := VariableNode{}
+			left.Name = name
+			left.RefType = ReferenceAccess
+
+			// Parse the right side of the operator
+			p.next()
+			right := p.parseExpression()
+
+			// Build out the bopNode
+			bopNode := BinaryNode{}
+			bopNode.Left = left
+			bopNode.Right = right
+			bopNode.OP = operator
+
+			n.Body = bopNode
+
+			// spew.Dump(n)
+		}
+
 		if p.token.Is(lexer.TokLeftBrace) {
 			n.IndexExpr = p.parseIndexExpr()
 			return n

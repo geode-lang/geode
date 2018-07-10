@@ -3,15 +3,8 @@ include "std:io"
 include "std:mem"
 
 func main int {
-	int i := 0;
-	byte* first := mem:get(3000);
-	io:print("First: %p\n", first);	
-	while i < 20 {
-		i <- i + 1;
-		byte* ptr := mem:get(300);
-		io:print("%d: %p\n", i, ptr);
-	}
-	
-	io:print("this is a nice meme. %p\n", mem:get(300));
+	float pi := 3.1415926535897932384626433832795028841971693993751058209749445923078164;
+	string data := io:format("%.50g", pi);
+	io:print("%s\n", data);
 	return 0;
 }
