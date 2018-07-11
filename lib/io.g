@@ -1,7 +1,8 @@
 is io
 
-link "io.c"
+link "c/io.c"
 
+include "std:mem"
 
 # Printing bindings
 func nomangle _GN2io5print(string format, ...) ...

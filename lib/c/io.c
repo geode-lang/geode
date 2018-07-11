@@ -1,7 +1,12 @@
+
+
+
 #include <stdio.h>
 #include <stdarg.h>
 
-extern char* gcmalloc(long size);
+
+#include "io.h"
+#include "mem.h"
 
 
 
@@ -18,16 +23,16 @@ void _GN2io5print(char *fmt, ...) {
 char* _GN2io6format(char *fmt, ...) {
 	va_list checkArgs;
 	va_start(checkArgs, fmt);
-	long size = vsnprintf(NULL, 0, fmt, checkArgs) + 1;
+	long size = vsnprintf(NULL, 0, fmt, checkArgs);
 	va_end(checkArgs);
 	
 	// Allocate memory for the string
-	char* buffer = gcmalloc(size);
+	char* buffer = gcmalloc(size + 1);
 	
 	// Reparse the args... There is no way around this, sadly
 	va_list args;
 	va_start(args, fmt);
-	vsnprintf(buffer, size, fmt, args) + 1;
+	vsnprintf(buffer, size + 1, fmt, args);
 	va_end(args);
 	return buffer;
 }

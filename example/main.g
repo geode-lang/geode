@@ -3,26 +3,13 @@ include "std:io"
 include "std:mem"
 
 
-class Foo {
+func main(int argc, string* argv) int {
+	int* a := &argc;
+	# io:print("Argc: %d\nStack Pointer: %p\n", *a, &_stkptr);
 	
-	int value;
-	
-	func foo() int {
-		return this.value;
-	}
-}
-
-
-func foo {
-	string data := io:format("%d", 300);
-	io:print("%s\n", data);
-}
-
-func main(int argc, string argv) int {
-	int i := 0;
-	while i < 255 {
-		i + 1;
-		io:print("%d\n", i);
+	for int i := 0; i < argc; i <- i + 1 {
+		io:print("%d: %s\n", i, argv[i]);
 	}
 	return 0;
 }
+ 

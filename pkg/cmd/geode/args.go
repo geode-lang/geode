@@ -12,11 +12,11 @@ var (
 	printVerbose = app.Flag("verbose", "Enable verbose printing").Short('v').Bool()
 	// logLevel = app.Flag("loglevel", "Set the level of logging to show").Default("info").Enum("info", "verbose")
 
-	buildCMD   = app.Command("build", "Build an executable.").Alias("b").Default()
+	buildCMD   = app.Command("build", "Build an executable.").Alias("b")
 	buildInput = buildCMD.Arg("input", "Geode source file or package").Default(".").String()
 	emitASM    = buildCMD.Flag("asm", "Set the target to .s asm files with intel syntax instead of a single binary.").Bool()
 
-	runCMD   = app.Command("run", "Build and run an executable, clean up afterwards").Alias("r")
+	runCMD   = app.Command("run", "Build and run an executable, clean up afterwards").Alias("r").Default()
 	runInput = runCMD.Arg("input", "Geode source file or package").String()
 	runArgs  = runCMD.Arg("args", "Arguments to be passed into the program after building").Strings()
 

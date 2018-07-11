@@ -72,6 +72,9 @@ func Lex(source *Sourcefile) chan Token {
 func (l *Lexer) run() {
 	for state := lexTopLevel; state != nil; {
 		state = state(l)
+		if state == nil {
+			break
+		}
 	}
 	log.Verbose("Lexer emitted %d tokens from %s\n", l.tokenCount, l.source.Path)
 	close(l.tokens) // No more tokens will be delivered.
@@ -182,9 +185,11 @@ func lexTopLevel(l *Lexer) stateFn {
 	// Either whitespace, an empty line, a comment,
 	// a number, a paren, identifier, or unary operator.
 	r := l.next()
+
 	// fmt.Printf("Rune: %#U\n", r)
 	switch {
 	case r == eof:
+
 		return nil
 	case strings.IndexRune("0123456789.", r) >= 0:
 		l.backup()
@@ -262,7 +267,8 @@ func lexNumber(l *Lexer) stateFn {
 
 func lexComment(l *Lexer) stateFn {
 	l.acceptRunPredicate(func(r rune) bool {
-		return r != '\n'
+		log.Verbose("Rune: %#U\n", r)
+		return r != '\n' && r != -1
 	})
 	l.emit(TokComment)
 	return lexTopLevel
