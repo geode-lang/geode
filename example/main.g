@@ -19,8 +19,10 @@ func foo {
 }
 
 func main(int argc, string argv) int {
-	while 1 {
-		foo();
+	int i := 0;
+	while i < 255 {
+		i + 1;
+		io:print("%d\n", i);
 	}
 	return 0;
 }

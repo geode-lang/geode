@@ -30,7 +30,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 		}
 
 		if p.token.Is(lexer.TokCompoundAssignment) {
-			operator := string(p.token.Value[1])
+			operator := string(p.token.Value[0])
 
 			n.RefType = ReferenceAssign
 

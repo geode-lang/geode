@@ -36,10 +36,10 @@ var tokenTypeOverrides = map[string]TokenType{
 	"...":     TokElipsis,
 	".":       TokDot,
 
-	"<+-": TokCompoundAssignment,
-	"<--": TokCompoundAssignment,
-	"<*-": TokCompoundAssignment,
-	"</-": TokCompoundAssignment,
+	"+=": TokCompoundAssignment,
+	"-=": TokCompoundAssignment,
+	"*=": TokCompoundAssignment,
+	"/=": TokCompoundAssignment,
 }
 
 // stateFn represents the state of the scanner as a function that returns the next state.
