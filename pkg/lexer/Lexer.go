@@ -267,7 +267,7 @@ func lexNumber(l *Lexer) stateFn {
 
 func lexComment(l *Lexer) stateFn {
 	l.acceptRunPredicate(func(r rune) bool {
-		log.Verbose("Rune: %#U\n", r)
+		// log.Verbose("Rune: %#U\n", r)
 		return r != '\n' && r != -1
 	})
 	l.emit(TokComment)

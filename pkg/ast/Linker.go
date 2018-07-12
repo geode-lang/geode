@@ -107,6 +107,7 @@ func (l *Linker) Run() {
 					ext := path.Ext(obj)
 					// Replace it with .s
 					filename = obj[0:len(obj)-len(ext)] + ".s"
+
 					// filename = filename + ".s"
 					// set the output to that of the .s file
 					asmArgs := append(linkArgs, "-o", filename, obj)

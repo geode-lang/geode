@@ -10,8 +10,8 @@
 
 
 
-// the _GN2io5print function wrapper.
-void _GN2io5print(char *fmt, ...) {
+// the _VN2ioM5print function wrapper.
+void _VN2ioM5print(char *fmt, ...) {
 	va_list args;
 	va_start(args, fmt);
 	vprintf(fmt, args);
@@ -19,8 +19,8 @@ void _GN2io5print(char *fmt, ...) {
 }
 
 
-// the _GN2io6format function wrapper.
-char* _GN2io6format(char *fmt, ...) {
+// the _VN2ioM6format function wrapper.
+char* _VN2ioM6format(char *fmt, ...) {
 	va_list checkArgs;
 	va_start(checkArgs, fmt);
 	long size = vsnprintf(NULL, 0, fmt, checkArgs);

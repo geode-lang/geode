@@ -63,11 +63,11 @@ func (c *Compiler) genInBlock(blk *ir.BasicBlock, fn func()) {
 }
 
 // NewCompiler returns a pointer to a new Compiler object.
-func NewCompiler(moduleName string, pkg *Package) *Compiler {
+func NewCompiler(module *ir.Module, moduleName string, pkg *Package) *Compiler {
 	comp := &Compiler{}
 	comp.Package = pkg
 	// Initialize the module for this compiler.
-	comp.Module = ir.NewModule()
+	comp.Module = module
 	comp.Name = moduleName
 
 	comp.Scope = pkg.Scope

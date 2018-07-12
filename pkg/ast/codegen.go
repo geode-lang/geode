@@ -404,7 +404,11 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	completeName := fmt.Sprintf("%s:%s", ns, nm)
 
-	name := MangleFunctionName(completeName, argTypes...)
+	// spew.Dump(n.Generics)
+
+	name := MangleFunctionName(completeName, argTypes, n.Generics)
+
+	// fmt.Println(n.Name, name)
 	functionOptions := c.Scope.FindFunctions(name)
 	funcCount := len(functionOptions)
 

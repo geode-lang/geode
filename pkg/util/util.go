@@ -14,7 +14,7 @@ func RunCommand(command string, args ...string) ([]byte, error) {
 	var err error
 
 	tmpcmd := command + " " + strings.Join(args, " ")
-	maxLen := 20
+	maxLen := 500
 	if len(tmpcmd) > maxLen {
 		tmpcmd = tmpcmd[:maxLen-3] + "..."
 	}

@@ -23,7 +23,9 @@ func (p *Parser) parseFnDefn() FunctionNode {
 		// fn.Name = "__GEODE__main"
 	}
 
-	// p.next()
+	if p.token.Type == lexer.TokOper && p.token.Value == "<" {
+		fn.Generics, _ = p.parseGenericExpression(true)
+	}
 
 	if p.token.Type == lexer.TokLeftParen {
 		p.next()

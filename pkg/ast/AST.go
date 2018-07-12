@@ -104,6 +104,23 @@ func (p *Parser) move(o int) lexer.Token {
 	return p.token
 }
 
+// ParserSaveState is a wrapper around some parser
+// data so you can save and restore a parser
+type ParserSaveState struct {
+	index int
+}
+
+func (p *Parser) save() ParserSaveState {
+	return ParserSaveState{
+		index: p.tokenIndex,
+	}
+}
+
+func (p *Parser) restore(state ParserSaveState) {
+	p.tokenIndex = state.index
+	p.move(0) // make sure to update the token and whatnot, this is the easiest way.
+}
+
 func (p *Parser) peek(o int) lexer.Token {
 	target := p.tokenIndex + o
 	if target < 0 || target > len(p.tokens)-1 {

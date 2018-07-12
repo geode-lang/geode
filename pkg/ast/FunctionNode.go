@@ -24,6 +24,7 @@ type FunctionNode struct {
 	Variadic   bool
 	Nomangle   bool
 	ReturnType GeodeTypeRef
+	Generics   []*GenericSymbol
 }
 
 // NameString implements Node.NameString
@@ -61,7 +62,7 @@ func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 			log.Fatal("Main function must return type int. Called for type '%s'\n", n.ReturnType)
 		}
 	} else {
-		name = n.MangledName(scope, c)
+		name = n.MangledName(scope, c, nil)
 	}
 
 	ty := scope.FindType(n.ReturnType.Name).Type
@@ -78,7 +79,7 @@ func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 
 	keyName := fmt.Sprintf("%s:%s", c.Package.NamespaceName, n.Name)
 	// fmt.Println(function.Name, function.Sig.Variadic)
-	scopeItem := NewFunctionScopeItem(keyName, function, PublicVisibility)
+	scopeItem := NewFunctionScopeItem(keyName, n, function, PublicVisibility)
 	scopeItem.SetMangled(!n.Nomangle)
 	c.Scope.Add(scopeItem)
 
@@ -86,7 +87,7 @@ func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 }
 
 // MangledName will return the mangled name for a function node
-func (n FunctionNode) MangledName(scope *Scope, c *Compiler) string {
+func (n FunctionNode) MangledName(scope *Scope, c *Compiler, generics []*GenericSymbol) string {
 	if n.Nomangle {
 		return n.Name
 	}
@@ -98,8 +99,19 @@ func (n FunctionNode) MangledName(scope *Scope, c *Compiler) string {
 	}
 
 	n.Name = fmt.Sprintf("%s:%s", namespace, name)
-	name = MangleFunctionName(n.Name, argTypes...)
+	name = MangleFunctionName(n.Name, argTypes, n.Generics)
 	return name
+}
+
+// CodegenGeneric takes some generic type symbols, checks if they could work, and generates
+// a new function using those as types.
+func (n FunctionNode) CodegenGeneric(scope *Scope, c *Compiler, g []*GenericSymbol) value.Value {
+	if len(n.Generics) != len(g) {
+		log.Fatal("Generics used in function call on '%s' are not of the correct length. Passed: %d, Expected: %d", n.Name, len(g), len(n.Generics))
+	}
+
+	return n.Codegen(scope, c)
+
 }
 
 // Codegen implements Node.Codegen for FunctionNode
@@ -107,11 +119,15 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	name := n.Name
 
-	if name != "main" {
-		name = n.MangledName(scope, c)
+	if name != "main" || !n.Nomangle {
+		name = n.MangledName(scope, c, n.Generics)
 	}
 
 	declared := c.Scope.FindFunctions(name)
+	// for _, d := range declared {
+	// 	fmt.Printf(" -> %s\n", d.Name())
+	// }
+	// fmt.Printf("\n\n")
 	if len(declared) != 1 {
 		log.Fatal("Unable to find function declaration for '%s'\n", name)
 	}

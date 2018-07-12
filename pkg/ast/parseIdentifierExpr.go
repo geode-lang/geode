@@ -11,6 +11,18 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 	}
 
 	name := p.parseName()
+
+	var generics []*GenericSymbol
+
+	state := p.save()
+	genValid := false
+	if p.token.Is(lexer.TokOper) && p.token.Value == "<" {
+		generics, genValid = p.parseGenericExpression(false)
+	}
+
+	if !genValid {
+		p.restore(state)
+	}
 	// p.next()
 
 	// Is the next value a paren? If it isnt it is a normal variable reference
@@ -66,6 +78,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 		n := FunctionCallNode{}
 		n.Name = name
 		n.NodeType = nodeFunctionCall
+		n.Generics = generics
 
 		for p.next(); p.token.Type != lexer.TokRightParen; {
 			switch p.token.Type {

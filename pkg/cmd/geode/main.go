@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/llir/llvm/ir"
 	"github.com/nickwanninger/geode/pkg/ast"
 	"github.com/nickwanninger/geode/pkg/lexer"
 	"github.com/nickwanninger/geode/pkg/util"
@@ -118,19 +119,23 @@ func (c *Context) Build(buildDir string) {
 	linker.SetOutput(c.Output)
 	linker.SetOptimize(*optimize)
 
+	module := ir.NewModule()
+
 	// Loop over the compilers and generate to .ll files
 	log.Timed("llvm emission", func() {
-		for c := range rootPackage.Compile() {
-			log.Debug("Emitting pkg %s with namespace %s\n", c.Name, c.NamespaceName)
-			obj := c.Emit(buildDir)
+		for c := range rootPackage.Compile(module) {
+			log.Debug("Compiled pkg %s with namespace %s\n", c.Name, c.NamespaceName)
+			// obj := c.Emit(buildDir)
 			primaryTree = append(primaryTree, c.Nodes...)
-			linker.AddObject(obj)
+			// linker.AddObject(obj)
 			for _, link := range c.CLinkages {
 				log.Debug("Added c linkage %s\n", link)
 				linker.AddObject(link)
 			}
 		}
 	})
+
+	linker.AddObject(rootPackage.Emit(buildDir))
 
 	if *emitLLVM {
 		log.Printf("%s\n", rootPackage)

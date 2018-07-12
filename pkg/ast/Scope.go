@@ -43,28 +43,60 @@ func (s *Scope) Find(name string) (ScopeItem, bool) {
 // FindFunctions returns a list of functions that might match the name provided
 // The needle can be any of the following: bare name, mangled name
 func (s *Scope) FindFunctions(needle string) []FunctionScopeItem {
+
+	// fmt.Println("===========================")
 	funcs := make([]FunctionScopeItem, 0)
 
 	unMangled := UnmangleFunctionName(needle)
+
 	_, name := parseName(unMangled)
+	// fmt.Println(needle, " -> ", unMangled)
+	// fmt.Println(needle, " -> ", name)
 
-	possibleNames := []string{needle, unMangled, name}
-
-	for _, nm := range possibleNames {
-		fnc, found := s.Vals[nm]
-		if found {
-			return append(funcs, fnc.(FunctionScopeItem))
-		}
-	}
-
+	// possibleNames := []string{needle, unMangled, name}
+	// fmt.Println(needle)
 	for _, v := range s.Vals {
-		if v.Type() == ScopeItemFunctionType {
-			fn := v.(FunctionScopeItem)
-			if fn.Name() == needle {
-				funcs = append(funcs, fn)
+		// if the function is not mangled, check specially
+		if name == unMangled {
+			if v.Name() == name {
+				// fmt.Println("IS MAIN")
+				return append(funcs, v.(FunctionScopeItem))
 			}
+			continue
+
 		}
+		// fmt.Println(v.Name(), needle, name, MangleMatches(needle, v.Name()))
+		if v.Name() == needle || v.Name() == name || MangleMatches(needle, v.Name()) {
+			// fmt.Println(" +", v.Name())
+			funcs = append(funcs, v.(FunctionScopeItem))
+		} else {
+			// fmt.Println(" -", v.Name())
+		}
+
 	}
+
+	// fmt.Println("===========================")
+
+	// for _, nm := range possibleNames {
+	// 	fnc, found := s.Vals[nm]
+	// 	if found {
+	// 		return append(funcs, fnc.(FunctionScopeItem))
+	// 	}
+	// }
+
+	// for _, v := range s.Vals {
+	// 	if v.Type() == ScopeItemFunctionType {
+	// 		fn := v.(FunctionScopeItem)
+	// 		if fn.Name() == needle {
+	// 			funcs = append(funcs, fn)
+	// 		}
+	// 		if UnmangleFunctionName(fn.Name()) == unMangled {
+	// 			funcs = append(funcs, fn)
+
+	// 		}
+	// 	}
+	// }
+
 	if s.Parent != nil {
 		funcs = append(funcs, s.Parent.FindFunctions(needle)...)
 	}
@@ -126,6 +158,7 @@ type ScopeItem interface {
 	Name() string
 	Mangled() bool
 	SetMangled(m bool)
+	Node() Node
 }
 
 // ScopeItemType -
@@ -156,6 +189,7 @@ type FunctionScopeItem struct {
 	vis      Visibility
 	name     string
 	mangled  bool
+	node     FunctionNode
 }
 
 // Value implements ScopeItem.Value()
@@ -188,12 +222,18 @@ func (item FunctionScopeItem) SetMangled(m bool) {
 	item.mangled = m
 }
 
+// Node implements ScopeItem.Node()
+func (item FunctionScopeItem) Node() Node {
+	return item.node
+}
+
 // NewFunctionScopeItem constructs a function scope item
-func NewFunctionScopeItem(name string, function *ir.Function, vis Visibility) FunctionScopeItem {
+func NewFunctionScopeItem(name string, node FunctionNode, function *ir.Function, vis Visibility) FunctionScopeItem {
 	item := FunctionScopeItem{}
 	item.name = function.Name
 	item.function = function
 	item.vis = vis
+	item.node = node
 	return item
 }
 
@@ -206,6 +246,7 @@ type VariableScopeItem struct {
 	vis     Visibility
 	name    string
 	mangled bool
+	node    VariableNode
 }
 
 // Value implements ScopeItem.Value()
@@ -236,6 +277,11 @@ func (item VariableScopeItem) Mangled() bool {
 // SetMangled implements ScopeItem.SetMangled()
 func (item VariableScopeItem) SetMangled(m bool) {
 	item.mangled = m
+}
+
+// Node implements ScopeItem.Node()
+func (item VariableScopeItem) Node() Node {
+	return item.node
 }
 
 // NewVariableScopeItem constructs a function scope item

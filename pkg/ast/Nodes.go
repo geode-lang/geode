@@ -248,8 +248,9 @@ func (n ReturnNode) InferType(scope *Scope) types.Type { return types.Void }
 type FunctionCallNode struct {
 	NodeType
 
-	Name string
-	Args []Node
+	Name     string
+	Args     []Node
+	Generics []*GenericSymbol
 }
 
 // NameString implements Node.NameString

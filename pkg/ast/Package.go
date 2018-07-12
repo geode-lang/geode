@@ -1,11 +1,13 @@
 package ast
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/llir/llvm/ir"
 	"github.com/nickwanninger/geode/pkg/lexer"
@@ -53,20 +55,18 @@ func NewPackage(name string, source *lexer.Sourcefile) *Package {
 
 // String will get the LLVM IR from the package's compiler
 func (p *Package) String() string {
-	ir := ""
+	// ir := ""
+	ir := &bytes.Buffer{}
 	// We need to build up the IR that will be emitted
 	// so we can track this information later on.
-	ir += fmt.Sprintf("; ModuleID = %q\n", p.Name)
-	ir += fmt.Sprintf("; SourceHash = %x\n", p.Hash())
-	ir += fmt.Sprintf("; Namespace = %s\n", p.NamespaceName)
-	// ir += fmt.Sprintf("; UnixDate = %d\n", time.Now().Unix())
-	ir += fmt.Sprintf("source_filename = %q\n", p.Source.Path)
+	fmt.Fprintf(ir, "; ModuleID = %q\n", p.Name)
+	fmt.Fprintf(ir, "; SourceHash = %x\n", p.Hash())
+	fmt.Fprintf(ir, "; UnixDate = %d\n", time.Now().Unix())
 
-	ir += "\n"
 	// Append the module information
-	ir += fmt.Sprintf("%s\n", p.Compiler.Module.String())
+	fmt.Fprintf(ir, "\n%s\n", p.Compiler.Module.String())
 
-	return ir
+	return ir.String()
 }
 
 // const buildDir = ".geode_build/"
@@ -158,12 +158,11 @@ func (p *Package) LoadDep(depPath string) *Package {
 }
 
 // InjectExternalFunction injects the function without the body, just the sig
-func (p *Package) InjectExternalFunction(from *Package, fn *ir.Function) {
-	ex := ir.NewFunction(fn.Name, fn.Sig.Ret, fn.Params()...)
-	ex.Sig.Variadic = fn.Sig.Variadic
-	scopeItem := NewFunctionScopeItem(fn.Name, ex, PublicVisibility)
+func (p *Package) InjectExternalFunction(from *Package, fn *ir.Function, node FunctionNode) {
+	// ex := ir.NewFunction(fn.Name, fn.Sig.Ret, fn.Params()...)
+	// ex.Sig.Variadic = fn.Sig.Variadic
+	scopeItem := NewFunctionScopeItem(fn.Name, node, fn, PublicVisibility)
 	p.Scope.Add(scopeItem)
-
 }
 
 // Inject another Package's defintions into this Package
@@ -176,7 +175,7 @@ func (p *Package) Inject(c *Package) {
 
 			if v.Type() == ScopeItemFunctionType {
 				// fmt.Println(p.Name, v.Name())
-				p.InjectExternalFunction(c, v.Value().(*ir.Function))
+				p.InjectExternalFunction(c, v.Value().(*ir.Function), v.Node().(FunctionNode))
 			} else {
 				p.Scope.Add(v)
 			}
@@ -222,11 +221,12 @@ func GetRuntime() *Package {
 }
 
 // Compile returns a codegen-ed compiler instance
-func (p *Package) Compile() chan *Package {
+func (p *Package) Compile(module *ir.Module) chan *Package {
 	packages := make(chan *Package)
 
 	go func() {
-		p.Compiler = NewCompiler(p.Name, p)
+		p.Compiler = NewCompiler(module, p.Name, p)
+		log.Debug("Compiling Package %s\n", p.Name)
 
 		if !p.IsRuntime {
 			log.Debug("Injecting runtime into '%s'\n", p.Name)
@@ -238,7 +238,7 @@ func (p *Package) Compile() chan *Package {
 		if p.Nodes[0].Kind() == nodeNamespace {
 			p.NamespaceName = p.Nodes[0].(NamespaceNode).Name
 		} else {
-			log.Fatal("%q missing namespace. It must be the first statement.\nEx: `is foo`\n", p.Name)
+			log.Fatal("%q missing namespace. It must be the first statement.\nEx: `is foo`\n...\n", p.Name)
 		}
 
 		// Go through all nodes and handle the ones that are dependencies
@@ -249,9 +249,10 @@ func (p *Package) Compile() chan *Package {
 		}
 
 		for _, dep := range p.Dependencies {
+			// fmt.Println(p.NamespaceName, len(p.Nodes))
 			if !dep.Compiled {
 				dep.Compiled = true
-				for pkg := range dep.Compile() {
+				for pkg := range dep.Compile(module) {
 					packages <- pkg
 				}
 			}
@@ -269,7 +270,12 @@ func (p *Package) Compile() chan *Package {
 		// go through and declare all the functions
 		for _, node := range p.Nodes {
 			if node.Kind() == nodeFunction {
-				node.(FunctionNode).Declare(p.Scope.SpawnChild(), p.Compiler)
+				fnNode := node.(FunctionNode)
+				if len(fnNode.Generics) == 0 {
+
+				}
+				fnNode.Declare(p.Scope.SpawnChild(), p.Compiler)
+
 			}
 			// node.Codegen(p.Compiler.Scope.SpawnChild(), p.Compiler)
 		}
