@@ -123,7 +123,6 @@ func (n FunctionNode) MangledName(scope *Scope, c *Compiler, generics []*Generic
 //    when the function is pure, it cannot accept pointer or have a block as a body.
 func (n FunctionNode) Check(scope *Scope, c *Compiler) error {
 	if n.DeclKeyword == DeclKeywordPure {
-		fmt.Println(n.Name)
 		_, argtypes := n.Arguments(scope)
 		for _, arg := range argtypes {
 			if types.IsPointer(arg) {
