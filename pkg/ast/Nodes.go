@@ -13,7 +13,7 @@ type Node interface {
 	Kind() NodeType
 	NameString() string
 	Codegen(*Scope, *Compiler) value.Value
-	InferType(scope *Scope) types.Type
+	InferType(scope *Scope) string
 }
 
 // Kind -
@@ -69,7 +69,7 @@ type IntNode struct {
 func (n IntNode) NameString() string { return "IntNode" }
 
 // InferType implements Node.InferType
-func (n IntNode) InferType(scope *Scope) types.Type { return types.I64 }
+func (n IntNode) InferType(scope *Scope) string { return "int" }
 
 //
 //
@@ -83,7 +83,7 @@ type FloatNode struct {
 func (n FloatNode) NameString() string { return "FloatNode" }
 
 // InferType implements Node.InferType
-func (n FloatNode) InferType(scope *Scope) types.Type { return types.Double }
+func (n FloatNode) InferType(scope *Scope) string { return "float" }
 
 //
 //
@@ -97,7 +97,7 @@ type StringNode struct {
 func (n StringNode) NameString() string { return "StringNode" }
 
 // InferType implements Node.InferType
-func (n StringNode) InferType(scope *Scope) types.Type { return types.NewPointer(types.I8) }
+func (n StringNode) InferType(scope *Scope) string { return "string" }
 
 // CharNode is a char literal
 // TODO: get parsing working for this.
@@ -110,7 +110,7 @@ type CharNode struct {
 func (n CharNode) NameString() string { return "CharNode" }
 
 // InferType implements Node.InferType
-func (n CharNode) InferType(scope *Scope) types.Type { return types.I8 }
+func (n CharNode) InferType(scope *Scope) string { return "byte" }
 
 // CastNode is a type cast "function" call. TODO: Replace this with normal function calls and check
 // in the function call codegen function
@@ -124,7 +124,7 @@ type CastNode struct {
 func (n CastNode) NameString() string { return "CastNode" }
 
 // InferType implements Node.InferType
-func (n CastNode) InferType(scope *Scope) types.Type { return scope.FindType(n.To).Type }
+func (n CastNode) InferType(scope *Scope) string { return n.To }
 
 // IfNode is an if statement representation
 type IfNode struct {
@@ -139,7 +139,7 @@ type IfNode struct {
 func (n IfNode) NameString() string { return "IfNode" }
 
 // InferType implements Node.InferType
-func (n IfNode) InferType(scope *Scope) types.Type { return types.Void }
+func (n IfNode) InferType(scope *Scope) string { return "void" }
 
 //
 // ForNode is a for loop structure representation
@@ -156,7 +156,7 @@ type ForNode struct {
 func (n ForNode) NameString() string { return "ForNode" }
 
 // InferType implements Node.InferType
-func (n ForNode) InferType(scope *Scope) types.Type { return types.Void }
+func (n ForNode) InferType(scope *Scope) string { return "void" }
 
 //
 // UnaryNode is a unary operation representation.
@@ -175,7 +175,7 @@ type UnaryNode struct {
 func (n UnaryNode) NameString() string { return "UnaryNode" }
 
 // InferType implements Node.InferType
-func (n UnaryNode) InferType(scope *Scope) types.Type { return n.Operand.InferType(scope) }
+func (n UnaryNode) InferType(scope *Scope) string { return n.Operand.InferType(scope) }
 
 //
 // BinaryNode is a binary operation representation
@@ -191,7 +191,7 @@ type BinaryNode struct {
 func (n BinaryNode) NameString() string { return "BinaryNode" }
 
 // InferType implements Node.InferType
-func (n BinaryNode) InferType(scope *Scope) types.Type { return types.Void }
+func (n BinaryNode) InferType(scope *Scope) string { return n.Left.InferType(scope) }
 
 // DependencyNode is a way of representing the need to include
 // a dependency or multiple dependencies. It also works to link
@@ -213,7 +213,7 @@ type DependencyNode struct {
 func (n DependencyNode) NameString() string { return "DependencyNode" }
 
 // InferType implements Node.InferType
-func (n DependencyNode) InferType(scope *Scope) types.Type { return types.Void }
+func (n DependencyNode) InferType(scope *Scope) string { return "void" }
 
 // ReferenceType is how we go about accessing a variable. Do we just
 // want the value, or do we want to assign to it
@@ -240,7 +240,7 @@ type ReturnNode struct {
 func (n ReturnNode) NameString() string { return "ReturnNode" }
 
 // InferType implements Node.InferType
-func (n ReturnNode) InferType(scope *Scope) types.Type { return types.Void }
+func (n ReturnNode) InferType(scope *Scope) string { return n.Value.InferType(scope) }
 
 // FunctionCallNode is a function call, example: `foo(a, b, c)`. This would be:
 //    Name = "foo"
@@ -257,7 +257,14 @@ type FunctionCallNode struct {
 func (n FunctionCallNode) NameString() string { return "FunctionCallNode" }
 
 // InferType implements Node.InferType
-func (n FunctionCallNode) InferType(scope *Scope) types.Type { return types.Void }
+func (n FunctionCallNode) InferType(scope *Scope) string {
+	// n.Name.m
+	// funcs := scope.FindFunctions(n.Name)
+	// if len(funcs) != 1 {
+	// 	log.Fatal("Unable to ")
+	// }
+	return "PLEASE IMPLEMENT ME :)"
+}
 
 // WhileNode is a while loop representationvbnm,bvbnm
 type WhileNode struct {
@@ -272,7 +279,7 @@ type WhileNode struct {
 func (n WhileNode) NameString() string { return "WhileNode" }
 
 // InferType implements Node.InferType
-func (n WhileNode) InferType(scope *Scope) types.Type { return types.Void }
+func (n WhileNode) InferType(scope *Scope) string { return "void" }
 
 // NamespaceNode -
 type NamespaceNode struct {
@@ -285,7 +292,7 @@ type NamespaceNode struct {
 func (n NamespaceNode) NameString() string { return "NamespaceNode" }
 
 // InferType implements Node.InferType
-func (n NamespaceNode) InferType(scope *Scope) types.Type { return types.Void }
+func (n NamespaceNode) InferType(scope *Scope) string { return "void" }
 
 // GeodeTypeRef -
 type GeodeTypeRef struct {

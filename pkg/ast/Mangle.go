@@ -65,14 +65,13 @@ func splitMany(s string, splits string) []string {
 // so I will use V
 const functionNamePrefix = "_V"
 
-// MangleFunctionName will mangle a function name like how cpp does :)
+// MangleFunctionName will mangle a function name
 func MangleFunctionName(origName string, argTypes []types.Type, generics []*GenericSymbol) string {
 
 	name := &bytes.Buffer{}
 
 	fmt.Fprintf(name, "%s", functionNamePrefix)
 
-	// name := functionNamePrefix
 	parts := splitMany(origName, ":.")
 	for i, p := range parts {
 		prefix := "M"
@@ -82,15 +81,9 @@ func MangleFunctionName(origName string, argTypes []types.Type, generics []*Gene
 		fmt.Fprintf(name, "%s%d%s", prefix, len(p), p)
 	}
 
-	// if len(generics) > 0 {
-	// 	fmt.Fprintf(name, "$")
-	// }
-
 	for _, gen := range generics {
 		fmt.Fprintf(name, "G%d%s", len(gen.Name), gen.Name)
 	}
-
-	// fmt.Println(UnmangleFunctionName(name.String()))
 
 	return name.String()
 }
@@ -191,7 +184,7 @@ func UnmangleFunctionName(mangled string) string {
 		}
 	}
 
-	GetMangleParts(mangled)
+	// GetMangleParts(mangled)
 
 	name := fmt.Sprintf("%s:%s", parsedParts[0], parsedParts[1])
 

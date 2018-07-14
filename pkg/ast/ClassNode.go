@@ -18,7 +18,7 @@ type ClassNode struct {
 func (n ClassNode) NameString() string { return "ClassNode" }
 
 // InferType implements Node.InferType
-func (n ClassNode) InferType(scope *Scope) types.Type { return types.Void }
+func (n ClassNode) InferType(scope *Scope) string { return "void" }
 
 // Codegen implements Node.Codegen for ClassNode
 func (n ClassNode) Codegen(scope *Scope, c *Compiler) value.Value {

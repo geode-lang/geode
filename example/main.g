@@ -1,12 +1,7 @@
 is main
-# include "std:io"
-# include "std:mem"
+include "std:io"
+include "std:mem"
 
-func foo<A> int {
-	return 0;
-}
+func main int -> 0;
 
-func main int {
-	foo<int>();
-	return 0;
-}
+pure puretest(int a) int -> 3;

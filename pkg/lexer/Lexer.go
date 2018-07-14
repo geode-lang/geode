@@ -17,6 +17,7 @@ var tokenTypeOverrides = map[string]TokenType{
 	"for":     TokFor,
 	"while":   TokWhile,
 	"func":    TokFuncDefn,
+	"pure":    TokFuncDefn,
 	"class":   TokClassDefn,
 	"include": TokDependency,
 	"link":    TokDependency,
@@ -248,7 +249,7 @@ func (l *Lexer) fatal(format string, args ...interface{}) stateFn {
 func lexIdentifer(l *Lexer) stateFn {
 	for {
 		switch r := l.next(); {
-		case isAlphaNumeric(r):
+		case isAlphaNumeric(r) || r == '\'':
 			// absorb
 		default:
 			l.backup()

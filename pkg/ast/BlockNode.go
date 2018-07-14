@@ -1,7 +1,6 @@
 package ast
 
 import (
-	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 )
 
@@ -16,7 +15,7 @@ type BlockNode struct {
 func (n BlockNode) NameString() string { return "BlockNode" }
 
 // InferType implements Node.InferType
-func (n BlockNode) InferType(scope *Scope) types.Type { return types.Void }
+func (n BlockNode) InferType(scope *Scope) string { return "void" }
 
 // Codegen implements Node.Codegen for BlockNode
 func (n BlockNode) Codegen(scope *Scope, c *Compiler) value.Value {

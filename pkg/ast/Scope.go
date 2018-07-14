@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
@@ -8,9 +10,6 @@ import (
 )
 
 func init() {
-	// gob.Register(Scope{})
-	// gob.Register(FunctionScopeItem{})
-	// gob.Register(VariableScopeItem{})
 }
 
 // Scope trees represent block scoping by having a root scope
@@ -44,58 +43,25 @@ func (s *Scope) Find(name string) (ScopeItem, bool) {
 // The needle can be any of the following: bare name, mangled name
 func (s *Scope) FindFunctions(needle string) []FunctionScopeItem {
 
-	// fmt.Println("===========================")
 	funcs := make([]FunctionScopeItem, 0)
 
 	unMangled := UnmangleFunctionName(needle)
 
 	_, name := parseName(unMangled)
-	// fmt.Println(needle, " -> ", unMangled)
-	// fmt.Println(needle, " -> ", name)
 
-	// possibleNames := []string{needle, unMangled, name}
-	// fmt.Println(needle)
 	for _, v := range s.Vals {
 		// if the function is not mangled, check specially
 		if name == unMangled {
 			if v.Name() == name {
-				// fmt.Println("IS MAIN")
 				return append(funcs, v.(FunctionScopeItem))
 			}
 			continue
-
 		}
-		// fmt.Println(v.Name(), needle, name, MangleMatches(needle, v.Name()))
 		if v.Name() == needle || v.Name() == name || MangleMatches(needle, v.Name()) {
-			// fmt.Println(" +", v.Name())
 			funcs = append(funcs, v.(FunctionScopeItem))
-		} else {
-			// fmt.Println(" -", v.Name())
 		}
 
 	}
-
-	// fmt.Println("===========================")
-
-	// for _, nm := range possibleNames {
-	// 	fnc, found := s.Vals[nm]
-	// 	if found {
-	// 		return append(funcs, fnc.(FunctionScopeItem))
-	// 	}
-	// }
-
-	// for _, v := range s.Vals {
-	// 	if v.Type() == ScopeItemFunctionType {
-	// 		fn := v.(FunctionScopeItem)
-	// 		if fn.Name() == needle {
-	// 			funcs = append(funcs, fn)
-	// 		}
-	// 		if UnmangleFunctionName(fn.Name()) == unMangled {
-	// 			funcs = append(funcs, fn)
-
-	// 		}
-	// 	}
-	// }
 
 	if s.Parent != nil {
 		funcs = append(funcs, s.Parent.FindFunctions(needle)...)
@@ -115,6 +81,15 @@ func (s *Scope) FindType(name string) *TypeDef {
 		return s.Parent.FindType(name)
 	}
 	return v
+}
+
+// GetTypeName takes a type and returns the human name
+// that the compiler and lexer understands
+func (s *Scope) GetTypeName(t types.Type) string {
+	for k, v := range *s.Types {
+		fmt.Println(k, v)
+	}
+	return "void"
 }
 
 // InjectPrimitives injects primitve types like int, byte, etc

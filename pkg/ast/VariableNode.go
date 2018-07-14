@@ -29,16 +29,32 @@ type VariableNode struct {
 func (n VariableNode) NameString() string { return "VariableNode" }
 
 // InferType implements Node.InferType
-func (n VariableNode) InferType(scope *Scope) types.Type { return types.Void }
+func (n VariableNode) InferType(scope *Scope) string {
+
+	if n.RefType == ReferenceDefine {
+		found := scope.FindType(n.Type.Name)
+		if found == nil {
+			return "void"
+		}
+
+		return found.Name
+	}
+
+	return "void"
+
+}
 
 // Codegen implements Node.Codegen for VariableNode
 func (n VariableNode) Codegen(scope *Scope, c *Compiler) value.Value {
+
 	block := c.CurrentBlock()
 	f := block.Parent
 
 	name := n.Name
 	var alloc *ir.InstAlloca
 	var val value.Value
+
+	// fmt.Printf("%s -> %s\n", n.Name, n.InferType(scope))
 
 	if n.RefType == ReferenceAccessValue || n.RefType == ReferenceAccessStackAddress {
 		v, found := scope.Find(name)

@@ -264,6 +264,10 @@ func createTypeCast(c *Compiler, in value.Value, to types.Type) value.Value {
 		return nil
 	}
 
+	if types.IsPointer(inType) && types.IsPointer(to) {
+		return c.CurrentBlock().NewBitCast(in, to)
+	}
+
 	if fromFloat && toInt {
 		return c.CurrentBlock().NewFPToSI(in, to)
 	}
@@ -376,7 +380,8 @@ func (n BinaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 // Codegen implements Node.Codegen for CastNode
 func (n CastNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	from := n.From.Codegen(scope, c)
-	return createTypeCast(c, from, n.InferType(scope))
+	realType := scope.FindType(n.InferType(scope)).Type
+	return createTypeCast(c, from, realType)
 }
 
 // Codegen implements Node.Codegen for FunctionCallNode

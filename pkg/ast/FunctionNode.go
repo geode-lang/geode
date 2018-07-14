@@ -10,6 +10,16 @@ import (
 	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
+// FuncDeclKeywordType lets the compiler keep track of
+// what keyword was used to declare a function
+type FuncDeclKeywordType int
+
+// Type of function declaration keywords
+const (
+	DeclKeywordFunc FuncDeclKeywordType = iota
+	DeclKeywordPure
+)
+
 // FunctionNode is the representation of some function. It has methods
 // on it to declare the function as well as codegen. A function has
 // a list of VariableNodes for arguments and a single block for a body,
@@ -17,22 +27,24 @@ import (
 type FunctionNode struct {
 	NodeType
 
-	Name       string
-	Args       []VariableNode
-	Body       BlockNode
-	External   bool
-	Variadic   bool
-	Nomangle   bool
-	ReturnType GeodeTypeRef
-	Generics   []*GenericSymbol
+	Name           string
+	Args           []VariableNode
+	Body           BlockNode
+	External       bool
+	Variadic       bool
+	Nomangle       bool
+	ReturnType     GeodeTypeRef
+	Generics       []*GenericSymbol
+	DeclKeyword    FuncDeclKeywordType
+	ImplicitReturn bool
 }
 
 // NameString implements Node.NameString
 func (n FunctionNode) NameString() string { return "FunctionNode" }
 
 // InferType implements Node.InferType
-func (n FunctionNode) InferType(scope *Scope) types.Type {
-	return scope.FindType(n.ReturnType.Name).Type
+func (n FunctionNode) InferType(scope *Scope) string {
+	return "function" //scope.FindType(n.ReturnType.Name).Type
 }
 
 // Arguments returns some FunctionNode's arguments
@@ -51,7 +63,10 @@ func (n FunctionNode) Arguments(scope *Scope) ([]*types.Param, []types.Type) {
 
 // Declare declares some FunctionNode's sig
 func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
-
+	checkerr := n.Check(scope, c)
+	if checkerr != nil {
+		log.Fatal("Check error: %s\n", checkerr.Error())
+	}
 	funcArgs, _ := n.Arguments(scope)
 
 	name := n.Name
@@ -103,6 +118,29 @@ func (n FunctionNode) MangledName(scope *Scope, c *Compiler, generics []*Generic
 	return name
 }
 
+// Check makes sure a function follows the correct limitations set by the language
+// ex:
+//    when the function is pure, it cannot accept pointer or have a block as a body.
+func (n FunctionNode) Check(scope *Scope, c *Compiler) error {
+	if n.DeclKeyword == DeclKeywordPure {
+		fmt.Println(n.Name)
+		_, argtypes := n.Arguments(scope)
+		for _, arg := range argtypes {
+			if types.IsPointer(arg) {
+				return fmt.Errorf("pure function '%s' is not allowed to accept pointers as arguments", n.Name)
+			}
+		}
+		if n.ReturnType.PointerLevel != 0 {
+			return fmt.Errorf("pure function '%s' is not allowed to return a pointer", n.Name)
+		}
+
+		if !n.ImplicitReturn {
+			return fmt.Errorf("pure function '%s' must have an implcit return, not a block", n.Name)
+		}
+	}
+	return nil
+}
+
 // CodegenGeneric takes some generic type symbols, checks if they could work, and generates
 // a new function using those as types.
 func (n FunctionNode) CodegenGeneric(scope *Scope, c *Compiler, g []*GenericSymbol) value.Value {
@@ -116,7 +154,10 @@ func (n FunctionNode) CodegenGeneric(scope *Scope, c *Compiler, g []*GenericSymb
 
 // Codegen implements Node.Codegen for FunctionNode
 func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
-
+	checkerr := n.Check(scope, c)
+	if checkerr != nil {
+		log.Fatal("Check error: %s\n", checkerr.Error())
+	}
 	name := n.Name
 
 	if name != "main" || !n.Nomangle {

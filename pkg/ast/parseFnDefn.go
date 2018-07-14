@@ -5,10 +5,17 @@ import (
 )
 
 func (p *Parser) parseFnDefn() FunctionNode {
+	// func, pure, etc...
+	declarationKeyword := p.token.Value
 	p.next()
 
 	fn := FunctionNode{}
 	fn.NodeType = nodeFunction
+	fn.DeclKeyword = DeclKeywordFunc
+
+	if declarationKeyword == "pure" {
+		fn.DeclKeyword = DeclKeywordPure
+	}
 
 	if p.token.Type == lexer.TokIdent && p.token.Value == "nomangle" {
 		fn.Nomangle = true
@@ -16,6 +23,8 @@ func (p *Parser) parseFnDefn() FunctionNode {
 	}
 
 	fn.Name = p.parseName()
+
+	// fmt.Println(declarationKeyword, fn.Name)
 
 	// The main function should never be mangled
 	if fn.Name == "main" {
@@ -72,6 +81,7 @@ func (p *Parser) parseFnDefn() FunctionNode {
 		fn.Body = BlockNode{}
 		fn.Body.NodeType = nodeBlock
 		fn.Body.Nodes = make([]Node, 0)
+		fn.ImplicitReturn = true
 		p.next()
 
 		implReturnValue := p.parseExpression()
