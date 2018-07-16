@@ -11,6 +11,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 	}
 
 	name := p.parseName()
+	namedRef := NewNamedReference(name)
 
 	var generics []*GenericSymbol
 
@@ -29,16 +30,17 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 	if !p.token.Is(lexer.TokLeftParen) {
 
 		n := VariableNode{}
-		n.Name = name
+		n.Name = namedRef
 		n.RefType = ReferenceAccessValue
 		n.HasValue = true
 		n.NodeType = nodeVariable
 		// fmt.Println(p.token)
 		if p.token.Is(lexer.TokLeftArrow) {
-			n.RefType = ReferenceAssign
+			assignment := VariableAssignNode{}
+			assignment.Target = namedRef
 			p.next()
-			n.Body = p.parseExpression()
-			return n
+			assignment.Body = p.parseExpression()
+			return assignment
 		}
 
 		if p.token.Is(lexer.TokCompoundAssignment) {
@@ -48,7 +50,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 
 			// The left side is just a reference to the variable.
 			left := VariableNode{}
-			left.Name = name
+			left.Name = namedRef
 			left.RefType = ReferenceAccessValue
 
 			// Parse the right side of the operator
@@ -76,7 +78,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 
 		// it was a paren, so we need to parse it as if it were a function call
 		n := FunctionCallNode{}
-		n.Name = name
+		n.Name = namedRef
 		n.NodeType = nodeFunctionCall
 		n.Generics = generics
 

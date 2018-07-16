@@ -7,11 +7,15 @@ import (
 func (p *Parser) parseFnDefn() FunctionNode {
 	// func, pure, etc...
 	declarationKeyword := p.token.Value
-	p.next()
 
 	fn := FunctionNode{}
 	fn.NodeType = nodeFunction
 	fn.DeclKeyword = DeclKeywordFunc
+
+	fn.line = p.token.Line
+	fn.column = p.token.Column
+
+	p.next()
 
 	if declarationKeyword == "pure" {
 		fn.DeclKeyword = DeclKeywordPure
@@ -22,14 +26,14 @@ func (p *Parser) parseFnDefn() FunctionNode {
 		p.next()
 	}
 
-	fn.Name = p.parseName()
+	rawNameString := p.parseName()
+	fn.Name = NewNamedReference(rawNameString)
 
 	// fmt.Println(declarationKeyword, fn.Name)
 
 	// The main function should never be mangled
-	if fn.Name == "main" {
+	if rawNameString == "main" {
 		fn.Nomangle = true
-		// fn.Name = "__GEODE__main"
 	}
 
 	if p.token.Type == lexer.TokOper && p.token.Value == "<" {

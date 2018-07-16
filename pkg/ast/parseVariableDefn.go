@@ -5,15 +5,15 @@ import (
 	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
-func (p *Parser) parseVariableDefn(allowDefn bool) VariableNode {
-	n := VariableNode{}
+func (p *Parser) parseVariableDefn(allowDefn bool) VariableDefnNode {
+	n := VariableDefnNode{}
 	n.NodeType = nodeVariableDecl
 
 	if p.atType() {
 		n.Type = p.parseType()
 
 		if p.token.Is(lexer.TokIdent) {
-			n.Name = p.token.Value
+			n.Name = NewNamedReference(p.token.Value)
 			p.next()
 		} else {
 			log.Debug("%s\n", p.token)
@@ -21,6 +21,7 @@ func (p *Parser) parseVariableDefn(allowDefn bool) VariableNode {
 		}
 
 	} else {
+		p.token.SyntaxError()
 		log.Fatal("Invalid variable declaration")
 	}
 

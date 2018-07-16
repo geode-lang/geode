@@ -248,7 +248,7 @@ func (n ReturnNode) InferType(scope *Scope) string { return n.Value.InferType(sc
 type FunctionCallNode struct {
 	NodeType
 
-	Name     string
+	Name     *NamedReference
 	Args     []Node
 	Generics []*GenericSymbol
 }

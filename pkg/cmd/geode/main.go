@@ -129,7 +129,7 @@ func (c *Context) Build(buildDir string) {
 			primaryTree = append(primaryTree, c.Nodes...)
 			// linker.AddObject(obj)
 			for _, link := range c.CLinkages {
-				log.Debug("Added c linkage %s\n", link)
+				log.Debug("Addedz c linkage %s\n", link)
 				linker.AddObject(link)
 			}
 		}
@@ -138,6 +138,7 @@ func (c *Context) Build(buildDir string) {
 	linker.AddObject(rootPackage.Emit(buildDir))
 
 	if *emitLLVM {
+
 		log.Printf("%s\n", rootPackage)
 	}
 

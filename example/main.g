@@ -1,7 +1,7 @@
 is main
-include "std:io"
-include "std:mem"
 
-func main int -> puretest(1);
-
-pure puretest(int a) int -> 3;
+func main int {
+	int a := 2;
+	a <- 3;
+	return a;
+}

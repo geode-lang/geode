@@ -27,8 +27,8 @@ const (
 type FunctionNode struct {
 	NodeType
 
-	Name           string
-	Args           []VariableNode
+	Name           *NamedReference
+	Args           []VariableDefnNode
 	Body           BlockNode
 	External       bool
 	Variadic       bool
@@ -37,6 +37,9 @@ type FunctionNode struct {
 	Generics       []*GenericSymbol
 	DeclKeyword    FuncDeclKeywordType
 	ImplicitReturn bool
+
+	line   int
+	column int
 }
 
 // NameString implements Node.NameString
@@ -54,7 +57,7 @@ func (n FunctionNode) Arguments(scope *Scope) ([]*types.Param, []types.Type) {
 	for _, arg := range n.Args {
 		ty := scope.FindType(arg.Type.Name).Type
 		ty = arg.Type.BuildPointerType(ty)
-		p := ir.NewParam(arg.Name, ty)
+		p := ir.NewParam(arg.Name.String(), ty)
 		funcArgs = append(funcArgs, p)
 		argTypes = append(argTypes, p.Type())
 	}
@@ -69,20 +72,20 @@ func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 	}
 	funcArgs, _ := n.Arguments(scope)
 
-	name := n.Name
+	namestring := n.Name.String()
 	// We need to do some special checks if the function is main. It's special.
 	// For instance, it must return int type.
-	if name == "main" {
+	if namestring == "main" {
 		if n.ReturnType.Name != "int" {
 			log.Fatal("Main function must return type int. Called for type '%s'\n", n.ReturnType)
 		}
 	} else {
-		name = n.MangledName(scope, c, nil)
+		namestring = n.MangledName(scope, c, nil)
 	}
 
 	ty := scope.FindType(n.ReturnType.Name).Type
 	ty = n.ReturnType.BuildPointerType(ty)
-	function := c.Module.NewFunction(name, ty, funcArgs...)
+	function := c.Module.NewFunction(namestring, ty, funcArgs...)
 
 	c.FN = function
 
@@ -103,18 +106,19 @@ func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 
 // MangledName will return the mangled name for a function node
 func (n FunctionNode) MangledName(scope *Scope, c *Compiler, generics []*GenericSymbol) string {
+	var ns string
 	if n.Nomangle {
-		return n.Name
+		return n.Name.String()
 	}
 	_, argTypes := n.Arguments(scope)
 	// Parse the namespace and name from the funciton name
-	namespace, name := parseName(n.Name)
+	namespace, name := parseName(n.Name.String())
 	if namespace == "" {
 		namespace = c.Package.NamespaceName
 	}
 
-	n.Name = fmt.Sprintf("%s:%s", namespace, name)
-	name = MangleFunctionName(n.Name, argTypes, n.Generics)
+	ns = fmt.Sprintf("%s:%s", namespace, name)
+	name = MangleFunctionName(ns, argTypes, n.Generics)
 	return name
 }
 
@@ -157,19 +161,17 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	if checkerr != nil {
 		log.Fatal("Check error: %s\n", checkerr.Error())
 	}
-	name := n.Name
 
-	if name != "main" || !n.Nomangle {
-		name = n.MangledName(scope, c, n.Generics)
+	namestring := n.Name.String()
+
+	if namestring != "main" || !n.Nomangle {
+		namestring = n.MangledName(scope, c, n.Generics)
 	}
 
-	declared := c.Scope.FindFunctions(name)
-	// for _, d := range declared {
-	// 	fmt.Printf(" -> %s\n", d.Name())
-	// }
-	// fmt.Printf("\n\n")
+	declared := c.Scope.FindFunctions(namestring)
+
 	if len(declared) != 1 {
-		log.Fatal("Unable to find function declaration for '%s'\n", name)
+		log.Fatal("Unable to find function declaration for '%s'\n", namestring)
 	}
 	function := declared[0].Value().(*ir.Function)
 	c.FN = function
@@ -181,8 +183,9 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		c.FN.AppendBlock(entryBlock)
 		c.PushBlock(entryBlock)
 
-		if name == "main" {
-			createPrelude(scope, c)
+		createPrelude(scope, c, n)
+		if len(function.Params()) > 0 {
+			c.CurrentBlock().AppendInst(NewLLVMComment(fmt.Sprintf("%s arguments:", n.Name.String())))
 		}
 
 		for _, arg := range function.Params() {
@@ -192,6 +195,7 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 			scItem := NewVariableScopeItem(arg.Name, alloc, PrivateVisibility)
 			scope.Add(scItem)
 		}
+		c.CurrentBlock().AppendInst(NewLLVMComment(fmt.Sprintf("%s code:", n.Name.String())))
 		// Gen the body of the function
 		n.Body.Codegen(scope, c)
 		if c.CurrentBlock().Term == nil {
@@ -206,8 +210,15 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return function
 }
 
-func createPrelude(scope *Scope, c *Compiler) {
-	// Initialize the garbage collector at the first value allocted to the stack.
-	QuickParseIdentifier("byte _stkptr;").Codegen(scope, c)
-	QuickParseExpression("_runtime:init(&_stkptr);").Codegen(scope, c)
+func createPrelude(scope *Scope, c *Compiler, n FunctionNode) {
+	if c.FN.Name == "main" {
+		c.CurrentBlock().AppendInst(NewLLVMComment("Runtime Prelude:"))
+		// Initialize the garbage collector at the first value allocted to the stack.
+		QuickParseIdentifier("byte __GC_BASE_POINTER;").Codegen(scope, c)
+		QuickParseExpression("___geodegcinit(&__GC_BASE_POINTER);").Codegen(scope, c)
+
+	}
+
+	// QuickParseIdentifier(fmt.Sprintf(`string __NAME__ := "%s %d:%d";`, n.Name, n.line, n.column)).Codegen(scope, c)
+
 }

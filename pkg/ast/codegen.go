@@ -401,7 +401,7 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		}
 	}
 
-	ns, nm := parseName(n.Name)
+	ns, nm := parseName(n.Name.String())
 
 	if ns == "" {
 		ns = c.Package.NamespaceName

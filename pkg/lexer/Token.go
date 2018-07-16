@@ -66,11 +66,14 @@ func (t *Token) SyntaxError() {
 
 		if ln >= t.Line-lineMargins && ln <= t.Line+lineMargins {
 			lineString := ""
-			lineNumber := "  "
+			lineNumber := fmt.Sprintf("%2d", ln)
+
 			if ln == t.Line {
-				lineNumber = fmt.Sprintf("%2d", ln)
+				lineString = color.Red(fmt.Sprintf("%s |", lineNumber))
+			} else {
+				lineString = color.Blue(fmt.Sprintf("%s |", lineNumber))
 			}
-			lineString = color.Blue(fmt.Sprintf("%s |", lineNumber))
+
 			fmt.Fprintf(buf, "%s %s\n", lineString, line)
 		}
 

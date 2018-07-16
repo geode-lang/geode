@@ -2,7 +2,6 @@ package ast
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/metadata"
@@ -26,17 +25,16 @@ type LLVMComment struct {
 }
 
 // NewLLVMComment returns a new geode binary instruction
-func NewLLVMComment(typ types.Type, lines ...string) *LLVMComment {
+func NewLLVMComment(format string, args ...interface{}) *LLVMComment {
 	return &LLVMComment{
-		data:     strings.Join(lines, "\n"),
-		typ:      typ,
+		data:     fmt.Sprintf(format, args...),
 		Metadata: make(map[string]*metadata.Metadata),
 	}
 }
 
 // Type returns the type of the instruction.
 func (inst *LLVMComment) Type() types.Type {
-	return inst.typ
+	return types.Void
 }
 
 // Ident returns the identifier associated with the instruction.

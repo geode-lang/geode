@@ -5,8 +5,8 @@ link "c/_runtime.c"
 
 func ___geodegcinit(byte* stk) ...
 
-func init(byte* stk) {
-	___geodegcinit(stk);
-}
+# func init(byte* stk) {
+# 	___geodegcinit(stk);
+# }
 
 

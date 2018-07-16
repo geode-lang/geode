@@ -16,7 +16,7 @@ type VariableNode struct {
 	NodeType
 	Type         GeodeTypeRef
 	HasValue     bool
-	Name         string
+	Name         *NamedReference
 	IsPointer    bool
 	RefType      ReferenceType
 	IndexExpr    Node
@@ -48,16 +48,18 @@ func (n VariableNode) InferType(scope *Scope) string {
 func (n VariableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	block := c.CurrentBlock()
-	f := block.Parent
+	// f := block.Parent
 
 	name := n.Name
 	var alloc *ir.InstAlloca
 	var val value.Value
 
+	// fmt.Printf("VARIABLE NODE %s\n", name)
+
 	// fmt.Printf("%s -> %s\n", n.Name, n.InferType(scope))
 
 	if n.RefType == ReferenceAccessValue || n.RefType == ReferenceAccessStackAddress {
-		v, found := scope.Find(name)
+		v, found := scope.Find(name.String())
 		if !found {
 			fmt.Printf("unknown variable name `%s`\n", name)
 			os.Exit(-1)
@@ -86,39 +88,6 @@ func (n VariableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		}
 		return val
 	}
-
-	if n.RefType == ReferenceAssign {
-		v, found := scope.Find(name)
-		if !found {
-			fmt.Println(v, "Not found")
-		}
-		alloc = v.Value().(*ir.InstAlloca)
-	} else if n.RefType == ReferenceDefine {
-		ty := scope.FindType(n.Type.Name).Type
-		ty = n.Type.BuildPointerType(ty)
-		alloc = createBlockAlloca(f, ty, name)
-		scItem := NewVariableScopeItem(n.Name, alloc, PrivateVisibility)
-		scope.Add(scItem)
-	}
-
-	if n.HasValue {
-		// Construct the body
-		if n.Body != nil {
-			val = n.Body.Codegen(scope, c)
-			if val == nil {
-				return val // nil
-			}
-		}
-		val = createTypeCast(c, val, alloc.Elem)
-
-	} else {
-		// Default to 0 from issue:
-		// https://github.com/nickwanninger/geode/issues/5
-		// val = createTypeCast(c, constant.NewInt(0, types.I64), alloc.Elem)
-		// val = nil
-		return nil
-	}
-	block.NewStore(val, alloc)
 
 	return nil
 }

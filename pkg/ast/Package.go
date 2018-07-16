@@ -60,7 +60,6 @@ func (p *Package) String() string {
 	// We need to build up the IR that will be emitted
 	// so we can track this information later on.
 	fmt.Fprintf(ir, "; ModuleID = %q\n", p.Name)
-	fmt.Fprintf(ir, "; SourceHash = %x\n", p.Hash())
 	fmt.Fprintf(ir, "; UnixDate = %d\n", time.Now().Unix())
 
 	// Append the module information
