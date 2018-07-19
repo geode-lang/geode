@@ -8,10 +8,11 @@ import (
 // ClassNode -
 type ClassNode struct {
 	NodeType
+	TokenReference
 
 	Name      string
 	Methods   []FunctionNode
-	Variables []VariableNode
+	Variables []VariableDefnNode
 }
 
 // NameString implements Node.NameString

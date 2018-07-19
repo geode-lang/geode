@@ -8,6 +8,7 @@ import (
 func (p *Parser) parseVariableDefn(allowDefn bool) VariableDefnNode {
 	n := VariableDefnNode{}
 	n.NodeType = nodeVariableDecl
+	n.TokenReference.Token = p.token
 
 	if p.atType() {
 		n.Type = p.parseType()

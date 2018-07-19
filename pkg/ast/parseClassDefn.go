@@ -9,6 +9,7 @@ var classIndex = 0
 func (p *Parser) parseClassDefn() Node {
 	p.requires(lexer.TokClassDefn)
 	n := ClassNode{}
+	n.TokenReference.Token = p.token
 	n.NodeType = nodeClass
 
 	p.next()
@@ -18,12 +19,12 @@ func (p *Parser) parseClassDefn() Node {
 
 	p.next()
 	nodes := p.parseClassBody()
-	n.Variables = make([]VariableNode, 0)
+	n.Variables = make([]VariableDefnNode, 0)
 	n.Methods = make([]FunctionNode, 0)
 	for _, node := range nodes {
 		switch node.Kind() {
 		case nodeVariableDecl:
-			n.Variables = append(n.Variables, node.(VariableNode))
+			n.Variables = append(n.Variables, node.(VariableDefnNode))
 		case nodeFunction:
 			n.Methods = append(n.Methods, node.(FunctionNode))
 		}

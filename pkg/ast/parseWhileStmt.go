@@ -9,6 +9,7 @@ var whileStmtIndex = 0
 func (p *Parser) parseWhileStmt() Node {
 	p.requires(lexer.TokWhile)
 	n := WhileNode{}
+	n.TokenReference.Token = p.token
 	n.NodeType = nodeWhile
 	n.Index = whileStmtIndex
 	whileStmtIndex++

@@ -14,4 +14,8 @@ _string.go
 *.s
 *.ll
 
+.idea
+
+debug
+
 .geode_build*

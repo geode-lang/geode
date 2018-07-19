@@ -85,6 +85,7 @@ func asciiEscapeToUnicode(bs []byte) rune {
 
 func (p *Parser) parseStringExpr() Node {
 	n := StringNode{}
+	n.TokenReference.Token = p.token
 	n.NodeType = nodeString
 	escaped, err := strconv.Unquote(p.token.Value)
 	if err != nil {

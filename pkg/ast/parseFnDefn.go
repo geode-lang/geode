@@ -9,6 +9,7 @@ func (p *Parser) parseFnDefn() FunctionNode {
 	declarationKeyword := p.token.Value
 
 	fn := FunctionNode{}
+	fn.TokenReference.Token = p.token
 	fn.NodeType = nodeFunction
 	fn.DeclKeyword = DeclKeywordFunc
 

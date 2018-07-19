@@ -163,6 +163,7 @@ func (n UnaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	operandValue := n.Operand.Codegen(scope, c)
 	if operandValue == nil {
+		n.Operand.SyntaxError()
 		log.Fatal("nil operand")
 	}
 
@@ -339,7 +340,8 @@ func (n BinaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	l, r, t := binaryCast(c, l, r)
 
 	if l == nil || r == nil {
-		log.Fatal("An operand to a binart operation `%s` was nil and failed to generate\n", n.OP)
+		n.SyntaxError()
+		log.Fatal("An operand to a binary operation `%s` was nil and failed to generate\n", n.OP)
 	}
 
 	blk := c.CurrentBlock()
@@ -418,9 +420,11 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	funcCount := len(functionOptions)
 
 	if funcCount > 1 {
+		n.SyntaxError()
 		log.Fatal("Too many options for function call '%s'\n", name)
 	} else if funcCount == 0 {
 		_, bareName := parseName(UnmangleFunctionName(name))
+		n.SyntaxError()
 		log.Fatal("Unable to find function '%s' in scope of module '%s'\n", bareName, c.Package.NamespaceName)
 	}
 
@@ -467,7 +471,7 @@ func newCharArray(s string) *constant.Array {
 		b := constant.NewInt(int64(s[i]), types.I8)
 		bs = append(bs, b)
 	}
-	bs = append(bs, constant.NewInt(int64(0), types.I8))
+	bs = append(bs, constant.NewInt(0, types.I8))
 	c := constant.NewArray(bs...)
 	c.CharArray = true
 	return c

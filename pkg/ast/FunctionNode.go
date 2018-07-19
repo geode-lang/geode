@@ -26,6 +26,7 @@ const (
 // all of which are codegenned.
 type FunctionNode struct {
 	NodeType
+	TokenReference
 
 	Name           *NamedReference
 	Args           []VariableDefnNode
@@ -88,6 +89,7 @@ func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 	function := c.Module.NewFunction(namestring, ty, funcArgs...)
 
 	c.FN = function
+	// function.CallConv = ir.CallConvCXX_Fast_TLS
 
 	// if n.Variadic && !n.External {
 	// 	log.Fatal("Function '%s' is variadic and has a body. This only allowed for external functions.\n", n.Name)
@@ -101,6 +103,8 @@ func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 	scopeItem.SetMangled(!n.Nomangle)
 	c.Scope.Add(scopeItem)
 
+	// c.Module.NewGlobalDecl(fmt.Sprintf("_ret_%s", function.Name), function.Sig.Ret)
+	c.FN = nil
 	return function
 }
 
@@ -148,6 +152,7 @@ func (n FunctionNode) Check(scope *Scope, c *Compiler) error {
 // a new function using those as types.
 func (n FunctionNode) CodegenGeneric(scope *Scope, c *Compiler, g []*GenericSymbol) value.Value {
 	if len(n.Generics) != len(g) {
+		n.SyntaxError()
 		log.Fatal("Generics used in function call on '%s' are not of the correct length. Passed: %d, Expected: %d", n.Name, len(g), len(n.Generics))
 	}
 
@@ -159,6 +164,7 @@ func (n FunctionNode) CodegenGeneric(scope *Scope, c *Compiler, g []*GenericSymb
 func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	checkerr := n.Check(scope, c)
 	if checkerr != nil {
+		n.SyntaxError()
 		log.Fatal("Check error: %s\n", checkerr.Error())
 	}
 
@@ -171,6 +177,7 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	declared := c.Scope.FindFunctions(namestring)
 
 	if len(declared) != 1 {
+		n.SyntaxError()
 		log.Fatal("Unable to find function declaration for '%s'\n", namestring)
 	}
 	function := declared[0].Value().(*ir.Function)
@@ -179,10 +186,13 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	// If the function is external (has ... at the end) we don't build a block
 	if !n.External {
 		// Create the entrypoint to the function
-		entryBlock := ir.NewBlock("entry")
+		entryBlock := ir.NewBlock(fmt.Sprintf("%s-entry", n.Name))
 		c.FN.AppendBlock(entryBlock)
 		c.PushBlock(entryBlock)
 
+		// Construct the prelude of this function
+		// The prelude contains information about
+		// initializing the runtime.
 		createPrelude(scope, c, n)
 		if len(function.Params()) > 0 {
 			c.CurrentBlock().AppendInst(NewLLVMComment(fmt.Sprintf("%s arguments:", n.Name.String())))
@@ -212,13 +222,10 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 func createPrelude(scope *Scope, c *Compiler, n FunctionNode) {
 	if c.FN.Name == "main" {
-		c.CurrentBlock().AppendInst(NewLLVMComment("Runtime Prelude:"))
+		c.CurrentBlock().AppendInst(NewLLVMComment("runtime prelude:"))
 		// Initialize the garbage collector at the first value allocted to the stack.
 		QuickParseIdentifier("byte __GC_BASE_POINTER;").Codegen(scope, c)
 		QuickParseExpression("___geodegcinit(&__GC_BASE_POINTER);").Codegen(scope, c)
 
 	}
-
-	// QuickParseIdentifier(fmt.Sprintf(`string __NAME__ := "%s %d:%d";`, n.Name, n.line, n.column)).Codegen(scope, c)
-
 }

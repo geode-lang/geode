@@ -9,6 +9,7 @@ var blkidx = 0
 func (p *Parser) parseBlockStmt() BlockNode {
 	p.requires(lexer.TokLeftCurly)
 	blk := BlockNode{}
+	blk.TokenReference.Token = p.token
 	blk.NodeType = nodeBlock
 
 	for {

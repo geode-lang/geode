@@ -7,6 +7,7 @@ import (
 func (p *Parser) parseNamespace() Node {
 	p.requires(lexer.TokNamespace)
 	n := NamespaceNode{}
+	n.TokenReference.Token = p.token
 	n.NodeType = nodeNamespace
 	p.next()
 

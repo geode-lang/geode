@@ -32,6 +32,7 @@ type Package struct {
 	Source             *lexer.Sourcefile
 	Nodes              []Node
 	Dependencies       []*Package
+	TargetTripple      string
 	Scope              *Scope
 	Compiler           *Compiler
 	IsRuntime          bool
@@ -61,9 +62,10 @@ func (p *Package) String() string {
 	// so we can track this information later on.
 	fmt.Fprintf(ir, "; ModuleID = %q\n", p.Name)
 	fmt.Fprintf(ir, "; UnixDate = %d\n", time.Now().Unix())
+	fmt.Fprintf(ir, "target triple = %q\n", p.TargetTripple)
 
 	// Append the module information
-	fmt.Fprintf(ir, "\n%s\n", p.Compiler.Module.String())
+	fmt.Fprintf(ir, "\n%s", p.Compiler.Module.String())
 
 	return ir.String()
 }
@@ -220,7 +222,8 @@ func GetRuntime() *Package {
 }
 
 // Compile returns a codegen-ed compiler instance
-func (p *Package) Compile(module *ir.Module) chan *Package {
+func (p *Package) Compile(module *ir.Module, targetTripple string) chan *Package {
+	p.TargetTripple = targetTripple
 	packages := make(chan *Package)
 
 	go func() {
@@ -237,7 +240,8 @@ func (p *Package) Compile(module *ir.Module) chan *Package {
 		if p.Nodes[0].Kind() == nodeNamespace {
 			p.NamespaceName = p.Nodes[0].(NamespaceNode).Name
 		} else {
-			log.Fatal("%q missing namespace. It must be the first statement.\nEx: `is foo`\n...\n", p.Name)
+			p.Nodes[0].SyntaxError()
+			log.Fatal("%q missing namespace. It must be the first statement.\n", p.Source.Path)
 		}
 
 		// Go through all nodes and handle the ones that are dependencies
@@ -251,7 +255,7 @@ func (p *Package) Compile(module *ir.Module) chan *Package {
 			// fmt.Println(p.NamespaceName, len(p.Nodes))
 			if !dep.Compiled {
 				dep.Compiled = true
-				for pkg := range dep.Compile(module) {
+				for pkg := range dep.Compile(module, targetTripple) {
 					packages <- pkg
 				}
 			}

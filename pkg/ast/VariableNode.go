@@ -14,6 +14,8 @@ import (
 // code generator what kind of variable statement to build
 type VariableNode struct {
 	NodeType
+	TokenReference
+
 	Type         GeodeTypeRef
 	HasValue     bool
 	Name         *NamedReference
@@ -61,6 +63,9 @@ func (n VariableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	if n.RefType == ReferenceAccessValue || n.RefType == ReferenceAccessStackAddress {
 		v, found := scope.Find(name.String())
 		if !found {
+			n.SyntaxError()
+
+			// spew.Dump(n)
 			fmt.Printf("unknown variable name `%s`\n", name)
 			os.Exit(-1)
 		}

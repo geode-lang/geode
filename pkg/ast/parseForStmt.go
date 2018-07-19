@@ -9,6 +9,7 @@ var forStmtIndex = 0
 func (p *Parser) parseForStmt() Node {
 	p.requires(lexer.TokFor)
 	n := ForNode{}
+	n.TokenReference.Token = p.token
 	n.NodeType = nodeFor
 	n.Index = forStmtIndex
 	forStmtIndex++

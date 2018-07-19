@@ -13,6 +13,8 @@ import (
 // code generator what kind of variable statement to build
 type VariableAssignNode struct {
 	NodeType
+	TokenReference
+
 	Type     GeodeTypeRef
 	HasValue bool
 	Target   *NamedReference

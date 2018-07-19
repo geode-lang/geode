@@ -43,12 +43,15 @@ func (t Token) String() string {
 
 // SyntaxError prints a formatted syntax error
 func (t *Token) SyntaxError() {
+	if t.Type == TokError {
+		return
+	}
 	// fmt.Println(t.Value)
 	// width := runewidth.StringWidth(t.Value)
 	// underline := util.Red(strings.Repeat("^", width))
 	// fmt.Println(underline)
 	buf := &bytes.Buffer{}
-	lineMargins := 2
+	// lineMargins := 1
 	src := t.source.String()
 
 	// Highlight the source string at the error
@@ -57,31 +60,35 @@ func (t *Token) SyntaxError() {
 	src = strings.Replace(src, "\t", "    ", -1)
 	lines := strings.Split(src, "\n")
 
+	location := fmt.Sprintf("%s:%d:%d-%d", t.source.Path, t.Line, t.Column, t.Column+len(t.Value))
 	// Start printing
-	fmt.Fprintf(buf, "\nSyntax error:\n")
-	fmt.Fprintf(buf, color.Blue("   | %s:%d\n"), t.source.Path, t.Line)
+	fmt.Fprintf(buf, "\nSyntax error: (%s)\n", location)
 	fmt.Fprintf(buf, color.Blue("   |\n"))
-	for i, line := range lines {
-		ln := i + 1
 
-		if ln >= t.Line-lineMargins && ln <= t.Line+lineMargins {
-			lineString := ""
-			lineNumber := fmt.Sprintf("%2d", ln)
+	lineNumber := color.Red(fmt.Sprintf("%2d", t.Line))
+	fmt.Fprintf(buf, "%s %s %s\n", lineNumber, color.Blue("|"), strings.TrimSpace(lines[t.Line-1]))
+	fmt.Fprintf(buf, color.Blue("   |\n"))
 
-			if ln == t.Line {
-				lineString = color.Red(fmt.Sprintf("%s |", lineNumber))
-			} else {
-				lineString = color.Blue(fmt.Sprintf("%s |", lineNumber))
-			}
+	// fmt.Fprintf(buf, color.Blue("   |\n"))
+	// for i, line := range lines {
+	// 	ln := i + 1
 
-			fmt.Fprintf(buf, "%s %s\n", lineString, line)
-		}
+	// 	if ln >= t.Line-lineMargins && ln <= t.Line+lineMargins {
+	// 		lineString := ""
+	// 		lineNumber := "  "
+	// 		if ln == t.Line {
+	// 			lineNumber = fmt.Sprintf("%2d", ln)
+	// 			lineString = color.Red(fmt.Sprintf("%s |", lineNumber))
+	// 		} else {
+	// 			lineString = color.Blue(fmt.Sprintf("%s |", lineNumber))
+	// 		}
 
-	}
-	fmt.Fprintf(buf, color.Blue("   |\n\n"))
+	// 		fmt.Fprintf(buf, "%s %s\n", lineString, line)
+	// 	}
+
+	// }
 
 	fmt.Println(buf)
-
 }
 
 // InferType takes some token and guesses the type

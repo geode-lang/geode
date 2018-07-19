@@ -36,10 +36,22 @@ func main() {
 
 	log.PrintVerbose = *printVerbose
 
-	clangVersion, clangError := util.RunCommand("clang", "--version")
+	clangVersion, clangError := util.RunCommand("clang", "-v")
 	if clangError != nil {
 		log.Fatal("Unable to find a clang install in your path. Please install clang and add it to your path\n")
 	}
+
+	clangVersionLines := strings.Split(string(clangVersion), "\n")
+	targetTripple := ""
+
+	for _, line := range clangVersionLines {
+		if strings.HasPrefix(line, "Target: ") {
+			targetTripple = strings.Replace(line, "Target: ", "", 1)
+		}
+	}
+
+	fmt.Println(targetTripple)
+
 	log.Verbose("Clang Version: %s\n", clangVersion)
 	log.Verbose("Building to %s...\n", buildDir)
 
@@ -47,12 +59,14 @@ func main() {
 	case buildCMD.FullCommand():
 		log.Timed("Compilation", func() {
 			context := NewContext(*buildInput, *buildOutput)
+			context.TargetTripple = targetTripple
 			context.Build(buildDir)
 		})
 
 	case runCMD.FullCommand():
 		out := path.Join(buildDir, "a.out")
 		context := NewContext(*runInput, out)
+		context.TargetTripple = targetTripple
 		context.Build(buildDir)
 		context.Run(*runArgs, buildDir)
 
@@ -71,8 +85,9 @@ func main() {
 
 // Context contains information for this compilation
 type Context struct {
-	Input  string
-	Output string
+	Input         string
+	Output        string
+	TargetTripple string
 }
 
 // NewContext constructs a new context and returns a pointer to it
@@ -123,25 +138,30 @@ func (c *Context) Build(buildDir string) {
 
 	// Loop over the compilers and generate to .ll files
 	log.Timed("llvm emission", func() {
-		for c := range rootPackage.Compile(module) {
-			log.Debug("Compiled pkg %s with namespace %s\n", c.Name, c.NamespaceName)
-			// obj := c.Emit(buildDir)
-			primaryTree = append(primaryTree, c.Nodes...)
-			// linker.AddObject(obj)
-			for _, link := range c.CLinkages {
-				log.Debug("Addedz c linkage %s\n", link)
-				linker.AddObject(link)
+		for c := range rootPackage.Compile(module, c.TargetTripple) {
+			if !*disableEmission {
+				log.Debug("Compiled pkg %s with namespace %s\n", c.Name, c.NamespaceName)
+				// obj := c.Emit(buildDir)
+				primaryTree = append(primaryTree, c.Nodes...)
+				// linker.AddObject(obj)
+				for _, link := range c.CLinkages {
+					log.Debug("Added c linkage %s\n", link)
+					linker.AddObject(link)
+				}
 			}
+
 		}
 	})
 
-	linker.AddObject(rootPackage.Emit(buildDir))
-
 	if *emitLLVM {
-
 		log.Printf("%s\n", rootPackage)
 	}
 
+	if *disableEmission {
+		return
+	}
+
+	linker.AddObject(rootPackage.Emit(buildDir))
 	log.Timed("Linking", func() {
 		linker.Run()
 	})

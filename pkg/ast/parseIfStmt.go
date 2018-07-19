@@ -9,6 +9,7 @@ var ifStmtIndex = 0
 func (p *Parser) parseIfStmt() Node {
 	p.requires(lexer.TokIf)
 	n := IfNode{}
+	n.TokenReference.Token = p.token
 	n.NodeType = nodeIf
 	n.Index = ifStmtIndex
 	ifStmtIndex++

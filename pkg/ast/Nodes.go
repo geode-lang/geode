@@ -3,22 +3,34 @@ package ast
 import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"github.com/nickwanninger/geode/pkg/lexer"
 )
 
 // NodeType -
 type NodeType int
 
-// Node -
-type Node interface {
-	Kind() NodeType
-	NameString() string
-	Codegen(*Scope, *Compiler) value.Value
-	InferType(scope *Scope) string
-}
-
 // Kind -
 func (t NodeType) Kind() NodeType {
 	return t
+}
+
+// TokenReference -
+type TokenReference struct {
+	Token lexer.Token
+}
+
+// SyntaxError -
+func (t TokenReference) SyntaxError() {
+	t.Token.SyntaxError()
+}
+
+// Node -
+type Node interface {
+	Kind() NodeType
+	SyntaxError()
+	NameString() string
+	Codegen(*Scope, *Compiler) value.Value
+	InferType(scope *Scope) string
 }
 
 // func (t NodeType) String() string {
@@ -62,6 +74,8 @@ const (
 // IntNode is an integer literal
 type IntNode struct {
 	NodeType
+	TokenReference
+
 	Value int64
 }
 
@@ -76,6 +90,8 @@ func (n IntNode) InferType(scope *Scope) string { return "int" }
 // FloatNode is a float literla
 type FloatNode struct {
 	NodeType
+	TokenReference
+
 	Value float64
 }
 
@@ -90,6 +106,8 @@ func (n FloatNode) InferType(scope *Scope) string { return "float" }
 // StringNode is a string literal
 type StringNode struct {
 	NodeType
+	TokenReference
+
 	Value string
 }
 
@@ -103,6 +121,8 @@ func (n StringNode) InferType(scope *Scope) string { return "string" }
 // TODO: get parsing working for this.
 type CharNode struct {
 	NodeType
+	TokenReference
+
 	Value int8
 }
 
@@ -116,6 +136,8 @@ func (n CharNode) InferType(scope *Scope) string { return "byte" }
 // in the function call codegen function
 type CastNode struct {
 	NodeType
+	TokenReference
+
 	From Node
 	To   string
 }
@@ -129,6 +151,8 @@ func (n CastNode) InferType(scope *Scope) string { return n.To }
 // IfNode is an if statement representation
 type IfNode struct {
 	NodeType
+	TokenReference
+
 	If    Node
 	Then  Node
 	Else  Node
@@ -145,6 +169,8 @@ func (n IfNode) InferType(scope *Scope) string { return "void" }
 // ForNode is a for loop structure representation
 type ForNode struct {
 	NodeType
+	TokenReference
+
 	Index int
 	Init  Node
 	Cond  Node
@@ -166,6 +192,7 @@ func (n ForNode) InferType(scope *Scope) string { return "void" }
 //
 type UnaryNode struct {
 	NodeType
+	TokenReference
 
 	Operator string
 	Operand  Node
@@ -181,6 +208,7 @@ func (n UnaryNode) InferType(scope *Scope) string { return n.Operand.InferType(s
 // BinaryNode is a binary operation representation
 type BinaryNode struct {
 	NodeType
+	TokenReference
 
 	OP    string
 	Left  Node
@@ -205,6 +233,8 @@ func (n BinaryNode) InferType(scope *Scope) string { return n.Left.InferType(sco
 ///
 type DependencyNode struct {
 	NodeType
+	TokenReference
+
 	Paths    []string
 	CLinkage bool
 }
@@ -233,6 +263,8 @@ const (
 // codegenned and used in a `NewRet()` call on the parent function
 type ReturnNode struct {
 	NodeType
+	TokenReference
+
 	Value Node
 }
 
@@ -247,6 +279,7 @@ func (n ReturnNode) InferType(scope *Scope) string { return n.Value.InferType(sc
 //    Args = [a, b, c]    <- these are Node references
 type FunctionCallNode struct {
 	NodeType
+	TokenReference
 
 	Name     *NamedReference
 	Args     []Node
@@ -269,6 +302,7 @@ func (n FunctionCallNode) InferType(scope *Scope) string {
 // WhileNode is a while loop representationvbnm,bvbnm
 type WhileNode struct {
 	NodeType
+	TokenReference
 
 	If    Node
 	Body  Node
@@ -284,6 +318,7 @@ func (n WhileNode) InferType(scope *Scope) string { return "void" }
 // NamespaceNode -
 type NamespaceNode struct {
 	NodeType
+	TokenReference
 
 	Name string
 }

@@ -74,9 +74,9 @@ func MangleFunctionName(origName string, argTypes []types.Type, generics []*Gene
 
 	parts := splitMany(origName, ":.")
 	for i, p := range parts {
-		prefix := "M"
+		prefix := "N"
 		if i == 0 {
-			prefix = "N"
+			prefix = "M"
 		}
 		fmt.Fprintf(name, "%s%d%s", prefix, len(p), p)
 	}
@@ -130,8 +130,8 @@ func MangleMatches(a, b string) bool {
 func GetMangleParts(mangled string) []ManglePart {
 
 	typeCharRefs := map[byte]ManglePartType{
-		'N': NamespaceMangle,
-		'M': NameMangle,
+		'M': NamespaceMangle,
+		'N': NameMangle,
 		'G': GenericMangle,
 	}
 

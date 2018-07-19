@@ -4,6 +4,7 @@ import "github.com/nickwanninger/geode/pkg/lexer"
 
 func (p *Parser) parseTypeCast() Node {
 	n := CastNode{}
+	n.TokenReference.Token = p.token
 	n.NodeType = nodeCast
 	n.To = p.token.Value
 

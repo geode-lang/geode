@@ -8,6 +8,7 @@ import (
 // that run in sequence.
 type BlockNode struct {
 	NodeType
+	TokenReference
 	Nodes []Node
 }
 

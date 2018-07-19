@@ -3,7 +3,7 @@ package ast
 // Parse unary will parse a single side of a binary statement
 
 func (p *Parser) parseUnary() Node {
-
+	startTok := p.token
 	ptrOps := map[string]bool{
 		"&": true,
 		"*": true,
@@ -24,12 +24,14 @@ func (p *Parser) parseUnary() Node {
 		if operand.Kind() == nodeVariable {
 			// Update operand's RefType if it is a nodeVariable
 			n := (operand).(VariableNode)
+			n.TokenReference.Token = startTok
 			n.RefType = ReferenceAccessStackAddress
 			operand = n
 		}
 	}
 	if operand != nil {
 		n := UnaryNode{}
+		n.TokenReference.Token = startTok
 		n.NodeType = nodeUnary
 		n.Operator = unaryOp
 		n.Operand = operand

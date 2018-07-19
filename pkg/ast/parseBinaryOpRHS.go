@@ -31,6 +31,7 @@ func (p *Parser) parseBinaryOpRHS(exprPrec int, lhs Node) Node {
 			}
 		}
 		n := BinaryNode{}
+		n.TokenReference.Token = p.token
 		n.NodeType = nodeBinary
 		n.OP = binOp
 		n.Left = lhs

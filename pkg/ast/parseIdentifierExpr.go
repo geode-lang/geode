@@ -10,6 +10,8 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 		return p.parseVariableDefn(true)
 	}
 
+	nameToken := p.token
+
 	name := p.parseName()
 	namedRef := NewNamedReference(name)
 
@@ -30,6 +32,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 	if !p.token.Is(lexer.TokLeftParen) {
 
 		n := VariableNode{}
+		n.TokenReference.Token = nameToken
 		n.Name = namedRef
 		n.RefType = ReferenceAccessValue
 		n.HasValue = true
@@ -50,6 +53,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 
 			// The left side is just a reference to the variable.
 			left := VariableNode{}
+			left.TokenReference.Token = p.token
 			left.Name = namedRef
 			left.RefType = ReferenceAccessValue
 
@@ -59,6 +63,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 
 			// Build out the bopNode
 			bopNode := BinaryNode{}
+			bopNode.TokenReference.Token = p.token
 			bopNode.Left = left
 			bopNode.Right = right
 			bopNode.OP = operator
@@ -78,6 +83,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 
 		// it was a paren, so we need to parse it as if it were a function call
 		n := FunctionCallNode{}
+		n.TokenReference.Token = nameToken
 		n.Name = namedRef
 		n.NodeType = nodeFunctionCall
 		n.Generics = generics
