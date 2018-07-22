@@ -1,18 +1,23 @@
+.PHONY: install build
 
-all: build
+default: build
 
+BINDIR =
 LIBDIR = /usr/local/lib/geodelib
-export GOBIN=/usr/local/bin
-build:
-	@rm -rf $(LIBDIR)
-	@mkdir -p $(LIBDIR)
-	@cp -a lib/* $(LIBDIR)
-	@go install github.com/nickwanninger/geode/...
 
-install: gen build
+# tell go to install to the current directory
+export GOBIN=$(shell pwd)
+
+install:
+	rm -rf $(LIBDIR)
+	mkdir -p $(LIBDIR)
+	cp -a lib/* $(LIBDIR)
+	install ./bin/geode /usr/local/bin
+
+build:
+	go build -o bin/geode ./pkg/cmd/geode
 
 gen:
 	go generate -v ./...
 
-dev: build
-	@geode run -S example
+dev: lib install

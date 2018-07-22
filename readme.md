@@ -38,7 +38,8 @@ Once you have the dependencies setup, building is easy:
 ```bash
 $ go get -u -d github.com/nickwanninger/geode/...
 $ cd $GOPATH/src/github.com/nickwanninger/geode
-$ sudo make # this needs to be run with sudo to write the stdlib
+$ make
+$ sudo make install
 ```
 
 This will build and install geode's executable binary to `/usr/local/bin`
