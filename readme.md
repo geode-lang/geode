@@ -36,9 +36,9 @@ Installing Geode is simple, just follow the steps below and install a few depend
 Once you have the dependencies setup, building is easy:
 
 ```
-$ go get -u -d github.com/nickwanninger/geode
+$ go get -u -d github.com/nickwanninger/geode/...
 $ cd $GOPATH/src/github.com/nickwanninger/geode
-$ make
+$ sudo make
 ```
 
 This will build and install geode's executable binary to `/usr/local/bin`
