@@ -89,7 +89,6 @@ func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 	function := c.Module.NewFunction(namestring, ty, funcArgs...)
 
 	c.FN = function
-	// function.CallConv = ir.CallConvCXX_Fast_TLS
 
 	// if n.Variadic && !n.External {
 	// 	log.Fatal("Function '%s' is variadic and has a body. This only allowed for external functions.\n", n.Name)

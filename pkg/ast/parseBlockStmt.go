@@ -13,7 +13,9 @@ func (p *Parser) parseBlockStmt() BlockNode {
 	blk.NodeType = nodeBlock
 
 	for {
+
 		p.next()
+		// fmt.Println(p.token)
 		// if p.token.Is(lexer.TokLet) {
 		// 	blk.Nodes = append(blk.Nodes, p.parseVariableDefn(true))
 		// 	p.checkSemiColon()

@@ -89,6 +89,7 @@ func QuickLex(str string) []Token {
 	tokArr := make([]Token, 0)
 
 	for t := range Lex(source) {
+		// fmt.Println(t)
 		tokArr = append(tokArr, t)
 	}
 
@@ -283,7 +284,16 @@ func lexSpace(l *Lexer) stateFn {
 }
 
 func lexSymbol(l *Lexer) stateFn {
-	l.acceptRunPredicate(isOperator)
+	var lastRune rune
+	l.acceptRunPredicate(func(c rune) bool {
+		if c == lastRune || l.peek() == lastRune {
+			l.backup()
+			l.emit(TokOper)
+			l.next()
+		}
+		lastRune = c
+		return isOperator(c)
+	})
 	l.emit(TokOper)
 	return lexTopLevel
 }

@@ -1,10 +1,35 @@
 package ast
 
 import (
+	"encoding/gob"
+
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nickwanninger/geode/pkg/lexer"
 )
+
+func init() {
+	gob.Register(IntNode{})
+	gob.Register(FloatNode{})
+	gob.Register(StringNode{})
+	gob.Register(CharNode{})
+	gob.Register(CastNode{})
+	gob.Register(IfNode{})
+	gob.Register(ForNode{})
+	gob.Register(UnaryNode{})
+	gob.Register(BinaryNode{})
+	gob.Register(DependencyNode{})
+	gob.Register(ReturnNode{})
+	gob.Register(FunctionCallNode{})
+	gob.Register(WhileNode{})
+	gob.Register(NamespaceNode{})
+	gob.Register(FunctionNode{})
+	gob.Register(VariableAssignNode{})
+	gob.Register(VariableDefnNode{})
+	gob.Register(VariableNode{})
+	gob.Register(ClassNode{})
+	gob.Register(BlockNode{})
+}
 
 // NodeType -
 type NodeType int
@@ -33,6 +58,9 @@ type Node interface {
 	InferType(scope *Scope) string
 }
 
+// func MarshalNodeToBinary(n Node) ([]byte, error) {
+
+// }
 // func (t NodeType) String() string {
 // 	return "nothing"
 // }

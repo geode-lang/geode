@@ -67,16 +67,12 @@ func Verbose(format string, args ...interface{}) {
 
 }
 
-var indent = 0
-
 // Timed -
 func Timed(title string, fn func()) {
 
 	start := time.Now()
 
-	indent++
 	fn()
-	indent--
 
 	duration := time.Since(start)
 	if PrintVerbose {

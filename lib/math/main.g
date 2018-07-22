@@ -1,6 +1,6 @@
 is math
 
-link "c/math.c"
+link "math.c"
 
 # Here are alot of external functions that
 # link to the c library

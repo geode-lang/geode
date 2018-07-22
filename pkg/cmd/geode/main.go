@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -28,9 +29,17 @@ var startTime time.Time
 
 func main() {
 
+	if runtime.GOOS == "windows" {
+		log.Fatal("Geode does not support windows at this time.")
+	}
+
 	spew.Config.DisableMethods = true
 	startTime = time.Now()
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
+
+	util.PurgeCache()
+
+	// fmt.Println(util.StdLibDir())
 
 	buildDir := fmt.Sprintf(".geode_build/")
 
@@ -49,8 +58,6 @@ func main() {
 			targetTripple = strings.Replace(line, "Target: ", "", 1)
 		}
 	}
-
-	fmt.Println(targetTripple)
 
 	log.Verbose("Clang Version: %s\n", clangVersion)
 	log.Verbose("Building to %s...\n", buildDir)

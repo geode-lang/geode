@@ -29,19 +29,19 @@ Installing Geode is simple, just follow the steps below and install a few depend
 
 - Golang with a `$GOPATH` setup in your env
 - The clang c compiler for linking binaries
+- make
 
 ### Building
 
 Once you have the dependencies setup, building is easy:
 
 ```
-$ go get -u -v github.com/nickwanninger/geode/...
+$ go get -u -d github.com/nickwanninger/geode
+$ cd $GOPATH/src/github.com/nickwanninger/geode
+$ make
 ```
 
-This will build and install geode's executable binary to `$GOPATH/bin/`
-
-You might need to do some extra setup on windows to get the
-c stdlib working... Gonna have to google for that
+This will build and install geode's executable binary to `/usr/local/bin`
 
 ## Example usage:
 

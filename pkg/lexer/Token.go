@@ -37,8 +37,7 @@ func (t Token) Is(types ...TokenType) bool {
 }
 
 func (t Token) String() string {
-
-	return fmt.Sprintf("%q - %s", t.Value, t.Type.String())
+	return fmt.Sprintf("%s(%q)", t.Type.String(), t.Value)
 }
 
 // SyntaxError prints a formatted syntax error
@@ -46,12 +45,7 @@ func (t *Token) SyntaxError() {
 	if t.Type == TokError {
 		return
 	}
-	// fmt.Println(t.Value)
-	// width := runewidth.StringWidth(t.Value)
-	// underline := util.Red(strings.Repeat("^", width))
-	// fmt.Println(underline)
 	buf := &bytes.Buffer{}
-	// lineMargins := 1
 	src := t.source.String()
 
 	// Highlight the source string at the error
@@ -68,25 +62,6 @@ func (t *Token) SyntaxError() {
 	lineNumber := color.Red(fmt.Sprintf("%2d", t.Line))
 	fmt.Fprintf(buf, "%s %s %s\n", lineNumber, color.Blue("|"), strings.TrimSpace(lines[t.Line-1]))
 	fmt.Fprintf(buf, color.Blue("   |\n"))
-
-	// fmt.Fprintf(buf, color.Blue("   |\n"))
-	// for i, line := range lines {
-	// 	ln := i + 1
-
-	// 	if ln >= t.Line-lineMargins && ln <= t.Line+lineMargins {
-	// 		lineString := ""
-	// 		lineNumber := "  "
-	// 		if ln == t.Line {
-	// 			lineNumber = fmt.Sprintf("%2d", ln)
-	// 			lineString = color.Red(fmt.Sprintf("%s |", lineNumber))
-	// 		} else {
-	// 			lineString = color.Blue(fmt.Sprintf("%s |", lineNumber))
-	// 		}
-
-	// 		fmt.Fprintf(buf, "%s %s\n", lineString, line)
-	// 	}
-
-	// }
 
 	fmt.Println(buf)
 }

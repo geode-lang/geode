@@ -2,7 +2,9 @@ package ast
 
 import (
 	"bytes"
+	"encoding/gob"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -11,6 +13,7 @@ import (
 
 	"github.com/llir/llvm/ir"
 	"github.com/nickwanninger/geode/pkg/lexer"
+	"github.com/nickwanninger/geode/pkg/util"
 	"github.com/nickwanninger/geode/pkg/util/log"
 )
 
@@ -76,6 +79,7 @@ func (p *Package) String() string {
 func (p *Package) Emit(buildDir string) string {
 	name := strings.Replace(p.Source.Name, ".g", "", -1)
 	filename := fmt.Sprintf("%s.ll", name)
+	objFileName := path.Join(util.GetCacheDir(), fmt.Sprintf("%x.o", p.Hash()))
 
 	pwd, _ := os.Getwd()
 	filename = strings.Replace(filename, pwd, "", -1)
@@ -91,6 +95,13 @@ func (p *Package) Emit(buildDir string) string {
 	if writeErr != nil {
 		panic(writeErr)
 	}
+
+	_, err := util.RunCommand("clang", filename, "-c", "-o", objFileName)
+	if err != nil {
+		log.Fatal("%s\n", err.Error())
+	}
+
+	// fmt.Println(filename, objFileName)
 
 	p.objectFilesEmitted = append(p.objectFilesEmitted, filename)
 	return filename
@@ -126,9 +137,8 @@ func (p *Package) LoadDep(depPath string) *Package {
 	if strings.HasPrefix(filename, "std:") {
 		isStdlib = true
 		filename = strings.Replace(filename, "std:", "", -1)
-		gopath := os.Getenv("GOPATH")
 		// Join up the new filename to the standard library source location
-		depPath = path.Join(gopath, "/src/github.com/nickwanninger/geode/lib/", filename)
+		depPath = util.StdLibFile(filename)
 	}
 
 	depSource, err := lexer.NewSourcefile(filename)
@@ -191,12 +201,46 @@ func (p *Package) Parse() chan *Package {
 	chn := make(chan *Package)
 	go func() {
 
-		tokens := lexer.Lex(p.Source)
-		nodes := Parse(tokens)
-		log.Debug("Parsing package %s\n", p.Name)
-		// And append all those nodes to the package's nodes.
-		for node := range nodes {
-			p.Nodes = append(p.Nodes, node)
+		cacheFolder := path.Join(util.GetCacheDir())
+		cacheFile := fmt.Sprintf("%s/%x.cache", cacheFolder, p.Hash())
+
+		var cacheBuffer bytes.Buffer
+
+		if _, err := os.Stat(cacheFile); os.IsNotExist(err) {
+			// There was no cache file
+			tokens := lexer.Lex(p.Source)
+			nodes := Parse(tokens)
+
+			log.Debug("Parsing package %s\n", p.Name)
+			// And append all those nodes to the package's nodes.
+			for node := range nodes {
+				p.Nodes = append(p.Nodes, node)
+			}
+
+			enc := gob.NewEncoder(&cacheBuffer)
+			err := enc.Encode(p.Nodes)
+			if err != nil {
+				log.Fatal("encode error:", err)
+			}
+
+			os.MkdirAll(cacheFolder, os.ModePerm)
+
+			err = ioutil.WriteFile(cacheFile, cacheBuffer.Bytes(), 0644)
+			if err != nil {
+				log.Fatal("Error writing cache file to home folder")
+			}
+		} else {
+			f, _ := os.Open(cacheFile) // Error handling elided for brevity.
+			defer f.Close()
+			io.Copy(&cacheBuffer, f) // Error handling elided for brevity.
+
+			// There was a cache file.
+			dec := gob.NewDecoder(&cacheBuffer)
+			p.Nodes = make([]Node, 0)
+			err = dec.Decode(&p.Nodes)
+			if err != nil {
+				log.Fatal("Error decoding node array in package %s\n", p.Name)
+			}
 		}
 
 		chn <- p
@@ -211,8 +255,7 @@ func GetRuntime() *Package {
 	if err != nil {
 		log.Fatal("Error creating runtime source structure\n")
 	}
-	gopath := os.Getenv("GOPATH")
-	rts.LoadFile(gopath + "/src/github.com/nickwanninger/geode/lib/_runtime.g")
+	rts.ResolveFile(util.StdLibFile("/runtime"))
 	rt := NewPackage("runtime", rts)
 	rt.IsRuntime = true
 	for _ = range rt.Parse() {

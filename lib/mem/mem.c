@@ -2,7 +2,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-#include "_runtime.h"
+#include "../c/_runtime.h"
 
 char*
 gcmalloc(long size) {

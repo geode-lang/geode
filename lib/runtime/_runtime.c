@@ -1,6 +1,6 @@
 
 
-#include "_runtime.h"
+#include "../c/_runtime.h"
 
 #define USE_GC
 

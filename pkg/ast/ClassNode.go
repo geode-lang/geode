@@ -23,6 +23,11 @@ func (n ClassNode) InferType(scope *Scope) string { return "void" }
 
 // Codegen implements Node.Codegen for ClassNode
 func (n ClassNode) Codegen(scope *Scope, c *Compiler) value.Value {
+	structDefn := types.NewStruct()
+	NewTypeDef(n.Name, structDefn, -1).InjectInto(scope)
+	// structDefn.Opaque = true
+	structDefn.SetName(n.Name)
+	c.Module.NewType(n.Name, structDefn)
 
 	fields := make([]types.Type, 0)
 
@@ -32,12 +37,8 @@ func (n ClassNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		fields = append(fields, ty)
 	}
 
-	structDefn := types.NewStruct(fields...)
+	structDefn.Fields = fields
 
-	NewTypeDef(n.Name, structDefn, -1).InjectInto(scope)
-	// structDefn.Opaque = true
-	structDefn.SetName(n.Name)
-	c.Module.NewType(n.Name, structDefn)
 	// fmt.Println(t, structDefn)
 	return nil
 }

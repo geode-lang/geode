@@ -6,7 +6,7 @@
 
 
 #include "io.h"
-#include "mem.h"
+#include "../c/mem.h"
 
 
 

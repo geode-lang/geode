@@ -1,6 +1,6 @@
 is mem
 
-link "c/mem.c"
+link "mem.c"
 
 # garbage collected malloc
 func nomangle gcmalloc(int size) byte* ...

@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/nickwanninger/geode/pkg/lexer"
 )
 
@@ -38,17 +40,15 @@ func (p *Parser) parseType() (t GeodeTypeRef) {
 
 	for {
 
-		// if p.token.Is(lexer.TokLeftBrace) {
-		// 	ptr = true
-		// 	t = types.NewArray(t, 0)
-		// 	p.next()
-		// 	p.requires(lexer.TokRightBrace)
-		// 	p.next()
-		// 	continue
-		// }
+		if p.token.Is(lexer.TokOper) {
+			for _, c := range p.token.Value {
+				fmt.Printf("  -  %c\n", c)
+				if c == '*' {
+					t.PointerLevel++
+					fmt.Println(t.PointerLevel)
+				}
+			}
 
-		if p.token.Is(lexer.TokOper) && p.token.Value == "*" {
-			t.PointerLevel++
 			p.next()
 			continue
 		}
