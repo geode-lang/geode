@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/nickwanninger/geode/pkg/util/color"
+	"github.com/geode-lang/geode/pkg/util/color"
 )
 
 // ShowTimers determines if the compiler should show timers or not

@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/nickwanninger/geode/pkg/lexer"
+	"github.com/geode-lang/geode/pkg/lexer"
 )
 
 func validTypeReferenceToken(t lexer.Token) bool {

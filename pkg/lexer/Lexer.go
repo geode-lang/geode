@@ -7,7 +7,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/nickwanninger/geode/pkg/util/log"
+	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 var tokenTypeOverrides = map[string]TokenType{
@@ -17,7 +17,7 @@ var tokenTypeOverrides = map[string]TokenType{
 	"for":     TokFor,
 	"while":   TokWhile,
 	"func":    TokFuncDefn,
-	"pure":    TokFuncDefn,
+	"λ":       TokFuncDefn,
 	"class":   TokClassDefn,
 	"include": TokDependency,
 	"link":    TokDependency,
@@ -107,7 +107,6 @@ func (l *Lexer) emit(typ TokenType) {
 		tok.EndPos = int(l.pos)
 		tok.Line = l.line
 		tok.Column = l.col
-
 		newTyp, override := tokenTypeOverrides[tok.Value]
 		if override {
 			typ = newTyp

@@ -1,13 +1,15 @@
 package ast
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
-	"github.com/nickwanninger/geode/pkg/util"
-	"github.com/nickwanninger/geode/pkg/util/log"
+	"github.com/geode-lang/geode/pkg/util"
+	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 // CompileTarget is a target to build a binary for
@@ -26,6 +28,7 @@ type Linker struct {
 	target      CompileTarget
 	objectPaths []string
 	optimize    bool
+	dump        bool // dump result of compilation to stdout
 }
 
 // NewLinker constructs a linker with an outpu
@@ -69,6 +72,11 @@ func (l *Linker) SetOptimize(o bool) {
 	l.optimize = o
 }
 
+// SetDump -
+func (l *Linker) SetDump(o bool) {
+	l.dump = o
+}
+
 // Cleanup removes all the
 func (l *Linker) Cleanup() {
 	for _, objFile := range l.objectPaths {
@@ -88,6 +96,7 @@ func (l *Linker) Run() {
 	linkArgs := make([]string, 0)
 
 	linkArgs = append(linkArgs, "-lm", "-lc")
+	// linkArgs = append(linkArgs, "-arch=cpp")
 
 	filename := l.output
 
@@ -113,12 +122,25 @@ func (l *Linker) Run() {
 					asmArgs := append(linkArgs, "-o", filename, obj)
 					// run the compile to asm
 					util.RunCommand(linker, asmArgs...)
+					if l.dump {
+						bs, _ := ioutil.ReadFile(filename)
+						fmt.Println(string(bs))
+					}
 				}
 
 			}
 		})
 
 		return
+	}
+
+	if l.dump {
+		for _, obj := range l.objectPaths {
+			if strings.HasSuffix(obj, ".ll") {
+				bs, _ := ioutil.ReadFile(obj)
+				fmt.Println(string(bs))
+			}
+		}
 	}
 
 	// Append input files to the end of the command

@@ -36,8 +36,8 @@ Installing Geode is simple, just follow the steps below and install a few depend
 Once you have the dependencies setup, building is easy:
 
 ```bash
-$ go get -u -d github.com/nickwanninger/geode/...
-$ cd $GOPATH/src/github.com/nickwanninger/geode
+$ go get -u -d github.com/geode-lang/geode/...
+$ cd $GOPATH/src/github.com/geode-lang/geode
 $ make
 $ sudo make install
 ```

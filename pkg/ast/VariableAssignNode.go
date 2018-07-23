@@ -5,7 +5,7 @@ import (
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/value"
-	"github.com/nickwanninger/geode/pkg/util/log"
+	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 // VariableAssignNode is a generic variable statement representation

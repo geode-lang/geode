@@ -17,7 +17,7 @@ import (
 	"syscall"
 
 	"github.com/BurntSushi/toml"
-	"github.com/nickwanninger/geode/pkg/util/color"
+	"github.com/geode-lang/geode/pkg/util/color"
 )
 
 // TestJob -

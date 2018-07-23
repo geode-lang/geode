@@ -6,7 +6,7 @@ import (
 
 var (
 	app             = kingpin.New("geode", "Compiler for the Geode Programming Language").Version(VERSION).Author(AUTHOR)
-	emitLLVM        = app.Flag("emit-llvm", "Print the main file's llvm to stdout").Short('S').Bool()
+	dumpResult      = app.Flag("dump", "Print either llvm or ASM code after compiled (llvm by default, asm if --asm is passed)").Short('S').Bool()
 	buildOutput     = app.Flag("output", "Output binary name.").Short('o').Default("a.out").String()
 	optimize        = app.Flag("optimize", "Enable full optimization").Short('O').Bool()
 	printVerbose    = app.Flag("verbose", "Enable verbose printing").Short('v').Bool()

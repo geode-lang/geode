@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/llir/llvm/ir/types"
-	"github.com/nickwanninger/geode/pkg/util/log"
+	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 func init() {

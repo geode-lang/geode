@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nickwanninger/geode/pkg/util/log"
+	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/shibukawa/configdir"
 )
 

@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/nickwanninger/geode/pkg/lexer"
-	"github.com/nickwanninger/geode/pkg/util/log"
+	"github.com/geode-lang/geode/pkg/lexer"
+	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 // Parser -

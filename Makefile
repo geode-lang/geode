@@ -11,7 +11,7 @@ export GOBIN=$(shell pwd)
 install: libinstall bininstall
 
 build:
-	@go build -o bin/geode ./pkg/cmd/geode
+	@go build -v -o bin/geode ./pkg/cmd/geode
 
 libinstall:
 	@rm -rf $(LIBDIR)
@@ -24,4 +24,5 @@ bininstall:
 gen:
 	go generate -v ./...
 
-all: lib install
+
+all: build install

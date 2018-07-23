@@ -3,8 +3,8 @@ package ast
 import (
 	"unicode"
 
-	"github.com/nickwanninger/geode/pkg/lexer"
-	"github.com/nickwanninger/geode/pkg/util/log"
+	"github.com/geode-lang/geode/pkg/lexer"
+	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 // parseGenericExpression is a bit differnet. It returns both the generic symbols

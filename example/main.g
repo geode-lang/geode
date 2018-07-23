@@ -1,7 +1,5 @@
 is main
 
-include "std:io"
-
-func main(int argc) int {
+func main int {
 	return 0;
 }

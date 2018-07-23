@@ -5,7 +5,7 @@ import (
 
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	"github.com/nickwanninger/geode/pkg/lexer"
+	"github.com/geode-lang/geode/pkg/lexer"
 )
 
 func init() {

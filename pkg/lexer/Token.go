@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nickwanninger/geode/pkg/typesystem"
-	"github.com/nickwanninger/geode/pkg/util/color"
+	"github.com/geode-lang/geode/pkg/typesystem"
+	"github.com/geode-lang/geode/pkg/util/color"
 )
 
 // TokenIsOperator will return if a given token is an operator or not

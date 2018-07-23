@@ -4,7 +4,7 @@ jobs:
     docker:
       # specify the version
       - image: circleci/golang:1.10
-    working_directory: /go/src/github.com/nickwanninger/geode
+    working_directory: /go/src/github.com/geode-lang/geode
     steps:
       - checkout
       - run: go get -t -d -v ./...

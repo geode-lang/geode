@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/llir/llvm/ir"
-	"github.com/nickwanninger/geode/pkg/lexer"
-	"github.com/nickwanninger/geode/pkg/util"
-	"github.com/nickwanninger/geode/pkg/util/log"
+	"github.com/geode-lang/geode/pkg/lexer"
+	"github.com/geode-lang/geode/pkg/util"
+	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 // RuntimePackage is the global runtime package

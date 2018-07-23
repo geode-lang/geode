@@ -1,8 +1,8 @@
 package ast
 
 import (
-	"github.com/nickwanninger/geode/pkg/lexer"
-	"github.com/nickwanninger/geode/pkg/util/log"
+	"github.com/geode-lang/geode/pkg/lexer"
+	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 func (p *Parser) parseName() string {

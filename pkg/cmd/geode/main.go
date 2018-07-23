@@ -12,23 +12,22 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/llir/llvm/ir"
-	"github.com/nickwanninger/geode/pkg/ast"
-	"github.com/nickwanninger/geode/pkg/lexer"
-	"github.com/nickwanninger/geode/pkg/util"
-	"github.com/nickwanninger/geode/pkg/util/log"
+	"github.com/geode-lang/geode/pkg/ast"
+	"github.com/geode-lang/geode/pkg/lexer"
+	"github.com/geode-lang/geode/pkg/util"
+	"github.com/geode-lang/geode/pkg/util/log"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 // Some constants that represent the program in it's current compiled state
 const (
-	VERSION = "0.0.7"
+	VERSION = "0.0.8"
 	AUTHOR  = "Nick Wanninger"
 )
 
 var startTime time.Time
 
 func main() {
-
 	if runtime.GOOS == "windows" {
 		log.Fatal("Geode does not support windows at this time.")
 	}
@@ -160,13 +159,14 @@ func (c *Context) Build(buildDir string) {
 		}
 	})
 
-	if *emitLLVM {
-		log.Printf("%s\n", rootPackage)
-	}
-
 	if *disableEmission {
+		if *dumpResult {
+			fmt.Println(rootPackage)
+		}
 		return
 	}
+
+	linker.SetDump(*dumpResult)
 
 	linker.AddObject(rootPackage.Emit(buildDir))
 	log.Timed("Linking", func() {

@@ -3,7 +3,7 @@ package ast
 import (
 	"strings"
 
-	"github.com/nickwanninger/geode/pkg/lexer"
+	"github.com/geode-lang/geode/pkg/lexer"
 )
 
 func (p *Parser) parseDependencyStmt() Node {

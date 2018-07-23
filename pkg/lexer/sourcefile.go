@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/nickwanninger/geode/pkg/util/log"
+	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 // Sourcefile is a wrapper around a rune array

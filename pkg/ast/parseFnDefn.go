@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/nickwanninger/geode/pkg/lexer"
+	"github.com/geode-lang/geode/pkg/lexer"
 )
 
 func (p *Parser) parseFnDefn() FunctionNode {
@@ -18,7 +18,7 @@ func (p *Parser) parseFnDefn() FunctionNode {
 
 	p.next()
 
-	if declarationKeyword == "pure" {
+	if declarationKeyword == "pure" || declarationKeyword == "λ" {
 		fn.DeclKeyword = DeclKeywordPure
 	}
 

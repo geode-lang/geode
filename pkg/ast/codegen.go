@@ -12,8 +12,8 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 
-	"github.com/nickwanninger/geode/pkg/typesystem"
-	"github.com/nickwanninger/geode/pkg/util/log"
+	"github.com/geode-lang/geode/pkg/typesystem"
+	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 func parseName(combined string) (string, string) {

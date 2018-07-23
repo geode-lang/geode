@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/nickwanninger/geode/pkg/lexer"
+import "github.com/geode-lang/geode/pkg/lexer"
 
 func (p *Parser) parseTypeCast() Node {
 	n := CastNode{}

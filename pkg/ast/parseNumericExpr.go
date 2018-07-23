@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/nickwanninger/geode/pkg/typesystem"
+import "github.com/geode-lang/geode/pkg/typesystem"
 
 func (p *Parser) parseNumericExpr() Node {
 	t, val := p.token.InferType()
