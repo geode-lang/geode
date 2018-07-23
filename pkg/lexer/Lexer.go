@@ -7,6 +7,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/geode-lang/geode/pkg/info"
 	"github.com/geode-lang/geode/pkg/util/log"
 )
 
@@ -114,6 +115,7 @@ func (l *Lexer) emit(typ TokenType) {
 
 		tok.Type = typ
 		// fmt.Println(tok.String())
+		info.AddToken(tok)
 		l.tokens <- tok
 	}
 

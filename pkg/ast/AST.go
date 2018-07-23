@@ -35,7 +35,7 @@ func Parse(tokens chan lexer.Token) <-chan Node {
 	// spew.Dump(QuickParseExpression("1 + 1"))
 	p := &Parser{
 		tokens:        make([]lexer.Token, 0),
-		topLevelNodes: make(chan Node, 100),
+		topLevelNodes: make(chan Node),
 		binaryOpPrecedence: map[string]int{
 			"=":  2,
 			"!=": 2,

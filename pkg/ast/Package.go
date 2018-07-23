@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/llir/llvm/ir"
 	"github.com/geode-lang/geode/pkg/lexer"
 	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/log"
+	"github.com/llir/llvm/ir"
 )
 
 // RuntimePackage is the global runtime package
@@ -279,11 +279,12 @@ func (p *Package) Compile(module *ir.Module, targetTripple string) chan *Package
 			p.AddDepPackage(RuntimePackage)
 		}
 
+		firstNode := p.Nodes[0]
 		// The first node *should* always be a namespace node
-		if p.Nodes[0].Kind() == nodeNamespace {
-			p.NamespaceName = p.Nodes[0].(NamespaceNode).Name
+		if firstNode.Kind() == nodeNamespace {
+			p.NamespaceName = firstNode.(NamespaceNode).Name
 		} else {
-			p.Nodes[0].SyntaxError()
+			firstNode.SyntaxError()
 			log.Fatal("%q missing namespace. It must be the first statement.\n", p.Source.Path)
 		}
 

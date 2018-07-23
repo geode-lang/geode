@@ -3,9 +3,9 @@ package ast
 import (
 	"encoding/gob"
 
+	"github.com/geode-lang/geode/pkg/lexer"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	"github.com/geode-lang/geode/pkg/lexer"
 )
 
 func init() {
@@ -32,7 +32,7 @@ func init() {
 }
 
 // NodeType -
-type NodeType int
+type NodeType string
 
 // Kind -
 func (t NodeType) Kind() NodeType {
@@ -67,36 +67,28 @@ type Node interface {
 
 const (
 	// literals
-	nodeInt NodeType = iota
-	nodeFloat
-	nodeString
-	nodeChar
-
-	// expressions
-	nodeIf
-	nodeWhile
-	nodeFor
-	nodeUnary  // unary operator  (!, ...)
-	nodeBinary // binary operator (+, -, *, ...)
-
-	nodeFnCall
-	nodeCast
-	nodeVariable
-	nodeVariableDecl
-	nodeVariableReference
-
-	nodeCompoundAssignment
-
-	// non-expression statements
-	nodeFnPrototype
-	nodeFunction
-	nodeFunctionCall
-	nodeClass
-	nodeDependency
-	nodeNamespace
-
-	// Other
-	nodeBlock
+	nodeInt                NodeType = "nodeInt"
+	nodeFloat                       = "nodeFloat"
+	nodeString                      = "nodeString"
+	nodeChar                        = "nodeChar"
+	nodeIf                          = "nodeIf"
+	nodeWhile                       = "nodeWhile"
+	nodeFor                         = "nodeFor"
+	nodeUnary                       = "nodeUnary"
+	nodeBinary                      = "nodeBinary"
+	nodeFnCall                      = "nodeFnCall"
+	nodeCast                        = "nodeCast"
+	nodeVariable                    = "nodeVariable"
+	nodeVariableDecl                = "nodeVariableDecl"
+	nodeVariableReference           = "nodeVariableReference"
+	nodeCompoundAssignment          = "nodeCompoundAssignment"
+	nodeFnPrototype                 = "nodeFnPrototype"
+	nodeFunction                    = "nodeFunction"
+	nodeFunctionCall                = "nodeFunctionCall"
+	nodeClass                       = "nodeClass"
+	nodeDependency                  = "nodeDependency"
+	nodeNamespace                   = "nodeNamespace"
+	nodeBlock                       = "nodeBlock"
 )
 
 // IntNode is an integer literal
@@ -319,11 +311,6 @@ func (n FunctionCallNode) NameString() string { return "FunctionCallNode" }
 
 // InferType implements Node.InferType
 func (n FunctionCallNode) InferType(scope *Scope) string {
-	// n.Name.m
-	// funcs := scope.FindFunctions(n.Name)
-	// if len(funcs) != 1 {
-	// 	log.Fatal("Unable to ")
-	// }
 	return "PLEASE IMPLEMENT ME :)"
 }
 

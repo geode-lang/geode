@@ -17,8 +17,6 @@ const (
 	TokDot
 	TokElipsis
 	TokOper
-	TokPtr
-
 	TokNamespaceAccess
 
 	TokOperatorStart

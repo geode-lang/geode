@@ -11,11 +11,12 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/llir/llvm/ir"
 	"github.com/geode-lang/geode/pkg/ast"
+	"github.com/geode-lang/geode/pkg/info"
 	"github.com/geode-lang/geode/pkg/lexer"
 	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/log"
+	"github.com/llir/llvm/ir"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -81,6 +82,15 @@ func main() {
 
 	case cleanCMD.FullCommand():
 		util.RunCommand("rm", "-rf", buildDir)
+
+	case infoCMD.FullCommand():
+		log.Timed("information gathering", func() {
+			context := NewContext(*infoInput, "/tmp/geodeinfooutput")
+			*disableEmission = true
+			context.TargetTripple = targetTripple
+			context.Build(buildDir)
+			info.DumpJSON()
+		})
 	}
 	duration := time.Since(startTime)
 	log.Verbose("Total time taken: %s\n", duration)
@@ -145,10 +155,12 @@ func (c *Context) Build(buildDir string) {
 	// Loop over the compilers and generate to .ll files
 	log.Timed("llvm emission", func() {
 		for c := range rootPackage.Compile(module, c.TargetTripple) {
+			primaryTree = append(primaryTree, c.Nodes...)
+
 			if !*disableEmission {
 				log.Debug("Compiled pkg %s with namespace %s\n", c.Name, c.NamespaceName)
 				// obj := c.Emit(buildDir)
-				primaryTree = append(primaryTree, c.Nodes...)
+
 				// linker.AddObject(obj)
 				for _, link := range c.CLinkages {
 					log.Debug("Added c linkage %s\n", link)
@@ -158,6 +170,10 @@ func (c *Context) Build(buildDir string) {
 
 		}
 	})
+
+	for _, n := range primaryTree {
+		info.AddNode(n)
+	}
 
 	if *disableEmission {
 		if *dumpResult {

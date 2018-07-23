@@ -10,7 +10,7 @@ var (
 	buildOutput     = app.Flag("output", "Output binary name.").Short('o').Default("a.out").String()
 	optimize        = app.Flag("optimize", "Enable full optimization").Short('O').Bool()
 	printVerbose    = app.Flag("verbose", "Enable verbose printing").Short('v').Bool()
-	disableEmission = app.Flag("disable-emission", "Disable emission and only go through the syntax checking process").Bool()
+	disableEmission = app.Flag("disable-emission", "Disable emission and only run through the syntax checking process").Bool()
 	// logLevel = app.Flag("loglevel", "Set the level of logging to show").Default("info").Enum("info", "verbose")
 
 	buildCMD   = app.Command("build", "Build an executable.").Alias("b")
@@ -25,4 +25,7 @@ var (
 	testDir = testCMD.Arg("dir", "Test Directory").Default("./tests").String()
 
 	cleanCMD = app.Command("clean", "Remove the hidden build directory")
+
+	infoCMD   = app.Command("info", "Get information about a program (does not compile, just lexes and parses)").Alias("i")
+	infoInput = infoCMD.Arg("input", "Geode source file or package").String()
 )

@@ -3,6 +3,8 @@
 # ExpectedOutput = "2 3 4 4 end 4\n"
 is main
 include "std:io"
+include "std:mem"
+include "std:math"
 
 
 func main(int argc) int {
