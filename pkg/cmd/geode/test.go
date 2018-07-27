@@ -118,11 +118,12 @@ func RunTests(testDirectory string) int {
 
 	// Do jobs
 
-	results := make(chan testResult)
+	results := make(chan testResult, len(jobs))
 
-	go func() {
-		outBuf := new(bytes.Buffer)
-		for _, job := range jobs {
+	testRunCount := 0
+	for i, j := range jobs {
+		go func(job TestJob, index int) {
+			outBuf := new(bytes.Buffer)
 			outpath := fmt.Sprintf("%s_test", job.Sourcefile)
 
 			// Compile the test program
@@ -145,7 +146,7 @@ func RunTests(testDirectory string) int {
 			if res.CompilerError != 0 {
 				results <- res
 				res.RunError = -1
-				continue
+				return
 			}
 
 			// Run the test program
@@ -156,6 +157,7 @@ func RunTests(testDirectory string) int {
 				fmt.Printf("Error while running test:\n%s\n", err.Error())
 				os.Exit(1)
 			}
+
 			res.ExpectedOutput = outBuf.String()
 
 			// Remove test executable
@@ -165,9 +167,13 @@ func RunTests(testDirectory string) int {
 			}
 
 			results <- res
-		}
-		close(results)
-	}()
+			testRunCount++
+
+			if testRunCount == len(jobs) {
+				close(results)
+			}
+		}(j, i)
+	}
 
 	// Check results
 	numSucceses := 0
