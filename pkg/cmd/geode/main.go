@@ -22,7 +22,7 @@ import (
 
 // Some constants that represent the program in it's current compiled state
 const (
-	VERSION = "0.0.8"
+	VERSION = "0.1.0"
 	AUTHOR  = "Nick Wanninger"
 )
 
