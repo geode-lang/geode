@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/geode-lang/llvm/ir"
+	"github.com/geode-lang/llvm/ir/types"
 	"github.com/geode-lang/llvm/ir/value"
 )
 
@@ -48,4 +49,16 @@ func (n SubscriptNode) GenAccess(s *Scope, c *Compiler) value.Value {
 func (n SubscriptNode) GenAssign(s *Scope, c *Compiler, val value.Value) value.Value {
 	c.CurrentBlock().NewStore(val, n.GenElementPtr(s, c))
 	return val
+}
+
+// Type returns the type of the node.
+func (n SubscriptNode) Type(s *Scope) types.Type {
+
+	tmpBlock := ir.NewBlock("")
+
+	c := NewCompiler(ir.NewModule(), "tmp", NewPackage("", nil))
+	c.PushBlock(tmpBlock)
+
+	load := tmpBlock.NewLoad(n.GenElementPtr(s, c))
+	return load.Type()
 }

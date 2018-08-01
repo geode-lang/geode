@@ -3,6 +3,7 @@ package ast
 import (
 	"fmt"
 
+	"github.com/geode-lang/llvm/ir/types"
 	"github.com/geode-lang/llvm/ir/value"
 )
 
@@ -32,7 +33,12 @@ func (n AssignmentNode) String() string {
 // Codegen implements Node.Codegen for AssignmentNode
 func (n AssignmentNode) Codegen(s *Scope, c *Compiler) value.Value {
 	c.CurrentBlock().AppendInst(NewLLVMComment(n.String()))
+
+	targetType := n.Assignee.Type(s)
 	val := n.Value.GenAccess(s, c)
+	if !types.Equal(val.Type(), targetType) {
+		val = createTypeCast(c, val, targetType)
+	}
 	n.Assignee.GenAssign(s, c, val)
 	return val
 }

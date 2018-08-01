@@ -3,6 +3,7 @@ package ast
 import (
 	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir"
+	"github.com/geode-lang/llvm/ir/types"
 	"github.com/geode-lang/llvm/ir/value"
 )
 
@@ -53,4 +54,9 @@ func (n *NamedReference) GenAssign(s *Scope, c *Compiler, assignment value.Value
 // GenAccess implements Accessable.GenAccess
 func (n *NamedReference) GenAccess(s *Scope, c *Compiler) value.Value {
 	return n.Load(c.CurrentBlock(), s)
+}
+
+// Type implements Assignable.Type
+func (n *NamedReference) Type(s *Scope) types.Type {
+	return n.Alloca(s).Elem
 }

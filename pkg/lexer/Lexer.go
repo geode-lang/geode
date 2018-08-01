@@ -187,7 +187,6 @@ func lexTopLevel(l *Lexer) stateFn {
 	// a number, a paren, identifier, or unary operator.
 	r := l.next()
 
-	// fmt.Printf("Rune: %#U\n", r)
 	switch {
 	case r == eof:
 
@@ -300,7 +299,6 @@ func lexSymbol(l *Lexer) stateFn {
 func lexStringLiteral(l *Lexer) stateFn {
 	for {
 		r := l.next()
-		// fmt.Printf("Rune: %#U\n", r)
 		if r == eof {
 			break
 		}

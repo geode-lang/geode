@@ -1,7 +1,6 @@
 package ast
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -72,7 +71,6 @@ func UnescapeString(str string) string {
 func asciiEscapeToUnicode(bs []byte) rune {
 	s := string(bs)
 	hex, err := strconv.ParseUint(strings.ToLower(s), 16, 32)
-	fmt.Println(hex, err)
 	if err != nil {
 		log.Fatal("Could not parse '%s' as a hexadecimal number, but the "+
 			"lexer claims it's OK: %s\n", s, err)

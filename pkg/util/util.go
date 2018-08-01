@@ -92,10 +92,10 @@ func GetTmp() string {
 func PurgeCache() {
 	cacheDir := GetCacheDir()
 
-	files, err := ioutil.ReadDir(cacheDir)
-	if err != nil {
-		log.Fatal("Unable to search cache for files\n")
-	}
+	files, _ := ioutil.ReadDir(cacheDir)
+	// if err != nil {
+	// 	log.Fatal("Unable to search cache for files\n")
+	// }
 
 	now := time.Now()
 
