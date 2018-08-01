@@ -3,11 +3,11 @@ package ast
 import (
 	"fmt"
 
-	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/constant"
-	"github.com/llir/llvm/ir/types"
-	"github.com/llir/llvm/ir/value"
 	"github.com/geode-lang/geode/pkg/util/log"
+	"github.com/geode-lang/llvm/ir"
+	"github.com/geode-lang/llvm/ir/constant"
+	"github.com/geode-lang/llvm/ir/types"
+	"github.com/geode-lang/llvm/ir/value"
 )
 
 // FuncDeclKeywordType lets the compiler keep track of
@@ -97,7 +97,7 @@ func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 	function.Sig.Variadic = n.Variadic
 
 	keyName := fmt.Sprintf("%s:%s", c.Package.NamespaceName, n.Name)
-	// fmt.Println(function.Name, function.Sig.Variadic)
+
 	scopeItem := NewFunctionScopeItem(keyName, n, function, PublicVisibility)
 	scopeItem.SetMangled(!n.Nomangle)
 	c.Scope.Add(scopeItem)
@@ -185,7 +185,7 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	// If the function is external (has ... at the end) we don't build a block
 	if !n.External {
 		// Create the entrypoint to the function
-		entryBlock := ir.NewBlock(fmt.Sprintf("%s-entry", n.Name))
+		entryBlock := ir.NewBlock(n.Name.String() + "-entry")
 		c.FN.AppendBlock(entryBlock)
 		c.PushBlock(entryBlock)
 
@@ -194,13 +194,13 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		// initializing the runtime.
 		createPrelude(scope, c, n)
 		if len(function.Params()) > 0 {
-			c.CurrentBlock().AppendInst(NewLLVMComment(fmt.Sprintf("%s arguments:", n.Name.String())))
+			c.CurrentBlock().AppendInst(NewLLVMComment(n.Name.String() + " arguments:"))
 		}
 
 		for _, arg := range function.Params() {
 			alloc := c.CurrentBlock().NewAlloca(arg.Type())
 			c.CurrentBlock().NewStore(arg, alloc)
-			// Set the scope iteme
+			// Set the scope item
 			scItem := NewVariableScopeItem(arg.Name, alloc, PrivateVisibility)
 			scope.Add(scItem)
 		}
@@ -209,7 +209,7 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		n.Body.Codegen(scope, c)
 		if c.CurrentBlock().Term == nil {
 			ty := scope.FindType(n.ReturnType.Name).Type
-			// log.Warn("Function %s is missing a return statement in the root block. Defaulting to 0\n", n.Name)
+			log.Error("Function %s is missing a return statement in the root block. Defaulting to 0\n", n.Name)
 			v := createTypeCast(c, constant.NewInt(0, types.I64), ty)
 			c.CurrentBlock().NewRet(v)
 		}

@@ -129,7 +129,8 @@ func RunTests(testDirectory string) int {
 			// Compile the test program
 			buildArgs := []string{"build"}
 			buildArgs = append(buildArgs, job.CompilerArgs...)
-			buildArgs = append(buildArgs, []string{"-o", outpath, job.Sourcefile}...)
+			buildArgs = append(buildArgs, "-O")
+			buildArgs = append(buildArgs, "-o", outpath, job.Sourcefile)
 
 			outBuf.Reset()
 
@@ -194,16 +195,6 @@ func RunTests(testDirectory string) int {
 			fmt.Printf("Got %d\n", res.CompilerError)
 			failure = true
 		}
-
-		// Check run errors
-		// if res.CompilerOutput == res.TestJob.CompilerOutput {
-		// } else {
-		// 	fmt.Printf("  CompilerOutput:\n    ")
-		// 	msg := color.Red("✗")
-		// 	fmt.Printf("%s. Expected %s\n    ", msg, res.TestJob.CompilerOutput)
-		// 	fmt.Printf("Got %s\n", res.CompilerOutput)
-		// 	failure = true
-		// }
 
 		// Check run errors
 		if res.RunError == res.TestJob.RunError {

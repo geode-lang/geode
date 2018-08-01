@@ -1,12 +1,10 @@
 package ast
 
 import (
-	"fmt"
-
-	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/types"
-	"github.com/llir/llvm/ir/value"
 	"github.com/geode-lang/geode/pkg/util/log"
+	"github.com/geode-lang/llvm/ir"
+	"github.com/geode-lang/llvm/ir/types"
+	"github.com/geode-lang/llvm/ir/value"
 )
 
 func init() {
@@ -86,9 +84,6 @@ func (s *Scope) FindType(name string) *TypeDef {
 // GetTypeName takes a type and returns the human name
 // that the compiler and lexer understands
 func (s *Scope) GetTypeName(t types.Type) string {
-	for k, v := range *s.Types {
-		fmt.Println(k, v)
-	}
 	return "void"
 }
 

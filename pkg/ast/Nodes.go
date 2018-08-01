@@ -1,35 +1,12 @@
 package ast
 
 import (
-	"encoding/gob"
+	"fmt"
 
 	"github.com/geode-lang/geode/pkg/lexer"
-	"github.com/llir/llvm/ir/types"
-	"github.com/llir/llvm/ir/value"
+	"github.com/geode-lang/llvm/ir/types"
+	"github.com/geode-lang/llvm/ir/value"
 )
-
-func init() {
-	gob.Register(IntNode{})
-	gob.Register(FloatNode{})
-	gob.Register(StringNode{})
-	gob.Register(CharNode{})
-	gob.Register(CastNode{})
-	gob.Register(IfNode{})
-	gob.Register(ForNode{})
-	gob.Register(UnaryNode{})
-	gob.Register(BinaryNode{})
-	gob.Register(DependencyNode{})
-	gob.Register(ReturnNode{})
-	gob.Register(FunctionCallNode{})
-	gob.Register(WhileNode{})
-	gob.Register(NamespaceNode{})
-	gob.Register(FunctionNode{})
-	gob.Register(VariableAssignNode{})
-	gob.Register(VariableDefnNode{})
-	gob.Register(VariableNode{})
-	gob.Register(ClassNode{})
-	gob.Register(BlockNode{})
-}
 
 // NodeType -
 type NodeType string
@@ -67,75 +44,31 @@ type Node interface {
 
 const (
 	// literals
-	nodeInt                NodeType = "nodeInt"
-	nodeFloat                       = "nodeFloat"
-	nodeString                      = "nodeString"
-	nodeChar                        = "nodeChar"
-	nodeIf                          = "nodeIf"
-	nodeWhile                       = "nodeWhile"
-	nodeFor                         = "nodeFor"
-	nodeUnary                       = "nodeUnary"
-	nodeBinary                      = "nodeBinary"
-	nodeFnCall                      = "nodeFnCall"
-	nodeCast                        = "nodeCast"
-	nodeVariable                    = "nodeVariable"
-	nodeVariableDecl                = "nodeVariableDecl"
-	nodeVariableReference           = "nodeVariableReference"
-	nodeCompoundAssignment          = "nodeCompoundAssignment"
-	nodeFnPrototype                 = "nodeFnPrototype"
-	nodeFunction                    = "nodeFunction"
-	nodeFunctionCall                = "nodeFunctionCall"
-	nodeClass                       = "nodeClass"
-	nodeDependency                  = "nodeDependency"
-	nodeNamespace                   = "nodeNamespace"
-	nodeBlock                       = "nodeBlock"
+	nodeInt          NodeType = "nodeInt"
+	nodeFloat                 = "nodeFloat"
+	nodeString                = "nodeString"
+	nodeChar                  = "nodeChar"
+	nodeIf                    = "nodeIf"
+	nodeWhile                 = "nodeWhile"
+	nodeFor                   = "nodeFor"
+	nodeUnary                 = "nodeUnary"
+	nodeBinary                = "nodeBinary"
+	nodeFnCall                = "nodeFnCall"
+	nodeAssignment            = "nodeAssignment"
+	nodeVariable              = "nodeVariable"
+	nodeVariableDecl          = "nodeVariableDecl"
+	nodeFunction              = "nodeFunction"
+	nodeFunctionCall          = "nodeFunctionCall"
+	nodeClass                 = "nodeClass"
+	nodeDependency            = "nodeDependency"
+	nodeNamespace             = "nodeNamespace"
+	nodeBlock                 = "nodeBlock"
+	nodeSubscript             = "nodeSubscript"
 )
-
-// IntNode is an integer literal
-type IntNode struct {
-	NodeType
-	TokenReference
-
-	Value int64
-}
-
-// NameString implements Node.NameString
-func (n IntNode) NameString() string { return "IntNode" }
-
-// InferType implements Node.InferType
-func (n IntNode) InferType(scope *Scope) string { return "int" }
-
-//
-//
-// FloatNode is a float literla
-type FloatNode struct {
-	NodeType
-	TokenReference
-
-	Value float64
-}
-
-// NameString implements Node.NameString
-func (n FloatNode) NameString() string { return "FloatNode" }
-
-// InferType implements Node.InferType
-func (n FloatNode) InferType(scope *Scope) string { return "float" }
 
 //
 //
 // StringNode is a string literal
-type StringNode struct {
-	NodeType
-	TokenReference
-
-	Value string
-}
-
-// NameString implements Node.NameString
-func (n StringNode) NameString() string { return "StringNode" }
-
-// InferType implements Node.InferType
-func (n StringNode) InferType(scope *Scope) string { return "string" }
 
 // CharNode is a char literal
 // TODO: get parsing working for this.
@@ -229,6 +162,7 @@ func (n UnaryNode) InferType(scope *Scope) string { return n.Operand.InferType(s
 type BinaryNode struct {
 	NodeType
 	TokenReference
+	Accessable
 
 	OP    string
 	Left  Node
@@ -240,6 +174,15 @@ func (n BinaryNode) NameString() string { return "BinaryNode" }
 
 // InferType implements Node.InferType
 func (n BinaryNode) InferType(scope *Scope) string { return n.Left.InferType(scope) }
+
+// GenAccess implements Accessable.GenAccess
+func (n BinaryNode) GenAccess(scope *Scope, c *Compiler) value.Value {
+	return n.Codegen(scope, c)
+}
+
+func (n BinaryNode) String() string {
+	return fmt.Sprintf("%s %s %s", n.Left, n.OP, n.Right)
+}
 
 // DependencyNode is a way of representing the need to include
 // a dependency or multiple dependencies. It also works to link
@@ -312,6 +255,11 @@ func (n FunctionCallNode) NameString() string { return "FunctionCallNode" }
 // InferType implements Node.InferType
 func (n FunctionCallNode) InferType(scope *Scope) string {
 	return "PLEASE IMPLEMENT ME :)"
+}
+
+// GenAccess implements Accessable.GenAccess
+func (n FunctionCallNode) GenAccess(s *Scope, c *Compiler) value.Value {
+	return n.Codegen(s, c)
 }
 
 // WhileNode is a while loop representationvbnm,bvbnm

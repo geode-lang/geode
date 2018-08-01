@@ -6,13 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/llir/llvm/ir/types"
 	"github.com/geode-lang/geode/pkg/util/log"
+	"github.com/geode-lang/llvm/ir/types"
 )
-
-func init() {
-	// fmt.Println("hello")
-}
 
 //go:generate stringer -type=ManglePartType
 
@@ -112,11 +108,9 @@ func MangleMatches(a, b string) bool {
 		// Only check if the names are the same if the current
 		// char type is not a generic
 		if ap.partType == GenericMangle {
-			// fmt.Println(" GEN", ap.value, bp.value)
 			continue
 		}
 
-		// fmt.Println(" ???", ap.value, bp.value)
 		if ap.value != bp.value {
 			return false
 		}

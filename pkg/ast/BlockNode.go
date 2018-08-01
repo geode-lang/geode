@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/llir/llvm/ir/value"
+	"github.com/geode-lang/llvm/ir/value"
 )
 
 // BlockNode is a block statement. A block statement is just an array of Nodes
@@ -21,7 +21,6 @@ func (n BlockNode) InferType(scope *Scope) string { return "void" }
 // Codegen implements Node.Codegen for BlockNode
 func (n BlockNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	blockScope := scope.SpawnChild()
-	// spew.Dump(n.Nodes)
 	for _, node := range n.Nodes {
 		node.Codegen(blockScope, c)
 	}

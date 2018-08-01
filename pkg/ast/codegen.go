@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/constant"
-	"github.com/llir/llvm/ir/types"
-	"github.com/llir/llvm/ir/value"
+	"github.com/geode-lang/llvm/ir"
+	"github.com/geode-lang/llvm/ir/constant"
+	"github.com/geode-lang/llvm/ir/types"
+	"github.com/geode-lang/llvm/ir/value"
 
 	"github.com/geode-lang/geode/pkg/typesystem"
 	"github.com/geode-lang/geode/pkg/util/log"
@@ -173,10 +173,19 @@ func (n UnaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	}
 	// handle dereference operation
 	if n.Operator == "*" {
-		return c.CurrentBlock().NewLoad(operandValue)
+		if types.IsPointer(operandValue.Type()) {
+			return c.CurrentBlock().NewLoad(operandValue)
+		}
+		n.SyntaxError()
+		log.Fatal("attempt to dereference a non-pointer variable\n")
 	}
 
 	return operandValue
+}
+
+// GenAccess implements Accessable.GenAccess
+func (n UnaryNode) GenAccess(scope *Scope, c *Compiler) value.Value {
+	return n.Codegen(scope, c)
 }
 
 // Codegen implements Node.Codegen for WhileNode
@@ -266,7 +275,7 @@ func createTypeCast(c *Compiler, in value.Value, to types.Type) value.Value {
 	}
 
 	if types.IsPointer(inType) && types.IsPointer(to) {
-		return c.CurrentBlock().NewBitCast(in, to)
+		return in
 	}
 
 	if fromFloat && toInt {
@@ -317,7 +326,7 @@ func createCmp(blk *ir.BasicBlock, i ir.IntPred, f ir.FloatPred, t types.Type, l
 	return nil
 }
 
-// CreateBinaryOp produces a geode binary op (just a wrapper around llir/llvm's binary instructions)
+// CreateBinaryOp produces a geode binary op (just a wrapper around geode-lang/llvm's binary instructions)
 func CreateBinaryOp(intstr, fltstr string, blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
 	var inst *GeodeBinaryInstr
 	if types.IsInt(t) {
@@ -331,6 +340,7 @@ func CreateBinaryOp(intstr, fltstr string, blk *ir.BasicBlock, t types.Type, lef
 
 // Codegen implements Node.Codegen for BinaryNode
 func (n BinaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
+
 	// Generate the left and right nodes
 	l := n.Left.Codegen(scope, c)
 	r := n.Right.Codegen(scope, c)
@@ -363,7 +373,7 @@ func (n BinaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		return CreateBinaryOp("shl", "shl", blk, t, l, r)
 	case "=":
 		return createCmp(blk, ir.IntEQ, ir.FloatOEQ, t, l, r)
-	case "!=":
+	case "!=", "≠":
 		return createCmp(blk, ir.IntNE, ir.FloatONE, t, l, r)
 	case ">":
 		return createCmp(blk, ir.IntSGT, ir.FloatOGT, t, l, r)
@@ -394,13 +404,19 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	args := []value.Value{}
 	argTypes := []types.Type{}
 	for _, arg := range n.Args {
-		a := arg.Codegen(scope, c)
 
-		args = append(args, a)
-		argTypes = append(argTypes, a.Type())
-		if args[len(args)-1] == nil {
-			return codegenError(fmt.Sprintf("Argument to function %q failed to generate code", n.Name))
+		if ac, isAccessable := arg.(Accessable); isAccessable {
+			val := ac.GenAccess(scope, c)
+			args = append(args, val)
+			argTypes = append(argTypes, val.Type())
+			if args[len(args)-1] == nil {
+				return codegenError(fmt.Sprintf("Argument to function %q failed to generate code", n.Name))
+			}
+		} else {
+			arg.SyntaxError()
+			log.Fatal("Argument to function call to '%s' is not accessable (has no readable value). Node type %s\n", n.Name, arg.Kind())
 		}
+
 	}
 
 	ns, nm := parseName(n.Name.String())
@@ -411,11 +427,8 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	completeName := fmt.Sprintf("%s:%s", ns, nm)
 
-	// spew.Dump(n.Generics)
-
 	name := MangleFunctionName(completeName, argTypes, n.Generics)
 
-	// fmt.Println(n.Name, name)
 	functionOptions := c.Scope.FindFunctions(name)
 	funcCount := len(functionOptions)
 
@@ -459,12 +472,6 @@ func (n ReturnNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return retVal
 }
 
-// Codegen implements Node.Codegen for IntNode
-func (n IntNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	// return llvm.ConstInt(llvm.Int64Type(), , true)
-	return constant.NewInt(n.Value, types.I64)
-}
-
 func newCharArray(s string) *constant.Array {
 	var bs []constant.Constant
 	for i := 0; i < len(s); i++ {
@@ -475,23 +482,6 @@ func newCharArray(s string) *constant.Array {
 	c := constant.NewArray(bs...)
 	c.CharArray = true
 	return c
-}
-
-func canBeIndexed(val value.Value) bool {
-	return types.IsArray(val.Type()) || types.IsPointer(val.Type())
-}
-
-// Codegen implements Node.Codegen for StringNode
-func (n StringNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	str := c.Module.NewGlobalDef(mangleName(".str"), newCharArray(n.Value))
-	str.IsConst = true
-	zero := constant.NewInt(0, types.I32)
-	return constant.NewGetElementPtr(str, zero, zero)
-}
-
-// Codegen implements Node.Codegen for FloatNode
-func (n FloatNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	return constant.NewFloat(n.Value, types.Double)
 }
 
 // CreateEntryBlockAlloca - Create an alloca instruction in the entry block of

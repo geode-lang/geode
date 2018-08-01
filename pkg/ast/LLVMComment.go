@@ -3,9 +3,9 @@ package ast
 import (
 	"fmt"
 
-	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/metadata"
-	"github.com/llir/llvm/ir/types"
+	"github.com/geode-lang/llvm/ir"
+	"github.com/geode-lang/llvm/ir/metadata"
+	"github.com/geode-lang/llvm/ir/types"
 )
 
 // LLVMComment implements ir.Instruction
@@ -16,8 +16,6 @@ type LLVMComment struct {
 	Parent *ir.BasicBlock
 
 	data string
-
-	typ types.Type
 
 	// Map from metadata identifier (e.g. !dbg) to metadata associated with the
 	// instruction.

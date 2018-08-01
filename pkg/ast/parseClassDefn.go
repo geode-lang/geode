@@ -4,8 +4,6 @@ import (
 	"github.com/geode-lang/geode/pkg/lexer"
 )
 
-var classIndex = 0
-
 func (p *Parser) parseClassDefn() Node {
 	p.requires(lexer.TokClassDefn)
 	n := ClassNode{}
@@ -45,7 +43,6 @@ func (p *Parser) parseClassBody() []Node {
 		p.next()
 
 		if p.token.Is(lexer.TokFuncDefn) {
-			// fmt.Println("CLASS - FUNC")
 
 			nodes = append(nodes, p.parseFnDefn())
 			p.back()
@@ -53,7 +50,6 @@ func (p *Parser) parseClassBody() []Node {
 		}
 
 		if p.atType() {
-			// fmt.Println("CLASS - VAR")
 			// No initializer is allowed in class variable defns
 			nodes = append(nodes, p.parseVariableDefn(false))
 			p.checkSemiColon()
@@ -62,7 +58,6 @@ func (p *Parser) parseClassBody() []Node {
 
 		// If the block is over.
 		if p.token.Is(lexer.TokRightCurly) {
-			// fmt.Println("CLASS - FUNC/")
 			break
 		}
 	}

@@ -16,7 +16,7 @@ import (
 	"github.com/geode-lang/geode/pkg/lexer"
 	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/log"
-	"github.com/llir/llvm/ir"
+	"github.com/geode-lang/llvm/ir"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -29,6 +29,7 @@ const (
 var startTime time.Time
 
 func main() {
+
 	if runtime.GOOS == "windows" {
 		log.Fatal("Geode does not support windows at this time.")
 	}

@@ -3,9 +3,9 @@ package ast
 import (
 	"strings"
 
-	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/metadata"
-	"github.com/llir/llvm/ir/types"
+	"github.com/geode-lang/llvm/ir"
+	"github.com/geode-lang/llvm/ir/metadata"
+	"github.com/geode-lang/llvm/ir/types"
 )
 
 // LLVMIdent implements ir.Instruction

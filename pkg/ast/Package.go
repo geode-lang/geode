@@ -2,9 +2,7 @@ package ast
 
 import (
 	"bytes"
-	"encoding/gob"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -14,7 +12,7 @@ import (
 	"github.com/geode-lang/geode/pkg/lexer"
 	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/log"
-	"github.com/llir/llvm/ir"
+	"github.com/geode-lang/llvm/ir"
 )
 
 // RuntimePackage is the global runtime package
@@ -31,18 +29,17 @@ func init() {
 type Package struct {
 	fmt.Stringer
 
-	Name               string
-	Source             *lexer.Sourcefile
-	Nodes              []Node
-	Dependencies       []*Package
-	TargetTripple      string
-	Scope              *Scope
-	Compiler           *Compiler
-	IsRuntime          bool
-	objectFilesEmitted []string
-	Compiled           bool
-	CLinkages          []string
-	NamespaceName      string
+	Name          string
+	Source        *lexer.Sourcefile
+	Nodes         []Node
+	Dependencies  []*Package
+	TargetTripple string
+	Scope         *Scope
+	Compiler      *Compiler
+	IsRuntime     bool
+	Compiled      bool
+	CLinkages     []string
+	NamespaceName string
 }
 
 // NewPackage returns a pointer to a new package
@@ -96,14 +93,11 @@ func (p *Package) Emit(buildDir string) string {
 		panic(writeErr)
 	}
 
-	_, err := util.RunCommand("clang", filename, "-c", "-o", objFileName)
+	out, err := util.RunCommand("clang", filename, "-c", "-o", objFileName)
 	if err != nil {
-		log.Fatal("%s\n", err.Error())
+		log.Fatal("%s\n%s\n", string(out), err.Error())
 	}
 
-	// fmt.Println(filename, objFileName)
-
-	p.objectFilesEmitted = append(p.objectFilesEmitted, filename)
 	return filename
 }
 
@@ -185,7 +179,6 @@ func (p *Package) Inject(c *Package) {
 		if v.Visibility() == PublicVisibility {
 
 			if v.Type() == ScopeItemFunctionType {
-				// fmt.Println(p.Name, v.Name())
 				p.InjectExternalFunction(c, v.Value().(*ir.Function), v.Node().(FunctionNode))
 			} else {
 				p.Scope.Add(v)
@@ -201,47 +194,47 @@ func (p *Package) Parse() chan *Package {
 	chn := make(chan *Package)
 	go func() {
 
-		cacheFolder := path.Join(util.GetCacheDir())
-		cacheFile := fmt.Sprintf("%s/%x.cache", cacheFolder, p.Hash())
+		// cacheFolder := path.Join(util.GetCacheDir())
+		// cacheFile := fmt.Sprintf("%s/%x.cache", cacheFolder, p.Hash())
 
-		var cacheBuffer bytes.Buffer
+		// var cacheBuffer bytes.Buffer
 
-		if _, err := os.Stat(cacheFile); os.IsNotExist(err) {
-			// There was no cache file
-			tokens := lexer.Lex(p.Source)
-			nodes := Parse(tokens)
+		// if _, err := os.Stat(cacheFile); os.IsNotExist(err) {
+		// There was no cache file
+		tokens := lexer.Lex(p.Source)
+		nodes := Parse(tokens)
 
-			log.Debug("Parsing package %s\n", p.Name)
-			// And append all those nodes to the package's nodes.
-			for node := range nodes {
-				p.Nodes = append(p.Nodes, node)
-			}
-
-			enc := gob.NewEncoder(&cacheBuffer)
-			err := enc.Encode(p.Nodes)
-			if err != nil {
-				log.Fatal("encode error:", err)
-			}
-
-			os.MkdirAll(cacheFolder, os.ModePerm)
-
-			err = ioutil.WriteFile(cacheFile, cacheBuffer.Bytes(), 0644)
-			if err != nil {
-				log.Fatal("Error writing cache file to home folder")
-			}
-		} else {
-			f, _ := os.Open(cacheFile) // Error handling elided for brevity.
-			defer f.Close()
-			io.Copy(&cacheBuffer, f) // Error handling elided for brevity.
-
-			// There was a cache file.
-			dec := gob.NewDecoder(&cacheBuffer)
-			p.Nodes = make([]Node, 0)
-			err = dec.Decode(&p.Nodes)
-			if err != nil {
-				log.Fatal("Error decoding node array in package %s\n", p.Name)
-			}
+		log.Debug("Parsing package %s\n", p.Name)
+		// And append all those nodes to the package's nodes.
+		for node := range nodes {
+			p.Nodes = append(p.Nodes, node)
 		}
+
+		// enc := gob.NewEncoder(&cacheBuffer)
+		// err := enc.Encode(p.Nodes)
+		// if err != nil {
+		// 	log.Fatal("encode error:", err)
+		// }
+
+		// os.MkdirAll(cacheFolder, os.ModePerm)
+
+		// err = ioutil.WriteFile(cacheFile, cacheBuffer.Bytes(), 0644)
+		// if err != nil {
+		// 	log.Fatal("Error writing cache file to home folder")
+		// }
+		// } else {
+		// 	f, _ := os.Open(cacheFile) // Error handling elided for brevity.
+		// 	defer f.Close()
+		// 	io.Copy(&cacheBuffer, f) // Error handling elided for brevity.
+
+		// 	// There was a cache file.
+		// 	dec := gob.NewDecoder(&cacheBuffer)f
+		// 	p.Nodes = make([]Node, 0)
+		// 	err = dec.Decode(&p.Nodes)
+		// 	if err != nil {
+		// 		log.Fatal("Error decoding node array in package %s\n", p.Name)
+		// 	}
+		// }
 
 		chn <- p
 		close(chn)
@@ -296,7 +289,6 @@ func (p *Package) Compile(module *ir.Module, targetTripple string) chan *Package
 		}
 
 		for _, dep := range p.Dependencies {
-			// fmt.Println(p.NamespaceName, len(p.Nodes))
 			if !dep.Compiled {
 				dep.Compiled = true
 				for pkg := range dep.Compile(module, targetTripple) {

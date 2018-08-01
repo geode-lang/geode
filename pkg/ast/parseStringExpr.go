@@ -94,12 +94,6 @@ func (p *Parser) parseStringExpr() Node {
 
 	// untrimmed := p.token.Value
 
-	// trimmed := untrimmed[1 : len(untrimmed)-1]
-	// fmt.Println("untrimmed", untrimmed)
-	// fmt.Println("trimmed", trimmed)
-
-	// escaped := strings.Trim(UnescapeString(p.token.Value), "\"")
-	// fmt.Println(p.token.Value, escaped)
 	n.Value = escaped
 	p.next()
 	return n

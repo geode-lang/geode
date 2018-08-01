@@ -32,9 +32,8 @@ func RunCommand(command string, args ...string) ([]byte, error) {
 
 	if err != nil {
 		return out, err
-
 	}
-	return out, nil
+	return out, err
 }
 
 // StdLibDir returns the stdlib directory path

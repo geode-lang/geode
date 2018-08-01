@@ -1,11 +1,9 @@
 package ast
 
 import (
-	"fmt"
-
-	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/value"
 	"github.com/geode-lang/geode/pkg/util/log"
+	"github.com/geode-lang/llvm/ir"
+	"github.com/geode-lang/llvm/ir/value"
 )
 
 // VariableAssignNode is a generic variable statement representation
@@ -40,7 +38,7 @@ func (n VariableAssignNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	v, found := scope.Find(name.String())
 	if !found {
-		fmt.Println(v, "Not found")
+		log.Fatal("%s not found\n", v)
 	}
 	alloc = v.Value().(*ir.InstAlloca)
 
@@ -53,7 +51,6 @@ func (n VariableAssignNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	} else {
 		log.Fatal("Missing body on variable assignment to name '%s'\n", name)
 	}
-
 	val = createTypeCast(c, val, alloc.Elem)
 	block.NewStore(val, alloc)
 	return nil

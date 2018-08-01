@@ -1,8 +1,8 @@
 package typesystem
 
 import (
-	"github.com/llir/llvm/ir/types"
 	"github.com/geode-lang/geode/pkg/util/log"
+	"github.com/geode-lang/llvm/ir/types"
 )
 
 var (
@@ -61,7 +61,7 @@ func CastPrecidence(t types.Type) int {
 	p, ok := castPrecidences[t]
 
 	if !ok {
-		log.Error("Invalid type precidence request")
+		log.Error("Invalid type precidence request\n")
 		return -1
 	}
 

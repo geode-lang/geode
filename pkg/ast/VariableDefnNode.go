@@ -1,13 +1,11 @@
 package ast
 
 import (
-	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/value"
+	"github.com/geode-lang/llvm/ir"
+	"github.com/geode-lang/llvm/ir/value"
 )
 
-// VariableDefnNode is a generic variable statement representation
-// this contains a reference type inside it that tellst the
-// code generator what kind of variable statement to build
+// VariableDefnNode -
 type VariableDefnNode struct {
 	NodeType
 	TokenReference
@@ -50,6 +48,7 @@ func (n VariableDefnNode) Codegen(scope *Scope, c *Compiler) value.Value {
 				return val // nil
 			}
 		}
+
 		val = createTypeCast(c, val, alloc.Elem)
 
 	} else {

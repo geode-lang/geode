@@ -56,8 +56,6 @@ type Lexer struct {
 	pos        int // current position in input
 	start      int // beginning position of the current token
 	width      int // width of last rune read from input
-	lineCount  int // number of lines seen in the current file
-	parenDepth int // nested layers of paren expressions
 	input      string
 	tokens     chan Token
 }
@@ -299,12 +297,6 @@ func lexSymbol(l *Lexer) stateFn {
 	return lexTopLevel
 }
 
-// globWhitespace globs contiguous whitespace. (Sometimes we
-// don't want to return to lexTopLevel after doing this.)
-func globWhitespace(l *Lexer) {
-
-}
-
 func lexStringLiteral(l *Lexer) stateFn {
 	for {
 		r := l.next()
@@ -330,13 +322,9 @@ func lexStringLiteral(l *Lexer) stateFn {
 
 //
 // Helper Functions
-//
+///
 
-func isNumber(r rune) bool {
-	return unicode.IsDigit(r)
-}
-
-const operators = "&\\*+-/%:!=<>≤≥.←"
+const operators = "&\\*+-/%:!=<>≤≥≠.←"
 
 func isOperator(r rune) bool {
 	return strings.IndexRune(operators, r) >= 0
@@ -344,15 +332,6 @@ func isOperator(r rune) bool {
 
 func isSpace(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\n' || r == '\r'
-}
-
-// isEOL reports whether r is an end-of-line character or an EOF.
-func isEOL(r rune) bool {
-	return r == '\n' || r == '\r' || r == eof
-}
-
-func isEOF(r rune) bool {
-	return r == 0
 }
 
 // isValidIdefRune reports if r may be part of an identifier name.

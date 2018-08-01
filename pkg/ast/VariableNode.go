@@ -1,12 +1,8 @@
 package ast
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/types"
-	"github.com/llir/llvm/ir/value"
+	"github.com/geode-lang/llvm/ir"
+	"github.com/geode-lang/llvm/ir/value"
 )
 
 // VariableNode is a generic variable statement representation
@@ -21,10 +17,9 @@ type VariableNode struct {
 	Name         *NamedReference
 	IsPointer    bool
 	RefType      ReferenceType
-	IndexExpr    Node
 	IsArray      bool
 	Reassignment bool
-	Body         Node
+	Body         Accessable
 }
 
 // NameString implements Node.NameString
@@ -46,53 +41,32 @@ func (n VariableNode) InferType(scope *Scope) string {
 
 }
 
+func (n VariableNode) String() string {
+	return n.Name.String()
+}
+
 // Codegen implements Node.Codegen for VariableNode
 func (n VariableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	block := c.CurrentBlock()
-	// f := block.Parent
 
-	name := n.Name
-	var alloc *ir.InstAlloca
-	var val value.Value
-
-	// fmt.Printf("VARIABLE NODE %s\n", name)
-
-	// fmt.Printf("%s -> %s\n", n.Name, n.InferType(scope))
-
-	if n.RefType == ReferenceAccessValue || n.RefType == ReferenceAccessStackAddress {
-		v, found := scope.Find(name.String())
-		if !found {
-			n.SyntaxError()
-
-			// spew.Dump(n)
-			fmt.Printf("unknown variable name `%s`\n", name)
-			os.Exit(-1)
-		}
-
-		alloc = v.Value().(*ir.InstAlloca)
-
-		if n.RefType == ReferenceAccessStackAddress {
-			return alloc
-		}
-
-		if n.RefType == ReferenceDereference {
-			return alloc
-		}
-
-		val = block.NewLoad(v.Value())
-
-		if n.IndexExpr != nil {
-			if types.IsPointer(val.Type()) {
-				// zero := constant.NewInt(0, types.I32)
-				index := n.IndexExpr.Codegen(scope, c)
-				ptr := block.NewGetElementPtr(val, index)
-				val = block.NewLoad(ptr)
-			}
-
-		}
+	switch n.RefType {
+	case ReferenceDereference, ReferenceAccessStackAddress:
+		alloc := n.Name.Alloca(scope)
+		return alloc
+	case ReferenceAccessValue:
+		val := n.Name.Load(block, scope)
 		return val
 	}
 
 	return nil
+}
+
+// GenAddress returns the instruction allocation
+func (n VariableNode) GenAddress(s *Scope, c *Compiler) *ir.InstAlloca {
+	return n.Name.Alloca(s)
+}
+
+func (n VariableNode) GenAccess(s *Scope, c *Compiler) value.Value {
+	return n.Codegen(s, c)
 }

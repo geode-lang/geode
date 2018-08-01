@@ -13,19 +13,19 @@ var (
 	disableEmission = app.Flag("disable-emission", "Disable emission and only run through the syntax checking process").Bool()
 	// logLevel = app.Flag("loglevel", "Set the level of logging to show").Default("info").Enum("info", "verbose")
 
-	buildCMD   = app.Command("build", "Build an executable.").Alias("b")
+	buildCMD   = app.Command("build", "Build an executable.")
 	buildInput = buildCMD.Arg("input", "Geode source file or package").Default(".").String()
 	emitASM    = buildCMD.Flag("asm", "Set the target to .s asm files with intel syntax instead of a single binary.").Bool()
 
-	runCMD   = app.Command("run", "Build and run an executable, clean up afterwards").Alias("r").Default()
+	runCMD   = app.Command("run", "Build and run an executable, clean up afterwards").Default()
 	runInput = runCMD.Arg("input", "Geode source file or package").String()
 	runArgs  = runCMD.Arg("args", "Arguments to be passed into the program after building").Strings()
 
-	testCMD = app.Command("test", "Run tests").Alias("t")
+	testCMD = app.Command("test", "Run tests")
 	testDir = testCMD.Arg("dir", "Test Directory").Default("./tests").String()
 
 	cleanCMD = app.Command("clean", "Remove the hidden build directory")
 
-	infoCMD   = app.Command("info", "Get information about a program (does not compile, just lexes and parses)").Alias("i")
+	infoCMD   = app.Command("info", "Get information about a program (does not compile, just lexes and parses)")
 	infoInput = infoCMD.Arg("input", "Geode source file or package").String()
 )

@@ -21,8 +21,6 @@ func (p *Parser) atType() bool {
 		offset++
 	}
 
-	// fmt.Println(p.peek(offset))
-
 	if p.peek(offset).Type == lexer.TokIdent {
 		return true
 	}

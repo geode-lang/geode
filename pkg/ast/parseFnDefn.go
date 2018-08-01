@@ -30,16 +30,14 @@ func (p *Parser) parseFnDefn() FunctionNode {
 	rawNameString := p.parseName()
 	fn.Name = NewNamedReference(rawNameString)
 
-	// fmt.Println(declarationKeyword, fn.Name)
-
 	// The main function should never be mangled
 	if rawNameString == "main" {
 		fn.Nomangle = true
 	}
 
-	if p.token.Type == lexer.TokOper && p.token.Value == "<" {
-		fn.Generics, _ = p.parseGenericExpression(true)
-	}
+	// if p.token.Type == lexer.TokOper && p.token.Value == "<" {
+	// 	fn.Generics, _ = p.parseGenericExpression(true)
+	// }
 
 	if p.token.Type == lexer.TokLeftParen {
 		p.next()

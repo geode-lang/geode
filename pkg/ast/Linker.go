@@ -96,7 +96,6 @@ func (l *Linker) Run() {
 	linkArgs := make([]string, 0)
 
 	linkArgs = append(linkArgs, "-lm", "-lc")
-	// linkArgs = append(linkArgs, "-arch=cpp")
 
 	filename := l.output
 
@@ -150,6 +149,7 @@ func (l *Linker) Run() {
 	linkArgs = append(linkArgs, "-o", filename)
 
 	out, err := util.RunCommand(linker, linkArgs...)
+
 	if err != nil {
 		log.Fatal("failed to run command `%s %s`: `%s`\n\n%s",
 			linker, strings.Join(linkArgs, " "),

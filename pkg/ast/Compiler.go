@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/llir/llvm/ir"
+	"github.com/geode-lang/llvm/ir"
 )
 
 // Compiler contains all information to
@@ -9,12 +9,11 @@ import (
 type Compiler struct {
 	Name string
 	// A reference to the scope in the package for easier access
-	Scope              *Scope
-	Package            *Package
-	Module             *ir.Module
-	blocks             []*ir.BasicBlock
-	FN                 *ir.Function // current funciton being compiled
-	objectFilesEmitted []string
+	Scope   *Scope
+	Package *Package
+	Module  *ir.Module
+	blocks  []*ir.BasicBlock
+	FN      *ir.Function // current funciton being compiled
 }
 
 // CurrentBlock -

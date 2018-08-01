@@ -12,7 +12,6 @@ import (
 
 // Parser -
 type Parser struct {
-	name               string        // the filename of the program
 	tokens             []lexer.Token // channel of tokens from the lexer
 	tokenIndex         int
 	token              lexer.Token // current token, most recently recieved

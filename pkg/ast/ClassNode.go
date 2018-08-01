@@ -1,8 +1,8 @@
 package ast
 
 import (
-	"github.com/llir/llvm/ir/types"
-	"github.com/llir/llvm/ir/value"
+	"github.com/geode-lang/llvm/ir/types"
+	"github.com/geode-lang/llvm/ir/value"
 )
 
 // ClassNode -
@@ -39,6 +39,5 @@ func (n ClassNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	structDefn.Fields = fields
 
-	// fmt.Println(t, structDefn)
 	return nil
 }

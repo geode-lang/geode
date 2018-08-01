@@ -16,7 +16,7 @@ import (
 type Sourcefile struct {
 	Path     string
 	Name     string
-	Contents []rune
+	contents []rune
 }
 
 // NewSourcefile resolves a filename and creates a source file
@@ -65,7 +65,7 @@ func (s *Sourcefile) ResolveFile(path string) error {
 // LoadString takes a string and loads it
 func (s *Sourcefile) LoadString(source string) {
 	runes := []rune(source)
-	s.Contents = runes
+	s.contents = runes
 }
 
 // LoadBytes takes an array of bytes and loads it into the source
@@ -74,12 +74,12 @@ func (s *Sourcefile) LoadBytes(bytes []byte) {
 }
 
 func (s *Sourcefile) String() string {
-	return string(s.Contents)
+	return string(s.contents)
 }
 
 // Bytes returns the source as a byte array
 func (s *Sourcefile) Bytes() []byte {
-	return []byte(string(s.Contents))
+	return []byte(string(s.contents))
 }
 
 // ResolveFileName - if the filename passed in is a folder, look in that folder for a main.g

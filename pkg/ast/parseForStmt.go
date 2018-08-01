@@ -15,7 +15,7 @@ func (p *Parser) parseForStmt() Node {
 	forStmtIndex++
 	p.next()
 
-	n.Init = p.parseVariableDefn(true)
+	n.Init = p.parseIdentifierExpr(true)
 	p.requires(lexer.TokSemiColon)
 
 	p.next()
