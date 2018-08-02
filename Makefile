@@ -2,7 +2,6 @@
 
 default: build
 
-BINDIR =
 LIBDIR = /usr/local/lib/geodelib
 
 # tell go to install to the current directory

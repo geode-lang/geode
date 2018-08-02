@@ -76,7 +76,8 @@ func (p *Package) String() string {
 func (p *Package) Emit(buildDir string) string {
 	name := strings.Replace(p.Source.Name, ".g", "", -1)
 	filename := fmt.Sprintf("%s.ll", name)
-	objFileName := path.Join(util.GetCacheDir(), fmt.Sprintf("%x.o", p.Hash()))
+
+	objFileName := path.Join(buildDir, "obj", fmt.Sprintf("%x.o", p.Hash()))
 
 	pwd, _ := os.Getwd()
 	filename = strings.Replace(filename, pwd, "", -1)
@@ -87,6 +88,7 @@ func (p *Package) Emit(buildDir string) string {
 	filename = path.Join(buildFolder, path.Base(filename))
 
 	os.MkdirAll(buildFolder, os.ModePerm)
+	os.MkdirAll(path.Join(buildDir, "obj"), os.ModePerm)
 
 	writeErr := ioutil.WriteFile(filename, []byte(ir), 0666)
 	if writeErr != nil {

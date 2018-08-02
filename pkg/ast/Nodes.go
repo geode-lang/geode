@@ -64,6 +64,7 @@ const (
 	nodeNamespace             = "nodeNamespace"
 	nodeBlock                 = "nodeBlock"
 	nodeSubscript             = "nodeSubscript"
+	nodeArray                 = "nodeArray"
 )
 
 //

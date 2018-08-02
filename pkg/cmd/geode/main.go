@@ -38,7 +38,7 @@ func main() {
 	startTime = time.Now()
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	util.PurgeCache()
+	// util.PurgeCache()
 
 	// fmt.Println(util.StdLibDir())
 
@@ -82,7 +82,7 @@ func main() {
 		RunTests(*testDir)
 
 	case cleanCMD.FullCommand():
-		util.RunCommand("rm", "-rf", buildDir)
+		os.RemoveAll(buildDir)
 
 	case infoCMD.FullCommand():
 		log.Timed("information gathering", func() {
@@ -109,7 +109,6 @@ type Context struct {
 
 // NewContext constructs a new context and returns a pointer to it
 func NewContext(in string, out string) *Context {
-
 	if in == "" {
 		log.Fatal("Failed to create context, no input file passed\n")
 	}
@@ -189,6 +188,10 @@ func (c *Context) Build(buildDir string) {
 	log.Timed("Linking", func() {
 		linker.Run()
 	})
+
+	// log.Timed("Cleaning up", func() {
+	// 	os.RemoveAll(buildDir)
+	// })
 
 }
 

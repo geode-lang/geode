@@ -1,6 +1,8 @@
 package util
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -92,6 +94,9 @@ func GetTmp() string {
 func PurgeCache() {
 	cacheDir := GetCacheDir()
 
+	fmt.Println(cacheDir)
+	os.MkdirAll(cacheDir, os.ModePerm)
+
 	files, _ := ioutil.ReadDir(cacheDir)
 	// if err != nil {
 	// 	log.Fatal("Unable to search cache for files\n")
@@ -107,4 +112,11 @@ func PurgeCache() {
 		}
 	}
 
+}
+
+// RandomHex returns a random hex string of n bytes in length
+func RandomHex(n int) string {
+	bytes := make([]byte, n)
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
 }

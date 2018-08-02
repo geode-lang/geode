@@ -1,6 +1,9 @@
 package ast
 
 import (
+	"fmt"
+
+	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir"
 	"github.com/geode-lang/llvm/ir/types"
@@ -212,11 +215,12 @@ func NewFunctionScopeItem(name string, node FunctionNode, function *ir.Function,
 // VariableScopeItem implements ScopeItem.
 // This is used so we can store functions in the scope (mainly in the root scope)
 type VariableScopeItem struct {
-	value   value.Value
-	vis     Visibility
-	name    string
-	mangled bool
-	node    VariableNode
+	value    value.Value
+	vis      Visibility
+	name     string
+	mangled  bool
+	node     VariableNode
+	varIndex int
 }
 
 // Value implements ScopeItem.Value()
@@ -239,6 +243,11 @@ func (item VariableScopeItem) Name() string {
 	return item.name
 }
 
+// MangledName returns the instance unique name for this variable (to fix the "variable already defined" bug)
+func (item VariableScopeItem) MangledName() string {
+	return fmt.Sprintf("%s_%d", item.name, item.varIndex)
+}
+
 // Mangled implements ScopeItem.Mangled()
 func (item VariableScopeItem) Mangled() bool {
 	return item.mangled
@@ -254,12 +263,26 @@ func (item VariableScopeItem) Node() Node {
 	return item.node
 }
 
+var varIndex = 0
+
 // NewVariableScopeItem constructs a function scope item
 func NewVariableScopeItem(name string, value value.Value, vis Visibility) VariableScopeItem {
 	item := VariableScopeItem{}
 	item.name = name
 	item.value = value
+
 	item.vis = vis
+	item.varIndex = varIndex
+	varIndex++
+
+	// Here we need to do something special. This is in order to fix the bug where you cannot define
+	// a variable if it has already been defined in another block in the same function
+	// Example of the bug:
+	//      for int i := 0; i < 200; i <- i + 1 {}
+	//      for int i := 0; i < 200; i <- i + 1 {}
+	// LLVM would complain in the second loop because `i` has already been defined in this "function"
+	// even if the scopes are different.
+	value.(*ir.InstAlloca).Name = fmt.Sprintf("%s_%s", name, util.RandomHex(4))
 	return item
 }
 

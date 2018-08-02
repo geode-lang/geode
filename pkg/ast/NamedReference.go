@@ -32,7 +32,7 @@ func (n *NamedReference) Alloca(s *Scope) *ir.InstAlloca {
 		log.Fatal("Unable to find named reference %s\n", n)
 	}
 
-	alloc, cast := scopeitem.Value().(*ir.InstAlloca)
+	alloc, cast := scopeitem.(VariableScopeItem).Value().(*ir.InstAlloca)
 	if !cast {
 		log.Fatal("Cast from scope item to alloca with named reference %s failed\n", n)
 	}

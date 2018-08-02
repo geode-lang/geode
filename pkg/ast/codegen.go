@@ -121,6 +121,8 @@ func (n ForNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	// The name of the blocks is prefixed so we can determine which for loop a block is for.
 	namePrefix := fmt.Sprintf("for.%X.", n.Index)
 	parentBlock := c.CurrentBlock()
+	loopScope := scope.SpawnChild()
+
 	var predicate value.Value
 	var condBlk *ir.BasicBlock
 	var bodyBlk *ir.BasicBlock
@@ -130,21 +132,21 @@ func (n ForNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	condBlk = parentFunc.NewBlock(namePrefix + "cond")
 
-	n.Init.Codegen(scope, c)
+	n.Init.Codegen(loopScope, c)
 
 	parentBlock.NewBr(condBlk)
 
 	c.genInBlock(condBlk, func() {
-		predicate = n.Cond.Codegen(scope, c)
+		predicate = n.Cond.Codegen(loopScope, c)
 		one := constant.NewInt(1, types.I1)
 		predicate = condBlk.NewICmp(ir.IntEQ, one, createTypeCast(c, predicate, types.I1))
 	})
 	bodyBlk = parentFunc.NewBlock(namePrefix + "body")
 	c.genInBlock(bodyBlk, func() {
-		bodyGenBlk = n.Body.Codegen(scope, c).(*ir.BasicBlock)
+		bodyGenBlk = n.Body.Codegen(loopScope, c).(*ir.BasicBlock)
 
 		c.genInBlock(bodyGenBlk, func() {
-			n.Step.Codegen(scope, c)
+			n.Step.Codegen(loopScope, c)
 		})
 		branchIfNoTerminator(bodyBlk, condBlk)
 		branchIfNoTerminator(bodyGenBlk, condBlk)

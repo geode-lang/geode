@@ -5,7 +5,6 @@ import (
 )
 
 func (p *Parser) parsePrimary() Node {
-
 	// fmt.Println(lexer.GetTokenName(p.token.Type))
 	switch p.token.Type {
 
@@ -17,10 +16,16 @@ func (p *Parser) parsePrimary() Node {
 		return p.parseParenExpr()
 	case lexer.TokString:
 		return p.parseStringExpr()
+
+	case lexer.TokLeftBrace:
+		return p.parseArrayDecl()
+
 	// case tokEndOfTokens:
 	// 	return nil // this token should not be skipped
 	default:
 		// p.next()
 		return nil
 	}
+
+	return nil
 }
