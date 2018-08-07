@@ -107,23 +107,25 @@ func (l *Linker) Run() {
 	if l.target == ASMTarget {
 		log.Timed("Assembly Generation", func() {
 			// We want to only write intel syntax. AT&T Sucks
-			linkArgs = append(linkArgs, "-S", "-masm=intel", "-o", "/dev/stdout")
+			linkArgs = append(linkArgs, "-S", "-masm=intel", "-Wno-everything")
 			// Compile each of the objects to a .s file.
 			for _, obj := range l.objectPaths {
 				// We only want to leave user generated files in the filesystem
 				if strings.HasSuffix(obj, ".ll") {
-					// Pull the extension of the object file
 					// ext := path.Ext(obj)
+					out := strings.Replace(obj, ".ll", ".s", -1)
+					// Pull the extension of the object file
+					if l.dump {
+						out = "/dev/stdout"
+					}
 					// Replace it with .s
 					// set the output to that of the .s file
-					asmArgs := append(linkArgs, obj)
+					asmArgs := append(linkArgs, "-o", out, obj)
 					// run the compile to asm
 					c, _ := util.RunCommandStr(linker, asmArgs...)
-					fmt.Println(c)
-					// if l.dump {
-					// 	bs, _ := ioutil.ReadFile(filename)
-					// 	fmt.Println(string(bs))
-					// }
+					if l.dump {
+						fmt.Println(c)
+					}
 				}
 
 			}
