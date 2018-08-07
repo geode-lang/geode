@@ -36,7 +36,7 @@ func (n SubscriptNode) GenElementPtr(s *Scope, c *Compiler) *ir.InstGetElementPt
 
 // Codegen implements Node.Codegen for SubscriptNode
 func (n SubscriptNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	c.CurrentBlock().AppendInst(NewLLVMComment("%s", n))
+	// c.CurrentBlock().AppendInst(NewLLVMComment("%s", n))
 	return c.CurrentBlock().NewLoad(n.GenElementPtr(scope, c))
 }
 

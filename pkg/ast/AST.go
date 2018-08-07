@@ -146,6 +146,7 @@ func (p *Parser) parseTopLevelStmt() Node {
 		// 	log.Debug("parseTopLevelStmt - TokFuncDefn\n")
 		// 	return p.parseVariableDefn(true)
 	}
+
 	p.token.SyntaxError()
 	p.Error("Invalid syntax in root\n")
 	return nil

@@ -126,6 +126,7 @@ func (c *Context) Build(buildDir string) {
 		log.Fatal("Unable to construct a source file.\n")
 	}
 	err = src.ResolveFile(c.Input)
+	src.Preprocess()
 	if err != nil {
 		log.Fatal("Unable to read file %s into sourcefile structure: %s\n", c.Input, err)
 	}

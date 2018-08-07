@@ -2,6 +2,7 @@ package ast
 
 import (
 	"github.com/geode-lang/llvm/ir"
+	"github.com/geode-lang/llvm/ir/types"
 )
 
 // Compiler contains all information to
@@ -14,6 +15,8 @@ type Compiler struct {
 	Module  *ir.Module
 	blocks  []*ir.BasicBlock
 	FN      *ir.Function // current funciton being compiled
+
+	typeCache types.Type
 }
 
 // CurrentBlock -

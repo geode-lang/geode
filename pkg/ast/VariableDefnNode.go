@@ -28,6 +28,7 @@ func (n VariableDefnNode) InferType(scope *Scope) string {
 func (n VariableDefnNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	block := c.CurrentBlock()
+
 	f := block.Parent
 
 	name := n.Name
@@ -36,7 +37,10 @@ func (n VariableDefnNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	ty := scope.FindType(n.Type.Name).Type
 	ty = n.Type.BuildPointerType(ty)
+	block.AppendInst(NewLLVMComment("%s %s", ty, name))
 	alloc = createBlockAlloca(f, ty, name.String())
+
+	c.typeCache = alloc.Elem
 	scItem := NewVariableScopeItem(name.String(), alloc, PrivateVisibility)
 	scope.Add(scItem)
 
@@ -54,6 +58,8 @@ func (n VariableDefnNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	} else {
 		return nil
 	}
+
+	block.AppendInst(NewLLVMComment("%s <- %s", name, val.Type()))
 
 	block.NewStore(val, alloc)
 

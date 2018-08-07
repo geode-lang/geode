@@ -1,96 +1,83 @@
 package ast
 
 import (
-	"strconv"
-	"strings"
-	"unicode/utf8"
+	"bytes"
+	"encoding/hex"
 
 	"github.com/geode-lang/geode/pkg/util/log"
 )
 
-// UnescapeString UTF-8 string
-// e.g. convert "\u0e27\u0e23\u0e0d\u0e32" to "วรญา"
-func UnescapeString(str string) string {
-	var replaced []rune
-	s := []byte(str)
-	r := 0
-	for r < len(s) {
-		if s[r] != '\\' {
-			c, size := utf8.DecodeRune(s[r:])
-			r += size
-			replaced = append(replaced, c)
-			continue
-		}
-		r++
-		if r >= len(s) {
-			log.Fatal("Escape sequence at end of string.")
-		}
-		switch s[r] {
-		default:
-			log.Fatal("Expected valid escape code after \\, but got %q.", s[r])
-		case 'b':
-			replaced = append(replaced, rune(0x0008))
-			r++
-		case 't':
-			replaced = append(replaced, rune(0x0009))
-			r++
-		case 'n':
-			replaced = append(replaced, rune(0x000A))
-			r++
-		case 'f':
-			replaced = append(replaced, rune(0x000C))
-			r++
-		case 'r':
-			replaced = append(replaced, rune(0x000D))
-			r++
-		case '"':
-			replaced = append(replaced)
-			r++
-		case '\\':
-			replaced = append(replaced, rune(0x005C))
-			r++
-		case 'u':
-			// At this point, we know we have a Unicode escape of the form
-			// `uXXXX` at [r, r+5). (Because the lexer guarantees this
-			// for us.)
-			escaped := asciiEscapeToUnicode(s[r+1 : r+5])
-			replaced = append(replaced, escaped)
-			r += 5
-		case 'U':
-			// At this point, we know we have a Unicode escape of the form
-			// `uXXXX` at [r, r+9). (Because the lexer guarantees this
-			// for us.)
-			escaped := asciiEscapeToUnicode(s[r+1 : r+9])
-			replaced = append(replaced, escaped)
-			r += 9
+const (
+	hexChars = "0123456789abcdefABCDEF"
+)
+
+func isHex(r rune) bool {
+	for _, c := range hexChars {
+		if r == c {
+			return true
 		}
 	}
-	return string(replaced)
+	return false
 }
 
-func asciiEscapeToUnicode(bs []byte) rune {
-	s := string(bs)
-	hex, err := strconv.ParseUint(strings.ToLower(s), 16, 32)
-	if err != nil {
-		log.Fatal("Could not parse '%s' as a hexadecimal number, but the "+
-			"lexer claims it's OK: %s\n", s, err)
+// UnescapeString UTF-8 string
+// e.g. convert "\u0e27\u0e23\u0e0d\u0e32" to "วรญา"
+func UnescapeString(s string) (string, error) {
+	// out := make([]rune, 0)
+	buff := bytes.NewBufferString("")
+	sr := []rune(s)
+
+	escapes := map[rune]rune{
+		'a':  0x07,
+		'b':  0x08,
+		'f':  0x0C,
+		'n':  0x0A,
+		'r':  0x0D,
+		't':  0x09,
+		'v':  0x0B,
+		'\\': 0x5C,
+		'\'': 0x27,
+		'"':  0x22,
+		'?':  0x3F,
 	}
-	if !utf8.ValidRune(rune(hex)) {
-		log.Fatal("Escaped character '\\u%s' is not valid UTF-8.", s)
+
+	for i := 0; i < len(sr); i++ {
+		if sr[i] == '\\' {
+			i++
+
+			if sr[i] == 'x' {
+				// i++
+				hexStr := make([]rune, 0)
+				for ; i < len(sr) && isHex(sr[i]); i++ {
+					hexStr = append(hexStr, sr[i])
+				}
+
+				bts, _ := hex.DecodeString(string(hexStr))
+				for _, b := range bts {
+					buff.WriteByte(b)
+				}
+				continue
+			}
+
+			esc, ok := escapes[sr[i]]
+			if !ok {
+				log.Fatal("Unknown escape: '\\%c'\n", sr[i])
+			}
+			buff.WriteRune(esc)
+		} else {
+			buff.WriteRune(sr[i])
+		}
 	}
-	return rune(hex)
+	return buff.String(), nil
 }
 
 func (p *Parser) parseStringExpr() Node {
 	n := StringNode{}
 	n.TokenReference.Token = p.token
 	n.NodeType = nodeString
-	escaped, err := strconv.Unquote(p.token.Value)
-	if err != nil {
-		panic(err)
-	}
 
-	// untrimmed := p.token.Value
+	val := p.token.Value[1 : len(p.token.Value)-1]
+	escaped, _ := UnescapeString(val)
 
 	n.Value = escaped
 	p.next()

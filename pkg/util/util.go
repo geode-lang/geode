@@ -38,6 +38,12 @@ func RunCommand(command string, args ...string) ([]byte, error) {
 	return out, err
 }
 
+// RunCommandStr is a wrapper around RunCommand that returns a string instead
+func RunCommandStr(command string, args ...string) (string, error) {
+	b, e := RunCommand(command, args...)
+	return string(b), e
+}
+
 // StdLibDir returns the stdlib directory path
 func StdLibDir() string {
 	libpath := os.Getenv("GEODELIB")

@@ -149,6 +149,8 @@ func (p *Package) LoadDep(depPath string) *Package {
 		depSource.Name = path.Join(".stdlib", filename)
 	}
 
+	depSource.Preprocess()
+
 	pkgName := fmt.Sprintf("%s", filename)
 
 	if pkg, ok := dependencyMap[depSource.HashName()]; ok {

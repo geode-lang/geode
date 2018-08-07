@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir/constant"
 	"github.com/geode-lang/llvm/ir/types"
@@ -36,12 +38,25 @@ func (n ArrayNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 		if !types.Equal(val.Type(), elementType) {
 			el.SyntaxError()
-			log.Fatal("Invalid type in array. Array should be of a single type (%s)\n", elementType)
+			log.Fatal("Invalid type in array. Array should be of a single type '%s', got '%s'\n", elementType, val.Type())
 		}
 		values = append(values, val)
 	}
+	fmt.Println("==========")
+	fmt.Println(c.typeCache)
+	typ := c.typeCache
 
-	typ := types.NewArray(values[0].Type(), int64(n.Length))
+	if len(values) > 0 {
+		typ = values[0].Type()
+	} else {
+		typ = typ.(*types.PointerType).Elem
+	}
+
+	fmt.Println("==========")
+
+	typ = types.NewArray(typ, int64(n.Length))
+
+	fmt.Println(typ)
 
 	alloca := block.NewAlloca(typ)
 
@@ -51,6 +66,7 @@ func (n ArrayNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	offset := arrayStart
 
 	for i, val := range values {
+		block.AppendInst(NewLLVMComment("[%d] <- %s", i, val.Ident()))
 		if i > 0 {
 			offset = block.NewGetElementPtr(offset, one)
 		}

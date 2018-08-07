@@ -306,14 +306,11 @@ func lexStringLiteral(l *Lexer) stateFn {
 		if r == '\\' {
 			// Skip escape ('\' and next char)
 			l.next()
-			// l.next()
 		}
 		if r == '"' {
-			// l.next()
 			l.emit(TokString)
 			return lexTopLevel
 		}
-		// l.next()
 	}
 	return l.fatal("Unclosed string literal\n")
 }

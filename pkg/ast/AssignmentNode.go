@@ -35,6 +35,8 @@ func (n AssignmentNode) Codegen(s *Scope, c *Compiler) value.Value {
 	c.CurrentBlock().AppendInst(NewLLVMComment(n.String()))
 
 	targetType := n.Assignee.Type(s)
+	c.typeCache = targetType
+
 	val := n.Value.GenAccess(s, c)
 	if !types.Equal(val.Type(), targetType) {
 		val = createTypeCast(c, val, targetType)

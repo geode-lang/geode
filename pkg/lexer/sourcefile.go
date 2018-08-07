@@ -104,3 +104,60 @@ func ResolveFileName(filename, suffix string) (string, error) {
 
 	return filename, nil
 }
+
+// Preprocess the preprocessor on some source runes
+func (s *Sourcefile) Preprocess() {
+
+	// baseDir := path.Dir(s.Path)
+	// source := s.contents
+
+	// escaped := false
+	// inside := false
+	// i := 0
+	// start := 0
+	// end := 0
+
+	// for i < len(source) {
+	// 	rn := source[i]
+	// 	end = i
+	// 	i++
+
+	// 	if rn == '\\' {
+	// 		escaped = true
+	// 	}
+	// 	if inside {
+	// 		if rn == '`' && !escaped {
+	// 			inside = false
+
+	// 			// done running over the , run the command
+
+	// 			// the command needs to be run as a bash command in the dir of the source file,
+	// 			// so first we need to cd into the directory, then run the command
+	// 			cmd := fmt.Sprintf("cd %s && %s", baseDir, string(source[start:end]))
+	// 			// Run the command through bash and get the contents as a string
+	// 			res, err := util.RunCommandStr("bash", "-c", cmd)
+	// 			if err != nil {
+	// 				log.Fatal("%d:%d - %s", start, end, res)
+	// 			}
+
+	// 			res = strings.TrimSpace(res)
+
+	// 			// Inject the result of the command into the source rune list
+	// 			source = append(source[:start-1], append([]rune(res), source[end+1:]...)...)
+	// 			i = start + len(res) + 1
+	// 			continue
+	// 		}
+	// 	}
+
+	// 	if !inside && rn == '`' && !escaped {
+	// 		inside = true
+	// 		start = i
+	// 	}
+
+	// 	if escaped {
+	// 		escaped = false
+	// 	}
+	// }
+
+	// s.contents = source
+}
