@@ -44,6 +44,12 @@ func Info(format string, args ...interface{}) {
 
 }
 
+// Syntax -
+func Syntax(format string, args ...interface{}) {
+	tolog := color.Yellow("[syntax] ") + fmt.Sprintf(format, args...)
+	log(tolog)
+}
+
 // Error -
 func Error(format string, args ...interface{}) {
 	tolog := color.Red("[error] ") + fmt.Sprintf(format, args...)

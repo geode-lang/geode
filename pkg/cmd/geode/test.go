@@ -22,17 +22,18 @@ import (
 
 // TestJob -
 type TestJob struct {
-	Name, Sourcefile               string
-	CompilerArgs, RunArgs          []string
-	CompilerError, RunError        int
-	Input                          string
-	CompilerOutput, ExpectedOutput string
+	Name, Sourcefile                       string
+	CompilerArgs, RunArgs                  []string
+	CompilerError, RunError, ExpectedError int
+	Input                                  string
+	CompilerOutput, ExpectedOutput         string
 }
 
 type testResult struct {
 	TestJob        TestJob
 	CompilerError  int
 	RunError       int
+	ExpectedError  int
 	CompilerOutput string
 	ExpectedOutput string
 }
@@ -187,7 +188,7 @@ func RunTests(testDirectory string) int {
 
 		// Check build errors
 
-		if (res.TestJob.CompilerError == -1 && res.CompilerError != 0) || (res.CompilerError == res.TestJob.CompilerError) {
+		if (res.TestJob.CompilerError == -1 && res.CompilerError != res.ExpectedError) || (res.CompilerError == res.TestJob.CompilerError) {
 		} else {
 			fmt.Printf("  CompilerError:\n    ")
 			msg := color.Red("✗")

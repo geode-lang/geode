@@ -22,7 +22,7 @@ import (
 
 // Some constants that represent the program in it's current compiled state
 const (
-	VERSION = "0.1.0"
+	VERSION = "0.1.1"
 	AUTHOR  = "Nick Wanninger"
 )
 
@@ -37,12 +37,8 @@ func main() {
 	spew.Config.DisableMethods = true
 	startTime = time.Now()
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
-
-	// util.PurgeCache()
-
-	// fmt.Println(util.StdLibDir())
-
-	buildDir := fmt.Sprintf(".geode_build/")
+	home := util.HomeDir()
+	buildDir := path.Join(home, ".geode/build/")
 
 	log.PrintVerbose = *printVerbose
 
@@ -157,18 +153,13 @@ func (c *Context) Build(buildDir string) {
 	log.Timed("llvm emission", func() {
 		for c := range rootPackage.Compile(module, c.TargetTripple) {
 			primaryTree = append(primaryTree, c.Nodes...)
-
 			if !*disableEmission {
 				log.Debug("Compiled pkg %s with namespace %s\n", c.Name, c.NamespaceName)
-				// obj := c.Emit(buildDir)
-
-				// linker.AddObject(obj)
 				for _, link := range c.CLinkages {
 					log.Debug("Added c linkage %s\n", link)
 					linker.AddObject(link)
 				}
 			}
-
 		}
 	})
 
@@ -178,6 +169,8 @@ func (c *Context) Build(buildDir string) {
 
 	if *disableEmission {
 		if *dumpResult {
+			// quick.Highlight(os.Stdout, rootPackage.String(), "llvm", "terminal", "monokai")
+
 			fmt.Println(rootPackage)
 		}
 		return
@@ -189,11 +182,6 @@ func (c *Context) Build(buildDir string) {
 	log.Timed("Linking", func() {
 		linker.Run()
 	})
-
-	// log.Timed("Cleaning up", func() {
-	// 	os.RemoveAll(buildDir)
-	// })
-
 }
 
 // Run a context with a given set of arguments

@@ -5,6 +5,8 @@ import (
 )
 
 func (p *Parser) parseBinaryOpRHS(exprPrec int, lhs Node) Node {
+
+	// parse plain binary operator
 	for {
 		_, isBinaryOp := p.binaryOpPrecedence[p.token.Value]
 		if !isBinaryOp || p.token.Is(lexer.TokSemiColon) {

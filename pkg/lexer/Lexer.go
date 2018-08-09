@@ -19,10 +19,13 @@ var tokenTypeOverrides = map[string]TokenType{
 	"while":   TokWhile,
 	"func":    TokFuncDefn,
 	"λ":       TokFuncDefn,
+	"new":     TokNew,
 	"class":   TokClassDefn,
 	"include": TokDependency,
 	"link":    TokDependency,
 	"is":      TokNamespace,
+	"sizeof":  TokSizeof,
+	"as":      TokAs,
 	"(":       TokLeftParen,
 	")":       TokRightParen,
 	"{":       TokLeftCurly,
@@ -110,9 +113,7 @@ func (l *Lexer) emit(typ TokenType) {
 		if override {
 			typ = newTyp
 		}
-
 		tok.Type = typ
-		// fmt.Println(tok.String())
 		info.AddToken(tok)
 		l.tokens <- tok
 	}
@@ -202,6 +203,9 @@ func lexTopLevel(l *Lexer) stateFn {
 	case isSpace(r):
 		l.backup()
 		return lexSpace
+	case isNewline(r):
+		l.backup()
+		return lexNewline
 	case r == ';':
 		l.emit(TokSemiColon)
 		return lexTopLevel
@@ -248,7 +252,7 @@ func (l *Lexer) fatal(format string, args ...interface{}) stateFn {
 func lexIdentifer(l *Lexer) stateFn {
 	for {
 		switch r := l.next(); {
-		case isAlphaNumeric(r) || r == '\'':
+		case isAlphaNumeric(r) || r == '\'' || r == '-':
 			// absorb
 		default:
 			l.backup()
@@ -274,9 +278,16 @@ func lexComment(l *Lexer) stateFn {
 	return lexTopLevel
 }
 
-// lexSpace globs contiguous whitespace.
+// lexSpace globs contiguous whitespace and ignores them.
 func lexSpace(l *Lexer) stateFn {
 	l.acceptRunPredicate(isSpace)
+	l.ignore()
+	return lexTopLevel
+}
+
+// lexNewline globs contiguous newlines.
+func lexNewline(l *Lexer) stateFn {
+	l.acceptRunPredicate(isNewline)
 	l.ignore()
 	return lexTopLevel
 }
@@ -326,7 +337,10 @@ func isOperator(r rune) bool {
 }
 
 func isSpace(r rune) bool {
-	return r == ' ' || r == '\t' || r == '\n' || r == '\r'
+	return r == ' ' || r == '\t'
+}
+func isNewline(r rune) bool {
+	return r == '\n'
 }
 
 // isValidIdefRune reports if r may be part of an identifier name.

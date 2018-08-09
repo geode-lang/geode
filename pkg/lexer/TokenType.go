@@ -51,6 +51,8 @@ const (
 	TokRightArrow
 	TokLeftArrow
 
+	TokSizeof
+
 	TokCompoundAssignment
 
 	TokFor
@@ -61,6 +63,8 @@ const (
 	TokFuncDefn
 	TokClassDefn
 	TokNamespace
+	TokNew
+	TokAs
 
 	TokDependency
 

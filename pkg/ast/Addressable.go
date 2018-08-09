@@ -1,6 +1,8 @@
 package ast
 
-import "github.com/geode-lang/llvm/ir"
+import (
+	"github.com/geode-lang/llvm/ir"
+)
 
 // Addressable is an interface implementable by
 // a node that allows the ability to read address

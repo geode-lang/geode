@@ -28,7 +28,7 @@ type FunctionNode struct {
 	NodeType
 	TokenReference
 
-	Name           *NamedReference
+	Name           NamedReference
 	Args           []VariableDefnNode
 	Body           BlockNode
 	External       bool
@@ -204,12 +204,12 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 			scItem := NewVariableScopeItem(arg.Name, alloc, PrivateVisibility)
 			scope.Add(scItem)
 		}
-		c.CurrentBlock().AppendInst(NewLLVMComment(fmt.Sprintf("%s code:", n.Name.String())))
+		// c.CurrentBlock().AppendInst(NewLLVMComment(fmt.Sprintf("%s code:", n.Name.String())))
 		// Gen the body of the function
 		n.Body.Codegen(scope, c)
 		if c.CurrentBlock().Term == nil {
 			ty := scope.FindType(n.ReturnType.Name).Type
-			log.Error("Function %s is missing a return statement in the root block. Defaulting to 0\n", n.Name)
+			// log.Error("Function %s is missing a return statement in the root block. Defaulting to 0\n", n.Name)
 			v := createTypeCast(c, constant.NewInt(0, types.I64), ty)
 			c.CurrentBlock().NewRet(v)
 		}
@@ -225,6 +225,6 @@ func createPrelude(scope *Scope, c *Compiler, n FunctionNode) {
 		// Initialize the garbage collector at the first value allocted to the stack.
 		QuickParseIdentifier("byte __GC_BASE_POINTER;").Codegen(scope, c)
 		QuickParseExpression("___geodegcinit(&__GC_BASE_POINTER);").Codegen(scope, c)
-
 	}
+
 }

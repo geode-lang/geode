@@ -1,8 +1,6 @@
 package ast
 
 import (
-	"fmt"
-
 	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir/constant"
 	"github.com/geode-lang/llvm/ir/types"
@@ -24,6 +22,11 @@ func (n ArrayNode) NameString() string { return "ArrayNode" }
 // InferType implements Node.InferType
 func (n ArrayNode) InferType(scope *Scope) string { return "void" }
 
+// GenAccess -
+func (n ArrayNode) GenAccess(s *Scope, c *Compiler) value.Value {
+	return n.Codegen(s, c)
+}
+
 // Codegen implements Node.Codegen for ArrayNode
 func (n ArrayNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	block := c.CurrentBlock()
@@ -42,8 +45,6 @@ func (n ArrayNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		}
 		values = append(values, val)
 	}
-	fmt.Println("==========")
-	fmt.Println(c.typeCache)
 	typ := c.typeCache
 
 	if len(values) > 0 {
@@ -52,11 +53,7 @@ func (n ArrayNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		typ = typ.(*types.PointerType).Elem
 	}
 
-	fmt.Println("==========")
-
 	typ = types.NewArray(typ, int64(n.Length))
-
-	fmt.Println(typ)
 
 	alloca := block.NewAlloca(typ)
 

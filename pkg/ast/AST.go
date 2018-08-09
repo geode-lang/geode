@@ -128,8 +128,13 @@ func (p *Parser) peek(o int) lexer.Token {
 	return p.tokens[target]
 }
 
-func (p *Parser) checkSemiColon() {
+func (p *Parser) allowSemiColon() {
 	p.requires(lexer.TokSemiColon)
+	// fmt.Println(p.token)
+	// if p.token.Is(lexer.TokSemiColon) {
+	// 	p.next()
+	// 	fmt.Println("->", p.token)
+	// }
 }
 
 func (p *Parser) parseTopLevelStmt() Node {

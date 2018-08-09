@@ -277,7 +277,7 @@ func createTypeCast(c *Compiler, in value.Value, to types.Type) value.Value {
 	}
 
 	if types.IsPointer(inType) && types.IsPointer(to) {
-		return in
+		return c.CurrentBlock().NewBitCast(in, to)
 	}
 
 	if fromFloat && toInt {
@@ -391,13 +391,6 @@ func (n BinaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	}
 }
 
-// Codegen implements Node.Codegen for CastNode
-func (n CastNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	from := n.From.Codegen(scope, c)
-	realType := scope.FindType(n.InferType(scope)).Type
-	return createTypeCast(c, from, realType)
-}
-
 // Codegen implements Node.Codegen for FunctionCallNode
 func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
@@ -405,9 +398,11 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	args := []value.Value{}
 	argTypes := []types.Type{}
+	argStrings := []string{}
 	for _, arg := range n.Args {
 
 		if ac, isAccessable := arg.(Accessable); isAccessable {
+			// argStrings = append(argStrings, ac.(fmt.Stringer).String())
 			val := ac.GenAccess(scope, c)
 			args = append(args, val)
 			argTypes = append(argTypes, val.Type())
@@ -419,6 +414,13 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 			log.Fatal("Argument to function call to '%s' is not accessable (has no readable value). Node type %s\n", n.Name, arg.Kind())
 		}
 
+	}
+
+	// First we need to check if the function call is actually a call to a class's constructor.
+	// Because in geode, calling a class name results in the constructor being called for said class.
+	class := c.Scope.FindType(n.Name.String())
+	if class != nil {
+		return GenerateClassConstruction(n.Name.String(), class.Type, scope, c, args)
 	}
 
 	ns, nm := parseName(n.Name.String())
@@ -453,6 +455,7 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		return codegenError(fmt.Sprintf("Unknown function %q referenced", name))
 	}
 
+	c.CurrentBlock().AppendInst(NewLLVMComment("%s(%s);", completeName, strings.Join(argStrings, ", ")))
 	return c.CurrentBlock().NewCall(callee, args...)
 }
 

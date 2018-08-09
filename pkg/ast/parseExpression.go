@@ -1,14 +1,17 @@
 package ast
 
+import (
+	"github.com/geode-lang/geode/pkg/lexer"
+)
+
 func (p *Parser) parseExpression() Node {
 	lhs := p.parseUnary()
 	if lhs == nil {
 		return nil
 	}
-	return p.parseBinaryOpRHS(1, lhs)
-}
 
-// QuickParseExpression takes a stream of tokens and lexes them into a single node
-func QuickParseExpression(src string) Node {
-	return NewQuickParser(src).parseExpression()
+	if p.token.Is(lexer.TokAs) {
+		return p.parseCastExpr(lhs)
+	}
+	return p.parseBinaryOpRHS(1, lhs)
 }

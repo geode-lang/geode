@@ -32,9 +32,8 @@ func (n AssignmentNode) String() string {
 
 // Codegen implements Node.Codegen for AssignmentNode
 func (n AssignmentNode) Codegen(s *Scope, c *Compiler) value.Value {
-	c.CurrentBlock().AppendInst(NewLLVMComment(n.String()))
-
-	targetType := n.Assignee.Type(s)
+	// c.CurrentBlock().AppendInst(NewLLVMComment(n.String()))
+	targetType := n.Assignee.Type(s, c)
 	c.typeCache = targetType
 
 	val := n.Value.GenAccess(s, c)

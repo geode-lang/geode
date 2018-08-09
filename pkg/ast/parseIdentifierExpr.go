@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/geode-lang/geode/pkg/lexer"
 	"github.com/geode-lang/geode/pkg/util/log"
 )
@@ -15,36 +17,12 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 
 	name := p.parseName()
 
-	var target *NamedReference
+	var target Reference
 	target = NewNamedReference(name)
 
-	// // Handle assignment to array subscripting
-	// if p.token.Is(lexer.TokLeftBrace) {
-
-	// 	var s Assignable
-	// 	s = target
-	// 	for p.token.Is(lexer.TokLeftBrace) {
-	// 		if a, isAccessable := s.(Accessable); isAccessable {
-	// 			s = p.parseSubscriptExpr(a).(Assignable)
-	// 		} else {
-	// 			s.(Node).SyntaxError()
-	// 			log.Fatal("Unable to index.")
-	// 		}
-	// 	}
-
-	// 	if p.token.Is(lexer.TokLeftArrow) {
-	// 		assignment := AssignmentNode{}
-	// 		p.next()
-	// 		if val, isAccessable := p.parseExpression().(Accessable); isAccessable {
-	// 			assignment.Value = val
-	// 		}
-
-	// 		assignment.Assignee = s
-
-	// 		fmt.Println(assignment)
-	// 		return assignment
-	// 	}
-	// }
+	for p.token.Is(lexer.TokDot) {
+		target = p.parseDotExpr(target)
+	}
 
 	var generics []*GenericSymbol
 
@@ -84,6 +62,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 				assignment.Value = access
 			} else {
 				store.SyntaxError()
+				fmt.Println(store)
 				log.Fatal("Not a valid value to assign to a variable node. (Not accessable)\n")
 			}
 			return assignment

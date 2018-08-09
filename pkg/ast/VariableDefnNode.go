@@ -12,7 +12,7 @@ type VariableDefnNode struct {
 
 	Type     GeodeTypeRef
 	HasValue bool
-	Name     *NamedReference
+	Name     NamedReference
 	Body     Node
 }
 
@@ -45,6 +45,7 @@ func (n VariableDefnNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	scope.Add(scItem)
 
 	if n.HasValue {
+
 		// Construct the body
 		if n.Body != nil {
 			val = n.Body.Codegen(scope, c)
@@ -56,6 +57,10 @@ func (n VariableDefnNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		val = createTypeCast(c, val, alloc.Elem)
 
 	} else {
+		defa := DefaultValue(alloc.Elem)
+		if defa != nil {
+			block.NewStore(defa, alloc)
+		}
 		return nil
 	}
 

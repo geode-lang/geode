@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/geode-lang/geode/pkg/lexer"
 	"github.com/geode-lang/geode/pkg/util"
@@ -61,7 +61,7 @@ func (p *Package) String() string {
 	// We need to build up the IR that will be emitted
 	// so we can track this information later on.
 	fmt.Fprintf(ir, "; ModuleID = %q\n", p.Name)
-	fmt.Fprintf(ir, "; UnixDate = %d\n", time.Now().Unix())
+	fmt.Fprintf(ir, "target datalayout = %q\n", "e-m:o-i64:64-f80:128-n8:16:32:64-S128")
 	fmt.Fprintf(ir, "target triple = %q\n", p.TargetTripple)
 
 	// Append the module information
@@ -70,37 +70,34 @@ func (p *Package) String() string {
 	return ir.String()
 }
 
-// const buildDir = ".geode_build/"
-
-// Emit will emit the package as IR to a file for further compiling
+// Emit will emit the package as IR to a file then build it into an object file for further usage.
+// This function returns the path to the object file
 func (p *Package) Emit(buildDir string) string {
-	name := strings.Replace(p.Source.Name, ".g", "", -1)
-	filename := fmt.Sprintf("%s.ll", name)
+	outPathBase, _ := filepath.Abs(p.Source.Path)
 
-	objFileName := path.Join(buildDir, "obj", fmt.Sprintf("%x.o", p.Hash()))
+	outPathBase = path.Join(buildDir, outPathBase)
+	extension := filepath.Ext(outPathBase)
+	outPathBase = outPathBase[0 : len(outPathBase)-len(extension)]
 
-	pwd, _ := os.Getwd()
-	filename = strings.Replace(filename, pwd, "", -1)
+	baseDir := filepath.Dir(outPathBase)
+
+	os.MkdirAll(baseDir, os.ModePerm)
+
+	llvmFileName := fmt.Sprintf("%s.ll", outPathBase)
+	// objFileName := fmt.Sprintf("%s.o", outPathBase)
+
 	ir := p.String()
 
-	buildFolder := path.Join(buildDir, path.Dir(filename))
-
-	filename = path.Join(buildFolder, path.Base(filename))
-
-	os.MkdirAll(buildFolder, os.ModePerm)
-	os.MkdirAll(path.Join(buildDir, "obj"), os.ModePerm)
-
-	writeErr := ioutil.WriteFile(filename, []byte(ir), 0666)
+	writeErr := ioutil.WriteFile(llvmFileName, []byte(ir), 0666)
 	if writeErr != nil {
 		panic(writeErr)
 	}
 
-	out, err := util.RunCommand("clang", filename, "-c", "-o", objFileName)
-	if err != nil {
-		log.Fatal("%s\n%s\n", string(out), err.Error())
-	}
-
-	return filename
+	// out, err := util.RunCommand("clang", "-flto=thin", "-Wl,-mllvm,-threads=4,-mllvm,-O0", llvmFileName, "-c", "-o", objFileName)
+	// if err != nil {
+	// 	log.Fatal("%s\n%s\n", string(out), err.Error())
+	// }
+	return llvmFileName
 }
 
 // Hash returns the truncated sha1 of the soruce file
@@ -303,11 +300,37 @@ func (p *Package) Compile(module *ir.Module, targetTripple string) chan *Package
 		}
 		p.Compiled = true
 
-		// go through and generate all classes/types
+		classes := make([]ClassNode, 0)
+
+		// go through and declare all classes/types
 		for _, node := range p.Nodes {
 			if node.Kind() == nodeClass {
-				node.(ClassNode).Codegen(p.Compiler.Scope, p.Compiler)
+				classes = append(classes, node.(ClassNode))
 			}
+		}
+
+		// Declare all classes
+		for _, c := range classes {
+			c.Declare(p.Compiler.Scope, p.Compiler)
+		}
+
+		// Generate the code for all classes
+		for _, c := range classes {
+			c.Codegen(p.Compiler.Scope, p.Compiler)
+		}
+
+		allClassesCorrect := true
+
+		// Verify all classes are correct
+		for _, c := range classes {
+			correct := c.VerifyCorrectness(p.Compiler.Scope, p.Compiler)
+			if !correct {
+				allClassesCorrect = false
+			}
+		}
+
+		if !allClassesCorrect {
+			log.Fatal("Exited at class check.\n")
 		}
 
 		// go through and declare all the functions

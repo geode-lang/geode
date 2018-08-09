@@ -17,20 +17,20 @@ func (p *Parser) parseBlockStmt() BlockNode {
 		p.next()
 		// if p.token.Is(lexer.TokLet) {
 		// 	blk.Nodes = append(blk.Nodes, p.parseVariableDefn(true))
-		// 	p.checkSemiColon()
+		// 	p.allowSemiColon()
 		// 	continue
 		// }
 
 		if p.token.Is(lexer.TokReturn) {
 			blk.Nodes = append(blk.Nodes, p.parseReturnStmt())
 
-			p.checkSemiColon()
+			p.allowSemiColon()
 			continue
 		}
 
 		if p.token.Is(lexer.TokIdent) {
 			blk.Nodes = append(blk.Nodes, p.parseIdentifierExpr(true))
-			p.checkSemiColon()
+			p.allowSemiColon()
 			continue
 		}
 
@@ -38,7 +38,7 @@ func (p *Parser) parseBlockStmt() BlockNode {
 			blk.Nodes = append(blk.Nodes, p.parseIfStmt())
 			p.back()
 			continue
-			// p.checkSemiColon()
+			// p.allowSemiColon()
 		}
 
 		if p.token.Is(lexer.TokWhile) {

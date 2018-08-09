@@ -1,7 +1,6 @@
 package ast
 
 import (
-	"github.com/geode-lang/llvm/ir"
 	"github.com/geode-lang/llvm/ir/value"
 )
 
@@ -14,7 +13,7 @@ type VariableNode struct {
 
 	Type         GeodeTypeRef
 	HasValue     bool
-	Name         *NamedReference
+	Name         Reference
 	IsPointer    bool
 	RefType      ReferenceType
 	IsArray      bool
@@ -52,10 +51,10 @@ func (n VariableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	switch n.RefType {
 	case ReferenceDereference, ReferenceAccessStackAddress:
-		alloc := n.Name.Alloca(scope)
+		alloc := n.Name.Alloca(scope, c)
 		return alloc
 	case ReferenceAccessValue:
-		val := n.Name.Load(block, scope)
+		val := n.Name.Load(block, scope, c)
 		return val
 	}
 
@@ -63,10 +62,11 @@ func (n VariableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 }
 
 // GenAddress returns the instruction allocation
-func (n VariableNode) GenAddress(s *Scope, c *Compiler) *ir.InstAlloca {
-	return n.Name.Alloca(s)
+func (n VariableNode) GenAddress(s *Scope, c *Compiler) value.Value {
+	return n.Name.Alloca(s, c)
 }
 
+// GenAccess returns the value of a VariableNode
 func (n VariableNode) GenAccess(s *Scope, c *Compiler) value.Value {
 	return n.Codegen(s, c)
 }

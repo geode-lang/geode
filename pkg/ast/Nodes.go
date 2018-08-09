@@ -65,6 +65,9 @@ const (
 	nodeBlock                 = "nodeBlock"
 	nodeSubscript             = "nodeSubscript"
 	nodeArray                 = "nodeArray"
+	nodeDot                   = "nodeDot"
+	nodeSizeof                = "nodeSizeof"
+	nodeCast                  = "nodeCast"
 )
 
 //
@@ -85,22 +88,6 @@ func (n CharNode) NameString() string { return "CharNode" }
 
 // InferType implements Node.InferType
 func (n CharNode) InferType(scope *Scope) string { return "byte" }
-
-// CastNode is a type cast "function" call. TODO: Replace this with normal function calls and check
-// in the function call codegen function
-type CastNode struct {
-	NodeType
-	TokenReference
-
-	From Node
-	To   string
-}
-
-// NameString implements Node.NameString
-func (n CastNode) NameString() string { return "CastNode" }
-
-// InferType implements Node.InferType
-func (n CastNode) InferType(scope *Scope) string { return n.To }
 
 // IfNode is an if statement representation
 type IfNode struct {
@@ -245,7 +232,7 @@ type FunctionCallNode struct {
 	NodeType
 	TokenReference
 
-	Name     *NamedReference
+	Name     Reference
 	Args     []Node
 	Generics []*GenericSymbol
 }

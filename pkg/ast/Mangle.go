@@ -58,8 +58,8 @@ func splitMany(s string, splits string) []string {
 
 // This is the prefix that will prefix all function names.
 // c++ uses _Z, I feel like an equally random value works fine
-// so I will use V
-const functionNamePrefix = "_V"
+// so I will use X
+const functionNamePrefix = "_X"
 
 // MangleFunctionName will mangle a function name
 func MangleFunctionName(origName string, argTypes []types.Type, generics []*GenericSymbol) string {

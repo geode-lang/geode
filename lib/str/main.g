@@ -1,5 +1,9 @@
 is str
 
+class String {
+	byte* data;
+}
+
 
 func len(string str) int {
 	int len := 0;

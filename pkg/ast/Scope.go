@@ -3,8 +3,6 @@ package ast
 import (
 	"fmt"
 
-	"github.com/geode-lang/geode/pkg/util"
-	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir"
 	"github.com/geode-lang/llvm/ir/types"
 	"github.com/geode-lang/llvm/ir/value"
@@ -77,7 +75,8 @@ func (s *Scope) FindType(name string) *TypeDef {
 	v, ok := (*s.Types)[name]
 	if !ok {
 		if s.Parent == nil {
-			log.Fatal("Unable to find type with name '%s' in scope\n", name)
+			// log.Fatal("Unable to find type with name '%s' in scope\n", name)
+			return nil
 		}
 		return s.Parent.FindType(name)
 	}
@@ -273,7 +272,6 @@ func NewVariableScopeItem(name string, value value.Value, vis Visibility) Variab
 
 	item.vis = vis
 	item.varIndex = varIndex
-	varIndex++
 
 	// Here we need to do something special. This is in order to fix the bug where you cannot define
 	// a variable if it has already been defined in another block in the same function
@@ -282,7 +280,8 @@ func NewVariableScopeItem(name string, value value.Value, vis Visibility) Variab
 	//      for int i := 0; i < 200; i <- i + 1 {}
 	// LLVM would complain in the second loop because `i` has already been defined in this "function"
 	// even if the scopes are different.
-	value.(*ir.InstAlloca).Name = fmt.Sprintf("%s_%s", name, util.RandomHex(4))
+	value.(*ir.InstAlloca).Name = fmt.Sprintf("_%d", varIndex)
+	varIndex++
 	return item
 }
 

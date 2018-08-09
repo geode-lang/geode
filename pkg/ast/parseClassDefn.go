@@ -52,7 +52,7 @@ func (p *Parser) parseClassBody() []Node {
 		if p.atType() {
 			// No initializer is allowed in class variable defns
 			nodes = append(nodes, p.parseVariableDefn(false))
-			p.checkSemiColon()
+			p.allowSemiColon()
 			continue
 		}
 

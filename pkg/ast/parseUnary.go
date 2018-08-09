@@ -1,5 +1,11 @@
 package ast
 
+import (
+	"fmt"
+
+	"github.com/geode-lang/geode/pkg/lexer"
+)
+
 // Parse unary will parse a single side of a binary statement
 
 func (p *Parser) parseUnary() Node {
@@ -7,6 +13,11 @@ func (p *Parser) parseUnary() Node {
 	ptrOps := map[string]bool{
 		"&": true,
 		"*": true,
+	}
+
+	// parse the "as"
+	if p.token.Is(lexer.TokAs) {
+		fmt.Println("IS AN AS")
 	}
 
 	// _, isBinaryOp := p.binaryOpPrecedence[p.token.Value]
@@ -19,7 +30,6 @@ func (p *Parser) parseUnary() Node {
 
 	p.next()
 	operand := p.parseUnary()
-
 	if unaryOp == "&" {
 		if operand.Kind() == nodeVariable {
 			// Update operand's RefType if it is a nodeVariable
@@ -35,7 +45,9 @@ func (p *Parser) parseUnary() Node {
 		n.NodeType = nodeUnary
 		n.Operator = unaryOp
 		n.Operand = operand
+
 		return n
 	}
+
 	return nil
 }
