@@ -13,6 +13,7 @@ const (
 	TokChar
 	TokString
 	TokNumber
+	TokBool
 
 	TokDot
 	TokElipsis

@@ -26,15 +26,16 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 
 	var generics []*GenericSymbol
 
-	// state := p.save()
-	// genValid := false
-	// if p.token.Is(lexer.TokOper) && p.token.Value == "<" {
-	// 	generics, genValid = p.parseGenericExpression(false)
-	// }
+	state := p.save()
+	genValid := false
+	if p.token.Is(lexer.TokOper) && p.token.Value == "<" && !p.token.SpaceBefore {
+		generics, genValid = p.parseGenericExpression(false)
+		fmt.Println(generics, genValid)
+	}
 
-	// if !genValid {
-	// 	p.restore(state)
-	// }
+	if !genValid {
+		p.restore(state)
+	}
 	// p.next()
 
 	// Is the next value a paren? If it isnt it is a normal variable reference
@@ -84,9 +85,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 			left.RefType = ReferenceAccessValue
 
 			// Parse the right side of the operator
-			p.next()
 			right := p.parseExpression()
-
 			// Build out the bopNode
 			bopNode := BinaryNode{}
 			bopNode.TokenReference.Token = p.token

@@ -56,7 +56,11 @@ func (n FunctionNode) Arguments(scope *Scope) ([]*types.Param, []types.Type) {
 	funcArgs := make([]*types.Param, 0)
 	argTypes := make([]types.Type, 0)
 	for _, arg := range n.Args {
-		ty := scope.FindType(arg.Type.Name).Type
+		found := scope.FindType(arg.Type.Name)
+		if found == nil {
+			log.Fatal("Unable to find type with name %q\n", arg.Type.Name)
+		}
+		ty := found.Type
 		ty = arg.Type.BuildPointerType(ty)
 		p := ir.NewParam(arg.Name.String(), ty)
 		funcArgs = append(funcArgs, p)
@@ -173,7 +177,7 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		namestring = n.MangledName(scope, c, n.Generics)
 	}
 
-	declared := c.Scope.FindFunctions(namestring)
+	declared, _ := c.Scope.FindFunctions(namestring)
 
 	if len(declared) != 1 {
 		n.SyntaxError()

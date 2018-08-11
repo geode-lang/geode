@@ -68,6 +68,7 @@ const (
 	nodeDot                   = "nodeDot"
 	nodeSizeof                = "nodeSizeof"
 	nodeCast                  = "nodeCast"
+	nodeBool                  = "nodeBool"
 )
 
 //

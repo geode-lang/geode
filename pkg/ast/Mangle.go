@@ -3,7 +3,6 @@ package ast
 import (
 	"bytes"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/geode-lang/geode/pkg/util/log"
@@ -74,11 +73,11 @@ func MangleFunctionName(origName string, argTypes []types.Type, generics []*Gene
 		if i == 0 {
 			prefix = "M"
 		}
-		fmt.Fprintf(name, "%s%d%s", prefix, len(p), p)
+		fmt.Fprintf(name, "$%s%s", prefix, p)
 	}
 
 	for _, gen := range generics {
-		fmt.Fprintf(name, "G%d%s", len(gen.Name), gen.Name)
+		fmt.Fprintf(name, "$G%s", gen.Name)
 	}
 
 	return name.String()
@@ -129,33 +128,62 @@ func GetMangleParts(mangled string) []ManglePart {
 		'G': GenericMangle,
 	}
 
-	parts := make([]ManglePart, 0)
-	for i := 0; i < len(mangled); i++ {
-		c := mangled[i:]
-		val := readNumber(c)
-		if val != 0 {
+	rawParts := strings.Split(mangled, "$")
+	parts := make([]ManglePart, 0, len(rawParts))
 
-			typeChar := mangled[i-1]
-
-			typ, ok := typeCharRefs[typeChar]
-			if !ok {
-				log.Fatal("Invalid typechar in mangled name %s: %c\n", mangled, typeChar)
-			}
-
-			i += len(strconv.Itoa(val)) - 1
-			start := i + 1
-			end := start + val
-			i += val
-
+	if rawParts[0] == functionNamePrefix {
+		rawParts = rawParts[1:]
+	} else {
+		for _, p := range rawParts {
 			part := ManglePart{}
-
-			part.partType = typ
-			part.value = mangled[start:end]
-
+			part.partType = NameMangle
+			part.value = p
 			parts = append(parts, part)
-
 		}
+
+		return parts
 	}
+
+	for _, rawPart := range rawParts {
+		typeChar := rawPart[0]
+
+		typ, ok := typeCharRefs[typeChar]
+		if !ok {
+			log.Fatal("Invalid typechar in mangled name %s: %c\n", mangled, typeChar)
+		}
+
+		part := ManglePart{}
+		part.partType = typ
+		part.value = rawPart[1:]
+		parts = append(parts, part)
+	}
+
+	// for i := 0; i < len(mangled); i++ {
+	// 	c := mangled[i:]
+	// 	val := readNumber(c)
+	// 	if val != 0 {
+
+	// 		typeChar := mangled[i-1]
+
+	// 		typ, ok := typeCharRefs[typeChar]
+	// 		if !ok {
+	// 			log.Fatal("Invalid typechar in mangled name %s: %c\n", mangled, typeChar)
+	// 		}
+
+	// 		i += len(strconv.Itoa(val)) - 1
+	// 		start := i + 1
+	// 		end := start + val
+	// 		i += val
+
+	// 		part := ManglePart{}
+
+	// 		part.partType = typ
+	// 		part.value = mangled[start:end]
+
+	// 		parts = append(parts, part)
+
+	// 	}
+	// }
 	return parts
 }
 
@@ -165,24 +193,35 @@ func UnmangleFunctionName(mangled string) string {
 		return mangled
 	}
 
-	parsedParts := make([]string, 0)
-	for i := 0; i < len(mangled); i++ {
-		c := mangled[i:]
-		val := readNumber(c)
-		if val != 0 {
-			i += len(strconv.Itoa(val)) - 1
-			start := i + 1
-			end := start + val
-			i += val
-			parsedParts = append(parsedParts, mangled[start:end])
-		}
+	parsedParts := GetMangleParts(mangled)
+
+	if len(parsedParts) == 1 {
+		return parsedParts[0].value
 	}
 
-	// GetMangleParts(mangled)
+	buff := &bytes.Buffer{}
+	for _, part := range parsedParts {
+		if part.partType == NamespaceMangle {
+			fmt.Fprintf(buff, "%s:", part.value)
+		}
 
-	name := fmt.Sprintf("%s:%s", parsedParts[0], parsedParts[1])
+		if part.partType == NameMangle {
+			fmt.Fprintf(buff, "%s", part.value)
+		}
+	}
+	// for i := 0; i < len(mangled); i++ {
+	// 	c := mangled[i:]
+	// 	val := readNumber(c)
+	// 	if val != 0 {
+	// 		i += len(strconv.Itoa(val)) - 1
+	// 		start := i + 1
+	// 		end := start + val
+	// 		i += val
+	// 		parsedParts = append(parsedParts, mangled[start:end])
+	// 	}
+	// }
 
-	return name
+	return buff.String()
 }
 
 // func

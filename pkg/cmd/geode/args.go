@@ -13,9 +13,10 @@ var (
 	disableEmission = app.Flag("disable-emission", "Disable emission and only run through the syntax checking process").Bool()
 	// logLevel = app.Flag("loglevel", "Set the level of logging to show").Default("info").Enum("info", "verbose")
 
-	buildCMD   = app.Command("build", "Build an executable.")
-	buildInput = buildCMD.Arg("input", "Geode source file or package").Default(".").String()
-	emitASM    = buildCMD.Flag("asm", "Set the target to .s asm files with intel syntax instead of a single binary.").Bool()
+	buildCMD      = app.Command("build", "Build an executable.")
+	buildInput    = buildCMD.Arg("input", "Geode source file or package").Default(".").String()
+	emitASM       = buildCMD.Flag("asm", "Set the target to .s asm files with intel syntax instead of a single binary.").Bool()
+	dumpScopeTree = buildCMD.Flag("dump-scope-tree", "Dump a tree representation of the scope to stdout").Bool()
 
 	runCMD   = app.Command("run", "Build and run an executable, clean up afterwards").Default()
 	runInput = runCMD.Arg("input", "Geode source file or package").String()

@@ -11,6 +11,8 @@ func (p *Parser) parsePrimary() Node {
 		return p.parseSizeofExpr()
 	case lexer.TokIdent:
 		return p.parseIdentifierExpr(false)
+	case lexer.TokBool:
+		return p.parseBooleanExpr()
 	case lexer.TokNumber:
 		return p.parseNumericExpr()
 	case lexer.TokLeftParen:

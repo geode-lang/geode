@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir"
 	"github.com/geode-lang/llvm/ir/value"
 )
@@ -35,7 +36,11 @@ func (n VariableDefnNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	var alloc *ir.InstAlloca
 	var val value.Value
 
-	ty := scope.FindType(n.Type.Name).Type
+	found := scope.FindType(n.Type.Name)
+	if found == nil {
+		log.Fatal("Unable to find type named %q\n", n.Type.Name)
+	}
+	ty := found.Type
 	ty = n.Type.BuildPointerType(ty)
 	block.AppendInst(NewLLVMComment("%s %s", ty, name))
 	alloc = createBlockAlloca(f, ty, name.String())

@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/geode-lang/geode/pkg/lexer"
 )
 
@@ -33,6 +35,12 @@ func (p *Parser) parseFnDefn() FunctionNode {
 	// The main function should never be mangled
 	if rawNameString == "main" {
 		fn.Nomangle = true
+	}
+
+	if p.token.Is(lexer.TokOper) && p.token.Value == "<" && !p.token.SpaceBefore {
+		fn.Generics, _ = p.parseGenericExpression(false)
+
+		fmt.Println(fn.Generics)
 	}
 
 	// if p.token.Type == lexer.TokOper && p.token.Value == "<" {

@@ -102,6 +102,8 @@ func (l *Linker) Run() {
 
 	if l.optimize {
 		linkArgs = append(linkArgs, "-O3")
+	} else {
+		linkArgs = append(linkArgs, "-Oz")
 	}
 
 	if l.target == ASMTarget {

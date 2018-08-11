@@ -52,12 +52,12 @@ func (n SubscriptNode) GenAssign(s *Scope, c *Compiler, val value.Value) value.V
 }
 
 // Type returns the type of the node.
-func (n SubscriptNode) Type(s *Scope) types.Type {
+func (n SubscriptNode) Type(s *Scope, c *Compiler) types.Type {
 
 	tmpBlock := ir.NewBlock("")
 
-	c := NewCompiler(ir.NewModule(), "tmp", NewPackage("", nil))
-	c.PushBlock(tmpBlock)
+	tmpC := NewCompiler(ir.NewModule(), "tmp", NewPackage("", nil, s))
+	tmpC.PushBlock(tmpBlock)
 
 	load := tmpBlock.NewLoad(n.GenElementPtr(s, c))
 	return load.Type()

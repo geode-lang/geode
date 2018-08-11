@@ -6,6 +6,7 @@ import (
 	"github.com/geode-lang/llvm/ir"
 	"github.com/geode-lang/llvm/ir/types"
 	"github.com/geode-lang/llvm/ir/value"
+	"github.com/xlab/treeprint"
 )
 
 func init() {
@@ -14,14 +15,26 @@ func init() {
 // Scope trees represent block scoping by having a root scope
 // and children scopes that point back to their parent scope.
 type Scope struct {
-	Parent *Scope
-	Vals   map[string]ScopeItem
-	Types  *map[string]*TypeDef
+	Parent           *Scope
+	Index            int
+	Children         []*Scope
+	Vals             map[string]ScopeItem
+	Types            *map[string]*TypeDef
+	GenericTemplates *[]GenericNodeWrapper
 }
 
 // Add a value to this specific scope
 func (s *Scope) Add(val ScopeItem) {
 	s.Vals[val.Name()] = val
+}
+
+// AddGenericTemplate creates and adds a generic template to the Scope
+func (s *Scope) AddGenericTemplate(node Node, generics []GenericSymbol) {
+	n := GenericNodeWrapper{}
+	n.node = node
+	n.generics = generics
+	templates := append(*s.GenericTemplates, n)
+	s.GenericTemplates = &templates
 }
 
 // Find will traverse the scope tree to find some definition of a symbol
@@ -40,9 +53,10 @@ func (s *Scope) Find(name string) (ScopeItem, bool) {
 
 // FindFunctions returns a list of functions that might match the name provided
 // The needle can be any of the following: bare name, mangled name
-func (s *Scope) FindFunctions(needle string) []FunctionScopeItem {
+func (s *Scope) FindFunctions(needle string) ([]FunctionScopeItem, []GenericTemplateScopeItem) {
 
 	funcs := make([]FunctionScopeItem, 0)
+	generics := make([]GenericTemplateScopeItem, 0)
 
 	unMangled := UnmangleFunctionName(needle)
 
@@ -52,7 +66,7 @@ func (s *Scope) FindFunctions(needle string) []FunctionScopeItem {
 		// if the function is not mangled, check specially
 		if name == unMangled {
 			if v.Name() == name {
-				return append(funcs, v.(FunctionScopeItem))
+				return append(funcs, v.(FunctionScopeItem)), generics
 			}
 			continue
 		}
@@ -63,10 +77,12 @@ func (s *Scope) FindFunctions(needle string) []FunctionScopeItem {
 	}
 
 	if s.Parent != nil {
-		funcs = append(funcs, s.Parent.FindFunctions(needle)...)
+		fn, gn := s.Parent.FindFunctions(needle)
+		funcs = append(funcs, fn...)
+		generics = append(generics, gn...)
 	}
 
-	return funcs
+	return funcs, generics
 }
 
 // FindType returns the type stored with a name in this scope
@@ -83,6 +99,28 @@ func (s *Scope) FindType(name string) *TypeDef {
 	return v
 }
 
+func (s *Scope) String() string {
+	tree := treeprint.New()
+	s.BuildTreeString(tree)
+	return tree.String()
+}
+
+// BuildTreeString is like string, but each line is returned with indents.
+// This allows displaying of nested scopes.
+func (s *Scope) BuildTreeString(tree treeprint.Tree) {
+	for val := range s.Vals {
+		tree.AddNode(fmt.Sprintf("Val: %s", val))
+	}
+
+	// for t := range *s.Types {
+	// 	tree.AddNode(fmt.Sprintf("Type: %s", t))
+	// }
+	for _, child := range s.Children {
+		branch := tree.AddBranch(fmt.Sprintf("Scope #%d (parent #%d)", child.Index, child.Parent.Index))
+		child.BuildTreeString(branch)
+	}
+}
+
 // GetTypeName takes a type and returns the human name
 // that the compiler and lexer understands
 func (s *Scope) GetTypeName(t types.Type) string {
@@ -91,11 +129,11 @@ func (s *Scope) GetTypeName(t types.Type) string {
 
 // InjectPrimitives injects primitve types like int, byte, etc
 func (s *Scope) InjectPrimitives() {
-	NewTypeDef("byte", types.I8, 1).InjectInto(s)
-	NewTypeDef("i16", types.I16, 2).InjectInto(s)
-	NewTypeDef("i32", types.I32, 3).InjectInto(s)
-	NewTypeDef("int", types.I64, 4).InjectInto(s)
-	NewTypeDef("big", types.NewInt(255), 100).InjectInto(s)
+	NewTypeDef("bool", types.I1, 1).InjectInto(s)
+	NewTypeDef("byte", types.I8, 2).InjectInto(s)
+	NewTypeDef("i16", types.I16, 3).InjectInto(s)
+	NewTypeDef("i32", types.I32, 4).InjectInto(s)
+	NewTypeDef("int", types.I64, 5).InjectInto(s)
 	NewTypeDef("float", types.Double, 11).InjectInto(s)
 	NewTypeDef("string", types.NewPointer(types.I8), 0).InjectInto(s)
 	NewTypeDef("void", types.Void, 0).InjectInto(s)
@@ -103,18 +141,24 @@ func (s *Scope) InjectPrimitives() {
 
 // SpawnChild takes a parent scope and creates a new variable scope for scoped variable access.
 func (s *Scope) SpawnChild() *Scope {
-	n := &Scope{}
-	n.Parent = s
-	n.Vals = make(map[string]ScopeItem)
-	n.Types = s.Types
-	return n
+	child := NewScope()
+	child.Parent = s
+	child.Vals = make(map[string]ScopeItem)
+	child.Types = s.Types
+	s.Children = append(s.Children, child)
+	return child
 }
+
+var scopeIndex = 0
 
 // NewScope creates a scope (for use when generating root scopes)
 func NewScope() *Scope {
 	n := &Scope{}
+	n.Index = scopeIndex
+	scopeIndex++
 	n.Parent = nil
 	n.Vals = make(map[string]ScopeItem)
+	n.GenericTemplates = &[]GenericNodeWrapper{}
 	typemap := make(map[string]*TypeDef)
 	n.Types = &typemap
 	return n
@@ -151,6 +195,60 @@ const (
 	PublicVisibility Visibility = iota
 	PrivateVisibility
 )
+
+//
+//
+// GenericTemplateScopeItem implements ScopeItem.
+// This is used so we can store functions in the scope (mainly in the root scope)
+type GenericTemplateScopeItem struct {
+	function *ir.Function
+	vis      Visibility
+	name     string
+	types    []GeodeTypeRef
+	node     Node
+	mangled  bool
+}
+
+// Value implements ScopeItem.Value()
+func (item GenericTemplateScopeItem) Value() value.Value {
+	return item.function
+}
+
+// Type implements ScopeItem.Type()
+func (item GenericTemplateScopeItem) Type() ScopeItemType {
+	return ScopeItemFunctionType
+}
+
+// Visibility implements ScopeItem.Visibility()
+func (item GenericTemplateScopeItem) Visibility() Visibility {
+	return item.vis
+}
+
+// Name implements ScopeItem.Name()
+func (item GenericTemplateScopeItem) Name() string {
+	return item.name
+}
+
+// Mangled implements ScopeItem.Mangled()
+func (item GenericTemplateScopeItem) Mangled() bool {
+	return item.mangled
+}
+
+// SetMangled implements ScopeItem.SetMangled()
+func (item GenericTemplateScopeItem) SetMangled(m bool) {
+	item.mangled = m
+}
+
+// Node implements ScopeItem.Node()
+func (item GenericTemplateScopeItem) Node() Node {
+	return item.node
+}
+
+// NewGenericTemplateScopeItem constructs a function scope item
+func NewGenericTemplateScopeItem(name string) GenericTemplateScopeItem {
+	item := GenericTemplateScopeItem{}
+	return item
+}
 
 //
 //
@@ -280,7 +378,7 @@ func NewVariableScopeItem(name string, value value.Value, vis Visibility) Variab
 	//      for int i := 0; i < 200; i <- i + 1 {}
 	// LLVM would complain in the second loop because `i` has already been defined in this "function"
 	// even if the scopes are different.
-	value.(*ir.InstAlloca).Name = fmt.Sprintf("_%d", varIndex)
+	value.(*ir.InstAlloca).Name = fmt.Sprintf("_%s%d", item.name, varIndex)
 	varIndex++
 	return item
 }

@@ -24,6 +24,9 @@ type Token struct {
 	EndPos int       `json:"end_pos"`
 	Line   int       `json:"line"`
 	Column int       `json:"column"`
+
+	SpaceBefore bool `json:"space_before"`
+	SpaceAfter  bool `json:"space_after"`
 }
 
 // Is - returns if the given token is in the set of types given

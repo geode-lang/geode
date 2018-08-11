@@ -14,9 +14,10 @@ var (
 
 // Declare the base types in the language
 var (
-	GeodeI8       = NewType("byte", types.I8, 1)
-	GeodeI32      = NewType("i32", types.I32, 2)
-	GeodeI64      = NewType("int", types.I64, 3)
+	GeodeBool     = NewType("bool", types.I1, 1)
+	GeodeI8       = NewType("byte", types.I8, 2)
+	GeodeI32      = NewType("i32", types.I32, 3)
+	GeodeI64      = NewType("int", types.I64, 4)
 	GeodeF64      = NewType("float", types.Double, 11) // All floats are doubles
 	GeodeString   = NewType("string", types.NewPointer(GeodeI8.LLVMType), 0)
 	GeodeVoidType = NewType("void", types.Void, 0)

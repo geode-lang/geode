@@ -127,11 +127,17 @@ func (c *Context) Build(buildDir string) {
 		log.Fatal("Unable to read file %s into sourcefile structure: %s\n", c.Input, err)
 	}
 	path := strings.Split(c.Input, "/")
-	rootPackage := ast.NewPackage(path[len(path)-1], src)
+	scope := ast.NewScope()
+	rootPackage := ast.NewPackage(path[len(path)-1], src, scope)
 	pkgs := make([]*ast.Package, 0)
 	primaryTree := make([]ast.Node, 0)
 
+	runtime := ast.GetRuntime(scope)
+
+	rootPackage.Inject(runtime)
+
 	for pkg := range rootPackage.Parse() {
+		log.Debug("Added package %s\n", pkg.Name)
 		log.Debug("Added package %s\n", pkg.Name)
 		pkgs = append(pkgs, pkg)
 	}
@@ -162,6 +168,10 @@ func (c *Context) Build(buildDir string) {
 			}
 		}
 	})
+
+	if *dumpScopeTree {
+		fmt.Println(scope)
+	}
 
 	for _, n := range primaryTree {
 		info.AddNode(n)

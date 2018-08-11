@@ -9,8 +9,7 @@ import (
 	"github.com/geode-lang/llvm/ir/value"
 )
 
-// DotReference is a block statement. A block statement is just an array of Nodes
-// that run in sequence.
+// DotReference -
 type DotReference struct {
 	NodeType
 	TokenReference

@@ -16,11 +16,11 @@ import (
 )
 
 // RuntimePackage is the global runtime package
-var RuntimePackage *Package
+// var RuntimePackage *Package
 var dependencyMap map[string]*Package
 
 func init() {
-	RuntimePackage = GetRuntime()
+	// RuntimePackage = GetRuntime()
 	dependencyMap = make(map[string]*Package)
 }
 
@@ -43,13 +43,13 @@ type Package struct {
 }
 
 // NewPackage returns a pointer to a new package
-func NewPackage(name string, source *lexer.Sourcefile) *Package {
+func NewPackage(name string, source *lexer.Sourcefile, scope *Scope) *Package {
 	p := &Package{}
 
 	p.Name = name
 	p.Source = source
 	p.Nodes = make([]Node, 0)
-	p.Scope = NewScope()
+	p.Scope = scope
 	p.Scope.InjectPrimitives()
 	return p
 }
@@ -155,7 +155,7 @@ func (p *Package) LoadDep(depPath string) *Package {
 		return pkg
 	}
 
-	depPkg := NewPackage(pkgName, depSource)
+	depPkg := NewPackage(pkgName, depSource, p.Scope)
 	for _ = range depPkg.Parse() {
 	}
 	dependencyMap[depPkg.Source.HashName()] = depPkg
@@ -244,13 +244,13 @@ func (p *Package) Parse() chan *Package {
 }
 
 // GetRuntime builds a runtime
-func GetRuntime() *Package {
+func GetRuntime(scope *Scope) *Package {
 	rts, err := lexer.NewSourcefile("runtime")
 	if err != nil {
 		log.Fatal("Error creating runtime source structure\n")
 	}
 	rts.ResolveFile(util.StdLibFile("/runtime"))
-	rt := NewPackage("runtime", rts)
+	rt := NewPackage("runtime", rts, scope)
 	rt.IsRuntime = true
 	for _ = range rt.Parse() {
 	}
@@ -266,12 +266,6 @@ func (p *Package) Compile(module *ir.Module, targetTripple string) chan *Package
 	go func() {
 		p.Compiler = NewCompiler(module, p.Name, p)
 		log.Debug("Compiling Package %s\n", p.Name)
-
-		if !p.IsRuntime {
-			log.Debug("Injecting runtime into '%s'\n", p.Name)
-			// p.LoadDep("std:_runtime.g")
-			p.AddDepPackage(RuntimePackage)
-		}
 
 		firstNode := p.Nodes[0]
 		// The first node *should* always be a namespace node
@@ -338,10 +332,8 @@ func (p *Package) Compile(module *ir.Module, targetTripple string) chan *Package
 			if node.Kind() == nodeFunction {
 				fnNode := node.(FunctionNode)
 				if len(fnNode.Generics) == 0 {
-
+					fnNode.Declare(p.Scope.SpawnChild(), p.Compiler)
 				}
-				fnNode.Declare(p.Scope.SpawnChild(), p.Compiler)
-
 			}
 			// node.Codegen(p.Compiler.Scope.SpawnChild(), p.Compiler)
 		}

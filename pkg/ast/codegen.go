@@ -433,16 +433,18 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	name := MangleFunctionName(completeName, argTypes, n.Generics)
 
-	functionOptions := c.Scope.FindFunctions(name)
+	functionOptions, _ := c.Scope.FindFunctions(name)
 	funcCount := len(functionOptions)
 
 	if funcCount > 1 {
 		n.SyntaxError()
 		log.Fatal("Too many options for function call '%s'\n", name)
 	} else if funcCount == 0 {
-		_, bareName := parseName(UnmangleFunctionName(name))
+		unmangled := UnmangleFunctionName(name)
+		// _, bareName := parseName(unmangled)
+
 		n.SyntaxError()
-		log.Fatal("Unable to find function '%s' in scope of module '%s'\n", bareName, c.Package.NamespaceName)
+		log.Fatal("Unable to find function '%s' in scope of module '%s'. Mangled name: %q\n", unmangled, c.Package.NamespaceName, name)
 	}
 
 	fnScopeItem := functionOptions[0]
