@@ -1,6 +1,7 @@
 <div style="text-align:center"><img src="https://s3-us-west-2.amazonaws.com/nickwanninger/geode/masthead.png"/></div>
 
 [![CircleCI](https://circleci.com/gh/nickwanninger/geode/tree/master.svg?style=svg)](https://circleci.com/gh/nickwanninger/geode/tree/master)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fgeode-lang%2Fgeode.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fgeode-lang%2Fgeode?ref=badge_shield)
 
 ## About
 
@@ -151,3 +152,7 @@ func main int -> fourtytwo();
 Notice the `...`? That is the way of telling geode, "this function is external, and has
 no body". If you do this, the function must be defined via a linkage. Otherwise the compiler
 will crash
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fgeode-lang%2Fgeode.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fgeode-lang%2Fgeode?ref=badge_large)
