@@ -1,9 +1,11 @@
 package util
 
 import (
+	"crypto/md5"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -84,10 +86,11 @@ var tmpdir string
 func GetTmp() string {
 
 	if tmpdir == "" {
-		pth, err := ioutil.TempDir(path.Join(HomeDir(), ".geode_cache"), "")
+		pth, err := ioutil.TempDir(path.Join(HomeDir(), ".geode/tmp"), "")
 		if err != nil {
 			log.Fatal("Unable to get temp directory\n")
 		}
+		os.MkdirAll(pth, os.ModePerm)
 
 		tmpdir = pth
 	}
@@ -125,4 +128,22 @@ func RandomHex(n int) string {
 	bytes := make([]byte, n)
 	rand.Read(bytes)
 	return hex.EncodeToString(bytes)
+}
+
+// HashFile takes a path and hashes it efficiently into sha1
+func HashFile(path string) string {
+	var returnMD5String string
+	file, err := os.Open(path)
+	if err != nil {
+		return returnMD5String
+	}
+	defer file.Close()
+	hash := md5.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return returnMD5String
+	}
+	hashInBytes := hash.Sum(nil)[:16]
+	returnMD5String = hex.EncodeToString(hashInBytes)
+	return returnMD5String
+
 }

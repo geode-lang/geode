@@ -7,6 +7,7 @@ import (
 
 func (p *Parser) parseVariableDefn(allowDefn bool) VariableDefnNode {
 	n := VariableDefnNode{}
+	n.Token = p.token
 	n.NodeType = nodeVariableDecl
 	n.TokenReference.Token = p.token
 
@@ -16,9 +17,11 @@ func (p *Parser) parseVariableDefn(allowDefn bool) VariableDefnNode {
 		if p.token.Is(lexer.TokIdent) {
 			n.Name = NewNamedReference(p.token.Value)
 			p.next()
+		} else if p.token.Is(lexer.TokAssignment) {
+
 		} else {
-			log.Debug("%s\n", p.token)
-			log.Fatal("Missing Variable name")
+			n.SyntaxError()
+			log.Fatal("Invalid variable declaration\n")
 		}
 
 	} else {

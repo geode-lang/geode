@@ -200,7 +200,6 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		if len(function.Params()) > 0 {
 			c.CurrentBlock().AppendInst(NewLLVMComment(n.Name.String() + " arguments:"))
 		}
-
 		for _, arg := range function.Params() {
 			alloc := c.CurrentBlock().NewAlloca(arg.Type())
 			c.CurrentBlock().NewStore(arg, alloc)
@@ -219,7 +218,6 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		}
 		c.PopBlock()
 	}
-
 	return function
 }
 
@@ -230,5 +228,4 @@ func createPrelude(scope *Scope, c *Compiler, n FunctionNode) {
 		QuickParseIdentifier("byte __GC_BASE_POINTER;").Codegen(scope, c)
 		QuickParseExpression("___geodegcinit(&__GC_BASE_POINTER);").Codegen(scope, c)
 	}
-
 }

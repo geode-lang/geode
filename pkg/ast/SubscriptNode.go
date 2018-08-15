@@ -56,7 +56,7 @@ func (n SubscriptNode) Type(s *Scope, c *Compiler) types.Type {
 
 	tmpBlock := ir.NewBlock("")
 
-	tmpC := NewCompiler(ir.NewModule(), "tmp", NewPackage("", nil, s))
+	tmpC := NewCompiler(ir.NewModule(), "tmp", NewPackage("", nil, s, nil), nil)
 	tmpC.PushBlock(tmpBlock)
 
 	load := tmpBlock.NewLoad(n.GenElementPtr(s, c))

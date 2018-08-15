@@ -15,7 +15,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 
 	nameToken := p.token
 
-	name := p.parseName()
+	name, _ := p.parseName()
 
 	var target Reference
 	target = NewNamedReference(name)

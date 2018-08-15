@@ -73,11 +73,11 @@ func MangleFunctionName(origName string, argTypes []types.Type, generics []*Gene
 		if i == 0 {
 			prefix = "M"
 		}
-		fmt.Fprintf(name, "$%s%s", prefix, p)
+		fmt.Fprintf(name, ".%s%s", prefix, p)
 	}
 
 	for _, gen := range generics {
-		fmt.Fprintf(name, "$G%s", gen.Name)
+		fmt.Fprintf(name, ".G%s", gen.Name)
 	}
 
 	return name.String()
@@ -128,7 +128,7 @@ func GetMangleParts(mangled string) []ManglePart {
 		'G': GenericMangle,
 	}
 
-	rawParts := strings.Split(mangled, "$")
+	rawParts := strings.Split(mangled, ".")
 	parts := make([]ManglePart, 0, len(rawParts))
 
 	if rawParts[0] == functionNamePrefix {

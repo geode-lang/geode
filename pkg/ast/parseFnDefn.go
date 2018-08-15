@@ -29,7 +29,7 @@ func (p *Parser) parseFnDefn() FunctionNode {
 		p.next()
 	}
 
-	rawNameString := p.parseName()
+	rawNameString, _ := p.parseName()
 	fn.Name = NewNamedReference(rawNameString)
 
 	// The main function should never be mangled

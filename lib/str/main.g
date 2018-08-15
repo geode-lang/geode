@@ -48,10 +48,24 @@ func eq(string a, string b) bool {
 }
 
 
-
+# concatinate two strings into a single string.
 func concat(string a, string b) string {
 	# cache the size of both strings for later use
 	int alen := len(a);
 	int blen := len(b);
-	return "hello";
+	# The final number of usable chars in the new string
+	int finalLen := alen + blen;
+	# allocate finalLen+1 bytes as zero so it is zero
+	# delimited
+	string combined := mem:zero(finalLen + 1);
+	# loop over all usable bytes of the new data and
+	# copy over the old strings into the new buffer.
+	for int i := 0; i < finalLen; i += 1 {
+		if i < alen {
+			combined[i] <- a[i];
+		} else {
+			combined[i] <- b[i - alen];
+		}
+	}
+	return combined;
 }

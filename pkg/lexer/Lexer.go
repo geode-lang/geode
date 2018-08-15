@@ -103,7 +103,6 @@ func QuickLex(str string) []Token {
 func (l *Lexer) emit(typ TokenType) {
 	l.tokenCount++
 	if typ != TokNoEmit {
-
 		tok := Token{}
 		tok.source = l.source
 		tok.Value = l.input[l.start:l.pos]
@@ -115,7 +114,6 @@ func (l *Lexer) emit(typ TokenType) {
 		if override {
 			typ = newTyp
 		}
-
 		// inputRunes := []rune(l.input)
 
 		// length := utf8.RuneCountInString(l.input)
@@ -283,7 +281,8 @@ func lexIdentifer(l *Lexer) stateFn {
 }
 
 func lexNumber(l *Lexer) stateFn {
-	l.acceptRun("0123456789.")
+
+	l.acceptRun("0123456789.xabcdefABCDEF")
 	l.next()
 	l.emit(TokNumber)
 	return lexTopLevel
@@ -350,7 +349,7 @@ func lexStringLiteral(l *Lexer) stateFn {
 // Helper Functions
 ///
 
-const operators = "&\\*+-/%:!=<>≤≥≠.←"
+const operators = "&\\*+-/%:!=<>≤≥≠.←|&^"
 
 func isOperator(r rune) bool {
 	return strings.IndexRune(operators, r) >= 0

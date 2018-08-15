@@ -128,16 +128,17 @@ func (c *Context) Build(buildDir string) {
 	}
 	path := strings.Split(c.Input, "/")
 	scope := ast.NewScope()
-	rootPackage := ast.NewPackage(path[len(path)-1], src, scope)
+
+	nodeNamespaces := make(map[string]*[]ast.Node, 0)
+	rootPackage := ast.NewPackage(path[len(path)-1], src, scope, nodeNamespaces)
 	pkgs := make([]*ast.Package, 0)
 	primaryTree := make([]ast.Node, 0)
 
-	runtime := ast.GetRuntime(scope)
+	runtime := ast.GetRuntime(scope, nodeNamespaces)
 
 	rootPackage.Inject(runtime)
 
 	for pkg := range rootPackage.Parse() {
-		log.Debug("Added package %s\n", pkg.Name)
 		log.Debug("Added package %s\n", pkg.Name)
 		pkgs = append(pkgs, pkg)
 	}
@@ -150,6 +151,7 @@ func (c *Context) Build(buildDir string) {
 
 	linker := ast.NewLinker(*buildOutput)
 	linker.SetTarget(target)
+	linker.SetBuildDir(buildDir)
 	linker.SetOutput(c.Output)
 	linker.SetOptimize(*optimize)
 
@@ -169,6 +171,10 @@ func (c *Context) Build(buildDir string) {
 		}
 	})
 
+	// for _, fn := range module.Funcs {
+	// 	fmt.Println(fn.Name)
+	// }
+
 	if *dumpScopeTree {
 		fmt.Println(scope)
 	}
@@ -179,8 +185,6 @@ func (c *Context) Build(buildDir string) {
 
 	if *disableEmission {
 		if *dumpResult {
-			// quick.Highlight(os.Stdout, rootPackage.String(), "llvm", "terminal", "monokai")
-
 			fmt.Println(rootPackage)
 		}
 		return

@@ -11,10 +11,11 @@ type VariableDefnNode struct {
 	NodeType
 	TokenReference
 
-	Type     GeodeTypeRef
-	HasValue bool
-	Name     NamedReference
-	Body     Node
+	Type      GeodeTypeRef
+	HasValue  bool
+	Name      NamedReference
+	Body      Node
+	MustInfer bool
 }
 
 // NameString implements Node.NameString
@@ -33,6 +34,7 @@ func (n VariableDefnNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	f := block.Parent
 
 	name := n.Name
+
 	var alloc *ir.InstAlloca
 	var val value.Value
 

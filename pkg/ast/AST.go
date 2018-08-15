@@ -36,6 +36,9 @@ func Parse(tokens chan lexer.Token) <-chan Node {
 		tokens:        make([]lexer.Token, 0),
 		topLevelNodes: make(chan Node),
 		binaryOpPrecedence: map[string]int{
+			"|":  1,
+			"&":  1,
+			"^":  1,
 			"=":  2,
 			"!=": 2,
 			"<":  10,
