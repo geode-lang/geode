@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/geode-lang/geode/pkg/ast"
 	"github.com/geode-lang/geode/pkg/info"
 	"github.com/geode-lang/geode/pkg/lexer"
@@ -22,19 +21,17 @@ import (
 
 // Some constants that represent the program in it's current compiled state
 const (
-	VERSION = "0.1.1"
+	VERSION = "0.2.0"
 	AUTHOR  = "Nick Wanninger"
 )
 
 var startTime time.Time
 
 func main() {
-
 	if runtime.GOOS == "windows" {
 		log.Fatal("Geode does not support windows at this time.")
 	}
 
-	spew.Config.DisableMethods = true
 	startTime = time.Now()
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
 	home := util.HomeDir()
@@ -170,10 +167,6 @@ func (c *Context) Build(buildDir string) {
 			}
 		}
 	})
-
-	// for _, fn := range module.Funcs {
-	// 	fmt.Println(fn.Name)
-	// }
 
 	if *dumpScopeTree {
 		fmt.Println(scope)

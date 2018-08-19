@@ -71,11 +71,11 @@ func (n DependencyNode) Codegen(scope *Scope, c *Compiler) value.Value { return 
 // Codegen implements Node.Codegen for IfNode
 func (n IfNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	predicate := n.If.Codegen(scope, c)
-	one := constant.NewInt(1, types.I1)
+	zero := constant.NewInt(0, types.I32)
 	// The name of the blocks is prefixed because
 	namePrefix := fmt.Sprintf("if.%d.", n.Index)
 	parentBlock := c.CurrentBlock()
-	predicate = parentBlock.NewICmp(ir.IntEQ, one, createTypeCast(c, predicate, types.I1))
+	predicate = parentBlock.NewICmp(ir.IntNE, zero, createTypeCast(c, predicate, types.I32))
 	parentFunc := parentBlock.Parent
 
 	var thenGenBlk *ir.BasicBlock
@@ -167,6 +167,18 @@ func (n UnaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	if operandValue == nil {
 		n.Operand.SyntaxError()
 		log.Fatal("nil operand")
+	}
+
+	if n.Operator == "-" {
+
+		if types.IsFloat(operandValue.Type()) {
+			return c.CurrentBlock().NewFSub(constant.NewFloat(0, types.Double), operandValue)
+		} else if types.IsInt(operandValue.Type()) {
+			return c.CurrentBlock().NewSub(constant.NewInt(0, types.I64), operandValue)
+		}
+		n.SyntaxError()
+		log.Fatal("Unable to make a non integer/float into a negative\n")
+
 	}
 
 	// handle reference operation
@@ -373,9 +385,9 @@ func (n BinaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		return CreateBinaryOp("lshr", "lshr", blk, t, l, r)
 	case "<<":
 		return CreateBinaryOp("shl", "shl", blk, t, l, r)
-	case "|":
+	case "||":
 		return CreateBinaryOp("or", "or", blk, t, l, r)
-	case "&":
+	case "&&":
 		return CreateBinaryOp("and", "and", blk, t, l, r)
 	case "^":
 		return CreateBinaryOp("xor", "xor", blk, t, l, r)
@@ -408,9 +420,12 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	argStrings := []string{}
 	for _, arg := range n.Args {
 
+		// fmt.Println(i)
+
 		if ac, isAccessable := arg.(Accessable); isAccessable {
 			// argStrings = append(argStrings, ac.(fmt.Stringer).String())
 			val := ac.GenAccess(scope, c)
+
 			args = append(args, val)
 			argTypes = append(argTypes, val.Type())
 			if args[len(args)-1] == nil {
@@ -465,6 +480,14 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	callee := fnScopeItem.Value().(*ir.Function)
 	if callee == nil {
 		return codegenError(fmt.Sprintf("Unknown function %q referenced", name))
+	}
+
+	// Attempt to typecast all the args into the correct type
+	// This is skipped with variadic functions
+	if !callee.Sig.Variadic {
+		for i := range args {
+			args[i] = createTypeCast(c, args[i], callee.Sig.Params[i].Type())
+		}
 	}
 
 	c.CurrentBlock().AppendInst(NewLLVMComment("%s(%s);", completeName, strings.Join(argStrings, ", ")))

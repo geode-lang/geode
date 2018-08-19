@@ -43,6 +43,7 @@ var tokenTypeOverrides = map[string]TokenType{
 	"...":     TokElipsis,
 	".":       TokDot,
 
+	"or": TokOper,
 	"+=": TokCompoundAssignment,
 	"-=": TokCompoundAssignment,
 	"*=": TokCompoundAssignment,
@@ -100,16 +101,20 @@ func QuickLex(str string) []Token {
 	return tokArr
 }
 
+func (l *Lexer) value() string {
+	return l.input[l.start:l.pos]
+}
 func (l *Lexer) emit(typ TokenType) {
 	l.tokenCount++
 	if typ != TokNoEmit {
 		tok := Token{}
 		tok.source = l.source
-		tok.Value = l.input[l.start:l.pos]
+		tok.Value = l.value()
 		tok.Pos = int(l.start)
 		tok.EndPos = int(l.pos)
 		tok.Line = l.line
 		tok.Column = l.col
+
 		newTyp, override := tokenTypeOverrides[tok.Value]
 		if override {
 			typ = newTyp
@@ -210,7 +215,7 @@ func lexTopLevel(l *Lexer) stateFn {
 	case r == eof:
 
 		return nil
-	case strings.IndexRune("0123456789.", r) >= 0:
+	case strings.IndexRune("-0123456789.", r) >= 0:
 		l.backup()
 		return lexNumber
 	case isAlphaNumeric(r):
@@ -281,9 +286,17 @@ func lexIdentifer(l *Lexer) stateFn {
 }
 
 func lexNumber(l *Lexer) stateFn {
-
-	l.acceptRun("0123456789.xabcdefABCDEF")
+	l.acceptRun("-0123456789.xabcdefABCDEF")
 	l.next()
+	// There is a chance that the numeric expression lexer will
+	// parse only a + or a - since it gets handled first in the list
+	// so if it is only a minus,
+	if isOnly(l.value(), '-') {
+		l.backup()
+
+		return lexSymbol
+	}
+
 	l.emit(TokNumber)
 	return lexTopLevel
 }
@@ -365,6 +378,15 @@ func isNewline(r rune) bool {
 // isValidIdefRune reports if r may be part of an identifier name.
 func isAlphaNumeric(r rune) bool {
 	return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r)
+}
+
+func isOnly(s string, r rune) bool {
+	for _, c := range s {
+		if r != c {
+			return false
+		}
+	}
+	return true
 }
 
 // NewLexer produces a new lexer and poluates it with the configuration

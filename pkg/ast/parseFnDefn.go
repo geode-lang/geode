@@ -81,13 +81,14 @@ func (p *Parser) parseFnDefn() FunctionNode {
 
 	if p.token.Is(lexer.TokIdent) {
 		fn.ReturnType = p.parseType()
+
+		// p.back()
 	} else {
 		fn.ReturnType = GeodeTypeRef{false, 0, "void"}
 	}
 
 	if p.token.Is(lexer.TokLeftCurly) {
 		fn.Body = p.parseBlockStmt()
-
 	} else if p.token.Is(lexer.TokRightArrow) {
 		fn.Body = BlockNode{}
 		fn.Body.NodeType = nodeBlock

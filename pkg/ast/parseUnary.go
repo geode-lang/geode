@@ -1,8 +1,6 @@
 package ast
 
 import (
-	"fmt"
-
 	"github.com/geode-lang/geode/pkg/lexer"
 )
 
@@ -10,18 +8,18 @@ import (
 
 func (p *Parser) parseUnary() Node {
 	startTok := p.token
-	ptrOps := map[string]bool{
+	validUnaryOps := map[string]bool{
 		"&": true,
 		"*": true,
+		"-": true,
 	}
 
 	// parse the "as"
 	if p.token.Is(lexer.TokAs) {
-		fmt.Println("IS AN AS")
 	}
 
 	// _, isBinaryOp := p.binaryOpPrecedence[p.token.Value]
-	_, isPtrOp := ptrOps[p.token.Value]
+	_, isPtrOp := validUnaryOps[p.token.Value]
 	if !isPtrOp {
 		return p.parsePrimary()
 	}

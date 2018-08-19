@@ -17,6 +17,7 @@ var (
 	GeodeBool     = NewType("bool", types.I1, 1)
 	GeodeI8       = NewType("byte", types.I8, 2)
 	GeodeI32      = NewType("i32", types.I32, 3)
+	GeodeU64      = NewType("uint", types.I64, 4)
 	GeodeI64      = NewType("int", types.I64, 4)
 	GeodeF64      = NewType("float", types.Double, 11) // All floats are doubles
 	GeodeString   = NewType("string", types.NewPointer(GeodeI8.LLVMType), 0)

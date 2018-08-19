@@ -17,6 +17,7 @@ func (p *Parser) parseIfStmt() Node {
 	p.next()
 
 	n.If = p.parseExpression()
+
 	p.requires(lexer.TokLeftCurly)
 
 	n.Then = p.parseBlockStmt()

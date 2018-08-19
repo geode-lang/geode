@@ -1,11 +1,8 @@
 package ast
 
 import (
-	"encoding/json"
-	"fmt"
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/geode-lang/geode/pkg/lexer"
 	"github.com/geode-lang/geode/pkg/util/log"
 )
@@ -31,13 +28,12 @@ func NewQuickParser(source string) *Parser {
 // Parse creates and runs a new lexer, that returns the
 // chan that the nodes will be passed through with
 func Parse(tokens chan lexer.Token) <-chan Node {
-	// spew.Dump(QuickParseExpression("1 + 1"))
 	p := &Parser{
 		tokens:        make([]lexer.Token, 0),
 		topLevelNodes: make(chan Node),
 		binaryOpPrecedence: map[string]int{
-			"|":  1,
-			"&":  1,
+			"||": 1,
+			"&&": 1,
 			"^":  1,
 			"=":  2,
 			"!=": 2,
@@ -168,33 +164,4 @@ func (p *Parser) getTokenPrecedence(token string) int {
 func (p *Parser) Error(format string, args ...interface{}) {
 	log.Fatal(format, args...)
 	os.Exit(1)
-}
-
-// DumpTree takes a channel of nodes and prints all Nodes it recieves,
-// then pushes them back out a new channel it makes and returns
-func DumpTree(in <-chan Node, useJSON bool) <-chan Node {
-	out := make(chan Node)
-	go func() {
-		for n := range in {
-
-			if useJSON {
-				// Attempt to parse the
-				j, jsonParseError := json.MarshalIndent(n, "", "    ")
-				// We need to warn the user of some error printing the node, but don't fail
-				// Instead print it as a spew dump, this way presentation is still given,
-				// but maybe not in a json format.
-				if jsonParseError != nil {
-					fmt.Println("Error printing node: ", jsonParseError)
-					fmt.Println("Raw representation of the node:")
-					spew.Dump(n)
-				}
-				fmt.Println(string(j))
-			} else {
-				spew.Dump(n)
-			}
-
-			out <- n
-		}
-	}()
-	return out
 }
