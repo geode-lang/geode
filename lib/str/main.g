@@ -8,17 +8,18 @@ class String {
 
 
 
+# str:len
 # A basic string length function that loops over the bytes
 # incrementing a counter till it encounters a null byte
 func len(string str) int {
 	int len := 0;
 	while str[len] != 0 {
-		len <- len + 1;
+		len += 1;
 	}
 	return len;
 }
 
-
+# str:eq
 # The equal function goes through several tests
 # before finally returning true. If any of these
 # tests fail along the way, the function will 
@@ -28,7 +29,6 @@ func len(string str) int {
 #   - looping over testing each byte for equality
 #     across both strings
 func eq(string a, string b) bool {
-	
 	# cache the size of both strings for later use
 	int alen := len(a);
 	int blen := len(b);
@@ -40,6 +40,7 @@ func eq(string a, string b) bool {
 	
 	# loop over each char and test if they are equal
 	for int i := 0; i < alen; i += 1 {
+		# Check if this character isn't equal
 		if a[i] != b[i] {
 			return false;
 		}
@@ -48,6 +49,8 @@ func eq(string a, string b) bool {
 }
 
 
+
+# str:concat
 # concatinate two strings into a single string.
 func concat(string a, string b) string {
 	# cache the size of both strings for later use

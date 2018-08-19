@@ -367,25 +367,6 @@ func isAlphaNumeric(r rune) bool {
 	return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r)
 }
 
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-
 // NewLexer produces a new lexer and poluates it with the configuration
 func NewLexer() *Lexer {
 	s := &Lexer{}

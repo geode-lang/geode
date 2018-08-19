@@ -1,11 +1,7 @@
 is main
-
-
+include "std:str"
 include "std:io"
-
-
 func main int {
-	int two_fifty_five := 0xff00ffad;
-	io:print("%x\n", two_fifty_five);
-	return 0;	
+	io:print("%d\n", str:len("asdf"));
+	return 0;
 }
