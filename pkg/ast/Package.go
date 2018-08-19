@@ -40,10 +40,11 @@ type Package struct {
 	Compiled      bool
 	CLinkages     []string
 	NamespaceName string
+	Namespaces    map[string]*[]Node
 }
 
 // NewPackage returns a pointer to a new package
-func NewPackage(name string, source *lexer.Sourcefile, scope *Scope) *Package {
+func NewPackage(name string, source *lexer.Sourcefile, scope *Scope, namespaces map[string]*[]Node) *Package {
 	p := &Package{}
 
 	p.Name = name
@@ -51,6 +52,7 @@ func NewPackage(name string, source *lexer.Sourcefile, scope *Scope) *Package {
 	p.Nodes = make([]Node, 0)
 	p.Scope = scope
 	p.Scope.InjectPrimitives()
+	p.Namespaces = namespaces
 	return p
 }
 
@@ -84,6 +86,7 @@ func (p *Package) Emit(buildDir string) string {
 	os.MkdirAll(baseDir, os.ModePerm)
 
 	llvmFileName := fmt.Sprintf("%s.ll", outPathBase)
+
 	// objFileName := fmt.Sprintf("%s.o", outPathBase)
 
 	ir := p.String()
@@ -115,6 +118,16 @@ func (p *Package) AddDepPackage(pkg *Package) {
 		}
 	}
 	p.Dependencies = append(p.Dependencies, pkg)
+}
+
+// HasDependency returns if a package has access to a namespace
+func (p *Package) HasDependency(ns string) bool {
+	for _, dep := range p.Dependencies {
+		if dep.Name == ns {
+			return true
+		}
+	}
+	return false
 }
 
 // AddClinkage - takes an absolute path to a c file, and adds it to the link list
@@ -155,7 +168,7 @@ func (p *Package) LoadDep(depPath string) *Package {
 		return pkg
 	}
 
-	depPkg := NewPackage(pkgName, depSource, p.Scope)
+	depPkg := NewPackage(pkgName, depSource, p.Scope, p.Namespaces)
 	for _ = range depPkg.Parse() {
 	}
 	dependencyMap[depPkg.Source.HashName()] = depPkg
@@ -194,13 +207,6 @@ func (p *Package) Parse() chan *Package {
 
 	chn := make(chan *Package)
 	go func() {
-
-		// cacheFolder := path.Join(util.GetCacheDir())
-		// cacheFile := fmt.Sprintf("%s/%x.cache", cacheFolder, p.Hash())
-
-		// var cacheBuffer bytes.Buffer
-
-		// if _, err := os.Stat(cacheFile); os.IsNotExist(err) {
 		// There was no cache file
 		tokens := lexer.Lex(p.Source)
 		nodes := Parse(tokens)
@@ -211,31 +217,16 @@ func (p *Package) Parse() chan *Package {
 			p.Nodes = append(p.Nodes, node)
 		}
 
-		// enc := gob.NewEncoder(&cacheBuffer)
-		// err := enc.Encode(p.Nodes)
-		// if err != nil {
-		// 	log.Fatal("encode error:", err)
-		// }
+		firstNode := p.Nodes[0]
+		// The first node *should* always be a namespace node
+		if firstNode.Kind() == nodeNamespace {
+			p.NamespaceName = firstNode.(NamespaceNode).Name
+		} else {
+			firstNode.SyntaxError()
+			log.Fatal("%q missing namespace. It must be the first statement.\n", p.Source.Path)
+		}
 
-		// os.MkdirAll(cacheFolder, os.ModePerm)
-
-		// err = ioutil.WriteFile(cacheFile, cacheBuffer.Bytes(), 0644)
-		// if err != nil {
-		// 	log.Fatal("Error writing cache file to home folder")
-		// }
-		// } else {
-		// 	f, _ := os.Open(cacheFile) // Error handling elided for brevity.
-		// 	defer f.Close()
-		// 	io.Copy(&cacheBuffer, f) // Error handling elided for brevity.
-
-		// 	// There was a cache file.
-		// 	dec := gob.NewDecoder(&cacheBuffer)f
-		// 	p.Nodes = make([]Node, 0)
-		// 	err = dec.Decode(&p.Nodes)
-		// 	if err != nil {
-		// 		log.Fatal("Error decoding node array in package %s\n", p.Name)
-		// 	}
-		// }
+		p.Namespaces[p.NamespaceName] = &p.Nodes
 
 		chn <- p
 		close(chn)
@@ -244,13 +235,13 @@ func (p *Package) Parse() chan *Package {
 }
 
 // GetRuntime builds a runtime
-func GetRuntime(scope *Scope) *Package {
+func GetRuntime(scope *Scope, namespaces map[string]*[]Node) *Package {
 	rts, err := lexer.NewSourcefile("runtime")
 	if err != nil {
 		log.Fatal("Error creating runtime source structure\n")
 	}
 	rts.ResolveFile(util.StdLibFile("/runtime"))
-	rt := NewPackage("runtime", rts, scope)
+	rt := NewPackage("runtime", rts, scope, namespaces)
 	rt.IsRuntime = true
 	for _ = range rt.Parse() {
 	}
@@ -263,18 +254,11 @@ func (p *Package) Compile(module *ir.Module, targetTripple string) chan *Package
 	p.TargetTripple = targetTripple
 	packages := make(chan *Package)
 
-	go func() {
-		p.Compiler = NewCompiler(module, p.Name, p)
-		log.Debug("Compiling Package %s\n", p.Name)
+	// fmt.Println(module)
 
-		firstNode := p.Nodes[0]
-		// The first node *should* always be a namespace node
-		if firstNode.Kind() == nodeNamespace {
-			p.NamespaceName = firstNode.(NamespaceNode).Name
-		} else {
-			firstNode.SyntaxError()
-			log.Fatal("%q missing namespace. It must be the first statement.\n", p.Source.Path)
-		}
+	go func() {
+		p.Compiler = NewCompiler(module, p.Name, p, p.Namespaces)
+		log.Debug("Compiling Package %s\n", p.Name)
 
 		// Go through all nodes and handle the ones that are dependencies
 		for _, node := range p.Nodes {

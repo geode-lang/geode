@@ -10,13 +10,13 @@ import (
 type Compiler struct {
 	Name string
 	// A reference to the scope in the package for easier access
-	Scope   *Scope
-	Package *Package
-	Module  *ir.Module
-	blocks  []*ir.BasicBlock
-	FN      *ir.Function // current funciton being compiled
-
-	typeCache types.Type
+	Scope      *Scope
+	Package    *Package
+	Module     *ir.Module
+	blocks     []*ir.BasicBlock
+	FN         *ir.Function // current funciton being compiled
+	Namespaces map[string]*[]Node
+	typeCache  types.Type
 }
 
 // CurrentBlock -
@@ -64,10 +64,15 @@ func (c *Compiler) genInBlock(blk *ir.BasicBlock, fn func()) {
 	c.PopBlock()
 }
 
+func (c *Compiler) HasDependency(ns string) bool {
+	return c.Package.HasDependency(ns)
+}
+
 // NewCompiler returns a pointer to a new Compiler object.
-func NewCompiler(module *ir.Module, moduleName string, pkg *Package) *Compiler {
+func NewCompiler(module *ir.Module, moduleName string, pkg *Package, namespaces map[string]*[]Node) *Compiler {
 	comp := &Compiler{}
 	comp.Package = pkg
+	comp.Namespaces = namespaces
 	// Initialize the module for this compiler.
 	comp.Module = module
 	comp.Name = moduleName

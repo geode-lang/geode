@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -25,6 +26,7 @@ const (
 type Linker struct {
 	output      string
 	target      CompileTarget
+	buildDir    string
 	objectPaths []string
 	optimize    bool
 	dump        bool // dump result of compilation to stdout
@@ -59,6 +61,12 @@ func (l *Linker) AddObject(path string) {
 // be it binary, asm, etc...
 func (l *Linker) SetTarget(t CompileTarget) {
 	l.target = t
+}
+
+// SetBuildDir sets the target output format of the linker
+// be it binary, asm, etc...
+func (l *Linker) SetBuildDir(t string) {
+	l.buildDir = t
 }
 
 // SetOutput -
@@ -103,48 +111,74 @@ func (l *Linker) Run() {
 	if l.optimize {
 		linkArgs = append(linkArgs, "-O3")
 	} else {
-		linkArgs = append(linkArgs, "-Oz")
-	}
-
-	if l.target == ASMTarget {
-		log.Timed("Assembly Generation", func() {
-			// We want to only write intel syntax. AT&T Sucks
-			linkArgs = append(linkArgs, "-S", "-masm=intel", "-Wno-everything")
-			// Compile each of the objects to a .s file.
-			for _, obj := range l.objectPaths {
-				// We only want to leave user generated files in the filesystem
-				if strings.HasSuffix(obj, ".ll") {
-					// ext := path.Ext(obj)
-					out := strings.Replace(obj, ".ll", ".s", -1)
-					// Pull the extension of the object file
-					if l.dump {
-						out = "/dev/stdout"
-					}
-					// Replace it with .s
-					// set the output to that of the .s file
-					asmArgs := append(linkArgs, "-o", out, obj)
-					// run the compile to asm
-					c, _ := util.RunCommandStr(linker, asmArgs...)
-					if l.dump {
-						fmt.Println(c)
-					}
-				}
-
-			}
-		})
-
-		return
+		linkArgs = append(linkArgs, "-O0")
 	}
 
 	if l.dump {
+
+		if l.target == ASMTarget {
+			log.Timed("Assembly Generation", func() {
+				// We want to only write intel syntax. AT&T Sucks
+				linkArgs = append(linkArgs, "-S", "-masm=intel", "-Wno-everything")
+				// Compile each of the objects to a .s file.
+				for _, obj := range l.objectPaths {
+					// We only want to leave user generated files in the filesystem
+					if strings.HasSuffix(obj, ".ll") {
+						// ext := path.Ext(obj)
+						out := strings.Replace(obj, ".ll", ".s", -1)
+						// Pull the extension of the object file
+						if l.dump {
+							out = "/dev/stdout"
+						}
+						// Replace it with .s
+						// set the output to that of the .s file
+						asmArgs := append(linkArgs, "-o", out, obj)
+						// run the compile to asm
+						c, _ := util.RunCommandStr(linker, asmArgs...)
+						fmt.Println(c)
+					}
+
+				}
+			})
+			return
+		}
+
 		for _, obj := range l.objectPaths {
 			if strings.HasSuffix(obj, ".ll") {
 				bs, _ := ioutil.ReadFile(obj)
 				fmt.Println(string(bs))
 			}
 		}
+
 	}
 
+	for i, obj := range l.objectPaths {
+		outbase := path.Join(l.buildDir, obj)
+
+		extension := filepath.Ext(outbase)
+		if extension == ".ll" {
+			// outbase = obj
+		}
+		outbase = outbase[0 : len(outbase)-len(extension)]
+
+		hash := util.HashFile(obj)
+
+		cachefile := outbase + ".cache"
+		objFile := outbase + ".o"
+
+		cachedat, err := ioutil.ReadFile(cachefile)
+		if err != nil || strings.Compare(string(cachedat), hash) != 0 {
+			os.MkdirAll(path.Dir(outbase), os.ModePerm)
+			// the file doesnt exist, we need to compile it
+			out, err := util.RunCommand("clang", "-c", "-o", objFile, obj)
+			if err != nil {
+				log.Fatal("(%s) %s\n", err, string(out))
+			}
+			// fmt.Println(string(out), err)
+			ioutil.WriteFile(cachefile, []byte(hash), os.ModePerm)
+		}
+		l.objectPaths[i] = objFile
+	}
 	// Append input files to the end of the command
 	linkArgs = append(linkArgs, l.objectPaths...)
 
@@ -152,6 +186,7 @@ func (l *Linker) Run() {
 	linkArgs = append(linkArgs, "-o", filename)
 
 	out, err := util.RunCommand(linker, linkArgs...)
+	// fmt.Println(string(out))
 
 	if err != nil {
 		log.Fatal("failed to run command `%s %s`: `%s`\n\n%s",

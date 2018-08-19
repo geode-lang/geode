@@ -373,6 +373,13 @@ func (n BinaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		return CreateBinaryOp("lshr", "lshr", blk, t, l, r)
 	case "<<":
 		return CreateBinaryOp("shl", "shl", blk, t, l, r)
+	case "|":
+		return CreateBinaryOp("or", "or", blk, t, l, r)
+	case "&":
+		return CreateBinaryOp("and", "and", blk, t, l, r)
+	case "^":
+		return CreateBinaryOp("xor", "xor", blk, t, l, r)
+
 	case "=":
 		return createCmp(blk, ir.IntEQ, ir.FloatOEQ, t, l, r)
 	case "!=", "≠":
@@ -427,6 +434,9 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	if ns == "" {
 		ns = c.Package.NamespaceName
+	} else if !c.HasDependency(ns) {
+		n.SyntaxError()
+		log.Fatal("Package %s doesn't load package %s but attempts to call %s:%s on line %d of %s.\n", c.Package.NamespaceName, ns, ns, nm, n.Token.Line, c.Package.Source.Path)
 	}
 
 	completeName := fmt.Sprintf("%s:%s", ns, nm)

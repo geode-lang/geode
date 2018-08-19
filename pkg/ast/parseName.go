@@ -1,24 +1,23 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/geode-lang/geode/pkg/lexer"
-	"github.com/geode-lang/geode/pkg/util/log"
 )
 
-func (p *Parser) parseName() string {
+func (p *Parser) parseName() (string, error) {
 
 	name := ""
 	if !p.token.Is(lexer.TokIdent) {
-		p.token.SyntaxError()
-		log.Fatal("Invalid Name Reference")
+		return "", fmt.Errorf("Invalid Name Reference")
 	}
 
 	for {
 		if p.token.Is(lexer.TokIdent) {
 			name += p.token.Value
 		} else {
-			p.token.SyntaxError()
-			log.Fatal("Invalid Name Reference")
+			return "", fmt.Errorf("Invalid Name Reference")
 		}
 		p.next()
 		if p.token.Is(lexer.TokNamespaceAccess) {
@@ -31,5 +30,5 @@ func (p *Parser) parseName() string {
 
 	// fmt.Println(name)
 
-	return name
+	return name, nil
 }

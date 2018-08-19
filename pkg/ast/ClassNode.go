@@ -90,7 +90,7 @@ func structContainsTypeAnywhere(s *types.StructType, t types.Type, path ...*type
 func (n ClassNode) Declare(scope *Scope, c *Compiler) value.Value {
 	structDefn := types.NewStruct()
 
-	name := fmt.Sprintf("struct.%s", n.Name)
+	name := fmt.Sprintf("class.%s.%s", c.Package.NamespaceName, n.Name)
 	structDefn.SetName(name)
 	c.Module.NewType(n.Name, structDefn)
 	NewTypeDef(n.Name, structDefn, -1).InjectInto(scope)
@@ -133,7 +133,7 @@ func (n ClassNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	methodBaseArgs := []VariableDefnNode{thisArg}
 	for _, m := range n.Methods {
-		m.Name.Value = fmt.Sprintf("%s.%s", n.Name, m.Name)
+		m.Name.Value = fmt.Sprintf("class.%s.%s", n.Name, m.Name)
 		if _, found := names[m.Name.String()]; found {
 			log.Fatal("Class '%s' has two fields/methods named '%s'\n", n.Name, m.Name)
 		}
@@ -142,8 +142,6 @@ func (n ClassNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		m.Declare(scope, c)
 		m.Codegen(scope, c)
 	}
-
-	// fmt.Println(structDefn)
 
 	return nil
 }
