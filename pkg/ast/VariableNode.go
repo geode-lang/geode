@@ -45,16 +45,17 @@ func (n VariableNode) String() string {
 }
 
 // Codegen implements Node.Codegen for VariableNode
-func (n VariableNode) Codegen(scope *Scope, c *Compiler) value.Value {
+func (n VariableNode) Codegen(prog *Program) value.Value {
+	c := prog.Compiler
 
 	block := c.CurrentBlock()
 
 	switch n.RefType {
 	case ReferenceDereference, ReferenceAccessStackAddress:
-		alloc := n.Name.Alloca(scope, c)
+		alloc := n.Name.Alloca(prog)
 		return alloc
 	case ReferenceAccessValue:
-		val := n.Name.Load(block, scope, c)
+		val := n.Name.Load(block, prog)
 		return val
 	}
 
@@ -62,11 +63,11 @@ func (n VariableNode) Codegen(scope *Scope, c *Compiler) value.Value {
 }
 
 // GenAddress returns the instruction allocation
-func (n VariableNode) GenAddress(s *Scope, c *Compiler) value.Value {
-	return n.Name.Alloca(s, c)
+func (n VariableNode) GenAddress(prog *Program) value.Value {
+	return n.Name.Alloca(prog)
 }
 
 // GenAccess returns the value of a VariableNode
-func (n VariableNode) GenAccess(s *Scope, c *Compiler) value.Value {
-	return n.Codegen(s, c)
+func (n VariableNode) GenAccess(prog *Program) value.Value {
+	return n.Codegen(prog)
 }

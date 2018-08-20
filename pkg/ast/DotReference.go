@@ -22,8 +22,8 @@ func (n DotReference) String() string {
 }
 
 // BaseType returns the type of the base struct to a class
-func (n DotReference) BaseType(s *Scope, c *Compiler) types.Type {
-	base := n.Base.Alloca(s, c)
+func (n DotReference) BaseType(prog *Program) types.Type {
+	base := n.Base.Alloca(prog)
 	baseType := base.(*ir.InstAlloca).Elem
 	for types.IsPointer(baseType) {
 		baseType = baseType.(*types.PointerType).Elem
@@ -32,10 +32,11 @@ func (n DotReference) BaseType(s *Scope, c *Compiler) types.Type {
 }
 
 // Alloca returns the nearest alloca instruction in this scope with the given name
-func (n DotReference) Alloca(s *Scope, c *Compiler) value.Value {
-	base := n.Base.Alloca(s, c)
+func (n DotReference) Alloca(prog *Program) value.Value {
+	c := prog.Compiler
+	base := n.Base.Alloca(prog)
 	index := 0
-	baseType := n.BaseType(s, c)
+	baseType := n.BaseType(prog)
 
 	// An allocation is always a pointer, so we need to figure out what it is pointing to
 	// here, I coerce base's type into a *PointerType and pull the Elem type out of it.
@@ -60,27 +61,27 @@ func (n DotReference) Alloca(s *Scope, c *Compiler) value.Value {
 }
 
 // Load returns a load instruction on a named reference with the given name
-func (n DotReference) Load(block *ir.BasicBlock, s *Scope, c *Compiler) *ir.InstLoad {
-	target := n.Alloca(s, c).(*ir.InstGetElementPtr)
-	target.Typ = types.NewPointer(n.Type(s, c))
+func (n DotReference) Load(block *ir.BasicBlock, prog *Program) *ir.InstLoad {
+	target := n.Alloca(prog).(*ir.InstGetElementPtr)
+	target.Typ = types.NewPointer(n.Type(prog))
 	return block.NewLoad(target)
 }
 
 // GenAssign implements Assignable.GenAssign
-func (n DotReference) GenAssign(s *Scope, c *Compiler, assignment value.Value) value.Value {
-	target := n.Alloca(s, c)
-	c.CurrentBlock().NewStore(assignment, target)
+func (n DotReference) GenAssign(prog *Program, assignment value.Value) value.Value {
+	target := n.Alloca(prog)
+	prog.Compiler.CurrentBlock().NewStore(assignment, target)
 	return assignment
 }
 
 // GenAccess implements Accessable.GenAccess
-func (n DotReference) GenAccess(s *Scope, c *Compiler) value.Value {
-	return n.Load(c.CurrentBlock(), s, c)
+func (n DotReference) GenAccess(prog *Program) value.Value {
+	return n.Load(prog.Compiler.CurrentBlock(), prog)
 }
 
 // Type implements Assignable.Type
-func (n DotReference) Type(s *Scope, c *Compiler) types.Type {
-	baseType := n.BaseType(s, c).(*types.StructType)
+func (n DotReference) Type(prog *Program) types.Type {
+	baseType := n.BaseType(prog).(*types.StructType)
 	index := baseType.FieldIndex(n.Field.String())
 	return baseType.Fields[index]
 }

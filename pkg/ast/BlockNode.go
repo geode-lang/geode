@@ -19,10 +19,13 @@ func (n BlockNode) NameString() string { return "BlockNode" }
 func (n BlockNode) InferType(scope *Scope) string { return "void" }
 
 // Codegen implements Node.Codegen for BlockNode
-func (n BlockNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	blockScope := scope.SpawnChild()
+func (n BlockNode) Codegen(prog *Program) value.Value {
+	prog.Scope = prog.Scope.SpawnChild()
+
 	for _, node := range n.Nodes {
-		node.Codegen(blockScope, c)
+		node.Codegen(prog)
 	}
-	return c.CurrentBlock()
+
+	prog.Scope = prog.Scope.Parent
+	return prog.Compiler.CurrentBlock()
 }

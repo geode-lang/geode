@@ -23,16 +23,18 @@ func (n CastNode) InferType(scope *Scope) string {
 }
 
 // GenAccess implements Accessable.Access for CastNode
-func (n CastNode) GenAccess(s *Scope, c *Compiler) value.Value {
-	return n.Codegen(s, c)
+func (n CastNode) GenAccess(prog *Program) value.Value {
+	return n.Codegen(prog)
 }
 
 // Codegen implements Node.Codegen for CastNode
-func (n CastNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	src := n.Source.Codegen(scope, c)
+func (n CastNode) Codegen(prog *Program) value.Value {
+
+	scope := prog.Scope
+	src := n.Source.Codegen(prog)
 	t := scope.FindType(n.Type.Name).Type
 	for i := 0; i < n.Type.PointerLevel; i++ {
 		t = types.NewPointer(t)
 	}
-	return createTypeCast(c, src, t)
+	return createTypeCast(prog, src, t)
 }

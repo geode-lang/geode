@@ -22,7 +22,7 @@ func (n BooleanNode) NameString() string { return "BooleanNode" }
 func (n BooleanNode) InferType(scope *Scope) string { return "bool" }
 
 // Codegen implements Node.Codegen for BooleanNode
-func (n BooleanNode) Codegen(scope *Scope, c *Compiler) value.Value {
+func (n BooleanNode) Codegen(prog *Program) value.Value {
 	options := map[string]int64{
 		"true":  1,
 		"false": 0,
@@ -35,6 +35,6 @@ func (n BooleanNode) String() string {
 }
 
 // GenAccess implements Accessable.GenAccess
-func (n BooleanNode) GenAccess(s *Scope, c *Compiler) value.Value {
-	return n.Codegen(s, c)
+func (n BooleanNode) GenAccess(prog *Program) value.Value {
+	return n.Codegen(prog)
 }

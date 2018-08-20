@@ -31,7 +31,7 @@ type Node interface {
 	Kind() NodeType
 	SyntaxError()
 	NameString() string
-	Codegen(*Scope, *Compiler) value.Value
+	Codegen(*Program) value.Value
 	InferType(scope *Scope) string
 }
 
@@ -165,8 +165,8 @@ func (n BinaryNode) NameString() string { return "BinaryNode" }
 func (n BinaryNode) InferType(scope *Scope) string { return n.Left.InferType(scope) }
 
 // GenAccess implements Accessable.GenAccess
-func (n BinaryNode) GenAccess(scope *Scope, c *Compiler) value.Value {
-	return n.Codegen(scope, c)
+func (n BinaryNode) GenAccess(prog *Program) value.Value {
+	return n.Codegen(prog)
 }
 
 func (n BinaryNode) String() string {
@@ -247,8 +247,8 @@ func (n FunctionCallNode) InferType(scope *Scope) string {
 }
 
 // GenAccess implements Accessable.GenAccess
-func (n FunctionCallNode) GenAccess(s *Scope, c *Compiler) value.Value {
-	return n.Codegen(s, c)
+func (n FunctionCallNode) GenAccess(prog *Program) value.Value {
+	return n.Codegen(prog)
 }
 
 // WhileNode is a while loop representationvbnm,bvbnm

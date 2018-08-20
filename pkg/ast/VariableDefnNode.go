@@ -27,7 +27,9 @@ func (n VariableDefnNode) InferType(scope *Scope) string {
 }
 
 // Codegen implements Node.Codegen for VariableDefnNode
-func (n VariableDefnNode) Codegen(scope *Scope, c *Compiler) value.Value {
+func (n VariableDefnNode) Codegen(prog *Program) value.Value {
+	scope := prog.Scope
+	c := prog.Compiler
 
 	block := c.CurrentBlock()
 
@@ -55,13 +57,13 @@ func (n VariableDefnNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 		// Construct the body
 		if n.Body != nil {
-			val = n.Body.Codegen(scope, c)
+			val = n.Body.Codegen(prog)
 			if val == nil {
 				return val // nil
 			}
 		}
 
-		val = createTypeCast(c, val, alloc.Elem)
+		val = createTypeCast(prog, val, alloc.Elem)
 
 	} else {
 		defa := DefaultValue(alloc.Elem)

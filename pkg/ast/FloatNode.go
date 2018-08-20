@@ -21,11 +21,11 @@ func (n FloatNode) NameString() string { return "FloatNode" }
 func (n FloatNode) InferType(scope *Scope) string { return "float" }
 
 // Codegen implements Node.Codegen for FloatNode
-func (n FloatNode) Codegen(scope *Scope, c *Compiler) value.Value {
+func (n FloatNode) Codegen(prog *Program) value.Value {
 	return constant.NewFloat(n.Value, types.Double)
 }
 
 // GenAccess implements Accessable.GenAccess
-func (n FloatNode) GenAccess(scope *Scope, c *Compiler) value.Value {
-	return n.Codegen(scope, c)
+func (n FloatNode) GenAccess(prog *Program) value.Value {
+	return n.Codegen(prog)
 }

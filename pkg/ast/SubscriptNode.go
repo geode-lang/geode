@@ -28,37 +28,34 @@ func (n SubscriptNode) String() string {
 }
 
 // GenElementPtr returns a generated GetElementPtr for this subscript operation
-func (n SubscriptNode) GenElementPtr(s *Scope, c *Compiler) *ir.InstGetElementPtr {
-	src := n.Source.GenAccess(s, c)
-	idx := n.Index.GenAccess(s, c)
-	return c.CurrentBlock().NewGetElementPtr(src, idx)
+func (n SubscriptNode) GenElementPtr(prog *Program) *ir.InstGetElementPtr {
+	src := n.Source.GenAccess(prog)
+	idx := n.Index.GenAccess(prog)
+	return prog.Compiler.CurrentBlock().NewGetElementPtr(src, idx)
 }
 
 // Codegen implements Node.Codegen for SubscriptNode
-func (n SubscriptNode) Codegen(scope *Scope, c *Compiler) value.Value {
+func (n SubscriptNode) Codegen(prog *Program) value.Value {
 	// c.CurrentBlock().AppendInst(NewLLVMComment("%s", n))
-	return c.CurrentBlock().NewLoad(n.GenElementPtr(scope, c))
+	return prog.Compiler.CurrentBlock().NewLoad(n.GenElementPtr(prog))
 }
 
 // GenAccess implements Accessable.GenAccess
-func (n SubscriptNode) GenAccess(s *Scope, c *Compiler) value.Value {
-	return n.Codegen(s, c)
+func (n SubscriptNode) GenAccess(prog *Program) value.Value {
+	return n.Codegen(prog)
 }
 
 // GenAssign generates an assignment at the address
-func (n SubscriptNode) GenAssign(s *Scope, c *Compiler, val value.Value) value.Value {
-	c.CurrentBlock().NewStore(val, n.GenElementPtr(s, c))
+func (n SubscriptNode) GenAssign(prog *Program, val value.Value) value.Value {
+	prog.Compiler.CurrentBlock().NewStore(val, n.GenElementPtr(prog))
 	return val
 }
 
 // Type returns the type of the node.
-func (n SubscriptNode) Type(s *Scope, c *Compiler) types.Type {
+func (n SubscriptNode) Type(prog *Program) types.Type {
 
 	tmpBlock := ir.NewBlock("")
 
-	tmpC := NewCompiler(ir.NewModule(), "tmp", NewPackage("", nil, s, nil), nil)
-	tmpC.PushBlock(tmpBlock)
-
-	load := tmpBlock.NewLoad(n.GenElementPtr(s, c))
+	load := tmpBlock.NewLoad(n.GenElementPtr(prog))
 	return load.Type()
 }

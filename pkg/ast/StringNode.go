@@ -21,14 +21,14 @@ func (n StringNode) NameString() string { return "StringNode" }
 func (n StringNode) InferType(scope *Scope) string { return "string" }
 
 // Codegen implements Node.Codegen for StringNode
-func (n StringNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	str := c.Module.NewGlobalDef(mangleName(".str"), newCharArray(n.Value))
+func (n StringNode) Codegen(prog *Program) value.Value {
+	str := prog.Compiler.Module.NewGlobalDef(mangleName(".str"), newCharArray(n.Value))
 	// str.IsConst = true
 	zero := constant.NewInt(0, types.I32)
 	return constant.NewGetElementPtr(str, zero, zero)
 }
 
 // GenAccess implements Accessable.GenAccess
-func (n StringNode) GenAccess(s *Scope, c *Compiler) value.Value {
-	return n.Codegen(s, c)
+func (n StringNode) GenAccess(prog *Program) value.Value {
+	return n.Codegen(prog)
 }

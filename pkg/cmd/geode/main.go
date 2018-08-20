@@ -12,16 +12,14 @@ import (
 
 	"github.com/geode-lang/geode/pkg/ast"
 	"github.com/geode-lang/geode/pkg/info"
-	"github.com/geode-lang/geode/pkg/lexer"
 	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/log"
-	"github.com/geode-lang/llvm/ir"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 // Some constants that represent the program in it's current compiled state
 const (
-	VERSION = "0.2.0"
+	VERSION = "0.3.0"
 	AUTHOR  = "Nick Wanninger"
 )
 
@@ -114,33 +112,15 @@ func NewContext(in string, out string) *Context {
 // Build some context into a binary file
 func (c *Context) Build(buildDir string) {
 
-	src, err := lexer.NewSourcefile(c.Input)
-	if err != nil {
-		log.Fatal("Unable to construct a source file.\n")
-	}
-	err = src.ResolveFile(c.Input)
-	src.Preprocess()
-	if err != nil {
-		log.Fatal("Unable to read file %s into sourcefile structure: %s\n", c.Input, err)
-	}
-	path := strings.Split(c.Input, "/")
-	scope := ast.NewScope()
+	program := ast.NewProgram()
+	program.ParseDep("", "std:runtime")
+	program.Entry = c.Input
+	program.ParsePath(c.Input)
+	program.TargetTripple = c.TargetTripple
 
-	nodeNamespaces := make(map[string]*[]ast.Node, 0)
-	rootPackage := ast.NewPackage(path[len(path)-1], src, scope, nodeNamespaces)
-	pkgs := make([]*ast.Package, 0)
-	primaryTree := make([]ast.Node, 0)
+	program.Codegen()
 
-	runtime := ast.GetRuntime(scope, nodeNamespaces)
-
-	rootPackage.Inject(runtime)
-
-	for pkg := range rootPackage.Parse() {
-		log.Debug("Added package %s\n", pkg.Name)
-		pkgs = append(pkgs, pkg)
-	}
-
-	// Construct a linker object
+	// // Construct a linker object
 	target := ast.BinaryTarget
 	if *emitASM {
 		target = ast.ASMTarget
@@ -152,40 +132,24 @@ func (c *Context) Build(buildDir string) {
 	linker.SetOutput(c.Output)
 	linker.SetOptimize(*optimize)
 
-	module := ir.NewModule()
-
-	// Loop over the compilers and generate to .ll files
-	log.Timed("llvm emission", func() {
-		for c := range rootPackage.Compile(module, c.TargetTripple) {
-			primaryTree = append(primaryTree, c.Nodes...)
-			if !*disableEmission {
-				log.Debug("Compiled pkg %s with namespace %s\n", c.Name, c.NamespaceName)
-				for _, link := range c.CLinkages {
-					log.Debug("Added c linkage %s\n", link)
-					linker.AddObject(link)
-				}
-			}
-		}
-	})
-
-	if *dumpScopeTree {
-		fmt.Println(scope)
+	for _, clink := range program.CLinkages {
+		linker.AddObject(clink)
 	}
 
-	for _, n := range primaryTree {
-		info.AddNode(n)
+	if *dumpScopeTree {
+		fmt.Println(program.Scope)
 	}
 
 	if *disableEmission {
 		if *dumpResult {
-			fmt.Println(rootPackage)
+			fmt.Println(program)
 		}
 		return
 	}
 
 	linker.SetDump(*dumpResult)
 
-	linker.AddObject(rootPackage.Emit(buildDir))
+	linker.AddObject(program.Emit(buildDir))
 	log.Timed("Linking", func() {
 		linker.Run()
 	})

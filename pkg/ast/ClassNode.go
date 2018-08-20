@@ -87,20 +87,27 @@ func structContainsTypeAnywhere(s *types.StructType, t types.Type, path ...*type
 }
 
 // Declare a class type
-func (n ClassNode) Declare(scope *Scope, c *Compiler) value.Value {
+func (n ClassNode) Declare(prog *Program) value.Value {
 	structDefn := types.NewStruct()
 
-	name := fmt.Sprintf("class.%s.%s", c.Package.NamespaceName, n.Name)
+	prog.Scope = prog.Scope.SpawnChild()
+
+	name := fmt.Sprintf("class.%s.%s", prog.Scope.NamespaceName, n.Name)
 	structDefn.SetName(name)
-	c.Module.NewType(n.Name, structDefn)
-	NewTypeDef(n.Name, structDefn, -1).InjectInto(scope)
+
+	prog.Module.NewType(n.Name, structDefn)
+	NewTypeDef(n.Name, structDefn, -1).InjectInto(prog.Scope)
 	// structDefn.Opaque = true
+
+	prog.Scope = prog.Scope.Parent
 
 	return nil
 }
 
 // Codegen implements Node.Codegen for ClassNode
-func (n ClassNode) Codegen(scope *Scope, c *Compiler) value.Value {
+func (n ClassNode) Codegen(prog *Program) value.Value {
+
+	scope := prog.Scope
 	structDefn := scope.FindType(n.Name).Type.(*types.StructType)
 
 	fieldnames := make([]string, 0, len(n.Variables))
@@ -139,8 +146,8 @@ func (n ClassNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		}
 		names[m.Name.String()] = true
 		m.Args = append(methodBaseArgs, m.Args...)
-		m.Declare(scope, c)
-		m.Codegen(scope, c)
+		m.Declare(prog)
+		m.Codegen(prog)
 	}
 
 	return nil

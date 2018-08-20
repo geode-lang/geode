@@ -3,8 +3,6 @@ package ast
 import (
 	"fmt"
 	"os"
-	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/geode-lang/llvm/ir"
@@ -43,39 +41,42 @@ func branchIfNoTerminator(blk *ir.BasicBlock, to *ir.BasicBlock) {
 }
 
 // Codegen returns some NamespaceNode's arguments
-func (n NamespaceNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
+func (n NamespaceNode) Codegen(prog *Program) value.Value { return nil }
 
 // Handle will do ast-level handling for a dependency node
-func (n DependencyNode) Handle(c *Compiler) value.Value {
+func (n DependencyNode) Handle(prog *Program) value.Value {
 
-	abs, _ := filepath.Abs(c.Package.Source.Path)
-	dir := path.Dir(abs)
+	// abs, _ := filepath.Abs(prog.Compiler.Package.Source.Path)
+	// dir := path.Dir(abs)
 
-	for _, dp := range n.Paths {
+	fmt.Println(n.Paths)
+	// for _, dp := range n.Paths {
 
-		depPath := path.Join(dir, dp)
-		if n.CLinkage {
-			c.Package.AddClinkage(depPath)
-		} else {
-			c.Package.LoadDep(depPath)
-		}
+	// 	depPath := path.Join(dir, dp)
+	// 	if n.CLinkage {
+	// 		prog.Compiler.Package.AddClinkage(depPath)
+	// 	} else {
+	// 		prog.Compiler.Package.LoadDep(depPath)
+	// 	}
 
-	}
+	// }
 
 	return nil
 }
 
 // Codegen implements Node.Codegen for DependencyNode
-func (n DependencyNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
+func (n DependencyNode) Codegen(prog *Program) value.Value { return nil }
 
 // Codegen implements Node.Codegen for IfNode
-func (n IfNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	predicate := n.If.Codegen(scope, c)
+func (n IfNode) Codegen(prog *Program) value.Value {
+
+	c := prog.Compiler
+	predicate := n.If.Codegen(prog)
 	zero := constant.NewInt(0, types.I32)
 	// The name of the blocks is prefixed because
 	namePrefix := fmt.Sprintf("if.%d.", n.Index)
 	parentBlock := c.CurrentBlock()
-	predicate = parentBlock.NewICmp(ir.IntNE, zero, createTypeCast(c, predicate, types.I32))
+	predicate = parentBlock.NewICmp(ir.IntNE, zero, createTypeCast(prog, predicate, types.I32))
 	parentFunc := parentBlock.Parent
 
 	var thenGenBlk *ir.BasicBlock
@@ -84,7 +85,7 @@ func (n IfNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	thenBlk := parentFunc.NewBlock(mangleName(namePrefix + "then"))
 
 	c.genInBlock(thenBlk, func() {
-		thenGenBlk = n.Then.Codegen(scope, c).(*ir.BasicBlock)
+		thenGenBlk = n.Then.Codegen(prog).(*ir.BasicBlock)
 	})
 
 	elseBlk := parentFunc.NewBlock(mangleName(namePrefix + "else"))
@@ -93,7 +94,7 @@ func (n IfNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	c.genInBlock(elseBlk, func() {
 		// We only want to construct the else block if there is one.
 		if n.Else != nil {
-			elseGenBlk = n.Else.Codegen(scope, c).(*ir.BasicBlock)
+			elseGenBlk = n.Else.Codegen(prog).(*ir.BasicBlock)
 		}
 	})
 
@@ -117,11 +118,14 @@ func (n IfNode) Codegen(scope *Scope, c *Compiler) value.Value {
 }
 
 // Codegen implements Node.Codegen for ForNode
-func (n ForNode) Codegen(scope *Scope, c *Compiler) value.Value {
+func (n ForNode) Codegen(prog *Program) value.Value {
+
+	c := prog.Compiler
+
 	// The name of the blocks is prefixed so we can determine which for loop a block is for.
 	namePrefix := fmt.Sprintf("for.%X.", n.Index)
 	parentBlock := c.CurrentBlock()
-	loopScope := scope.SpawnChild()
+	prog.Scope = prog.Scope.SpawnChild()
 
 	var predicate value.Value
 	var condBlk *ir.BasicBlock
@@ -132,21 +136,21 @@ func (n ForNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 	condBlk = parentFunc.NewBlock(namePrefix + "cond")
 
-	n.Init.Codegen(loopScope, c)
+	n.Init.Codegen(prog)
 
 	parentBlock.NewBr(condBlk)
 
 	c.genInBlock(condBlk, func() {
-		predicate = n.Cond.Codegen(loopScope, c)
+		predicate = n.Cond.Codegen(prog)
 		one := constant.NewInt(1, types.I1)
-		predicate = condBlk.NewICmp(ir.IntEQ, one, createTypeCast(c, predicate, types.I1))
+		predicate = condBlk.NewICmp(ir.IntEQ, one, createTypeCast(prog, predicate, types.I1))
 	})
 	bodyBlk = parentFunc.NewBlock(namePrefix + "body")
 	c.genInBlock(bodyBlk, func() {
-		bodyGenBlk = n.Body.Codegen(loopScope, c).(*ir.BasicBlock)
+		bodyGenBlk = n.Body.Codegen(prog).(*ir.BasicBlock)
 
 		c.genInBlock(bodyGenBlk, func() {
-			n.Step.Codegen(loopScope, c)
+			n.Step.Codegen(prog)
 		})
 		branchIfNoTerminator(bodyBlk, condBlk)
 		branchIfNoTerminator(bodyGenBlk, condBlk)
@@ -154,16 +158,20 @@ func (n ForNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	endBlk = parentFunc.NewBlock(namePrefix + "end")
 	c.PushBlock(endBlk)
 	condBlk.NewCondBr(predicate, bodyBlk, endBlk)
+
+	prog.Scope = prog.Scope.Parent
 	return endBlk
 }
 
 // Codegen implements Node.Codegen for CharNode
-func (n CharNode) Codegen(scope *Scope, c *Compiler) value.Value { return nil }
+func (n CharNode) Codegen(prog *Program) value.Value { return nil }
 
 // Codegen implements Node.Codegen for UnaryNode
-func (n UnaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
+func (n UnaryNode) Codegen(prog *Program) value.Value {
 
-	operandValue := n.Operand.Codegen(scope, c)
+	c := prog.Compiler
+
+	operandValue := n.Operand.Codegen(prog)
 	if operandValue == nil {
 		n.Operand.SyntaxError()
 		log.Fatal("nil operand")
@@ -198,12 +206,14 @@ func (n UnaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 }
 
 // GenAccess implements Accessable.GenAccess
-func (n UnaryNode) GenAccess(scope *Scope, c *Compiler) value.Value {
-	return n.Codegen(scope, c)
+func (n UnaryNode) GenAccess(prog *Program) value.Value {
+	return n.Codegen(prog)
 }
 
 // Codegen implements Node.Codegen for WhileNode
-func (n WhileNode) Codegen(scope *Scope, c *Compiler) value.Value {
+func (n WhileNode) Codegen(prog *Program) value.Value {
+
+	c := prog.Compiler
 
 	// The name of the blocks is prefixed because
 	namePrefix := fmt.Sprintf("while_%d_", n.Index)
@@ -212,17 +222,17 @@ func (n WhileNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	parentFunc := parentBlock.Parent
 	startblock := parentFunc.NewBlock(mangleName(namePrefix + "start"))
 	c.PushBlock(startblock)
-	predicate := n.If.Codegen(scope, c)
+	predicate := n.If.Codegen(prog)
 	one := constant.NewInt(1, types.I1)
 	c.PopBlock()
 	branchIfNoTerminator(parentBlock, startblock)
-	predicate = startblock.NewICmp(ir.IntEQ, one, createTypeCast(c, predicate, types.I1))
+	predicate = startblock.NewICmp(ir.IntEQ, one, createTypeCast(prog, predicate, types.I1))
 
 	var endBlk *ir.BasicBlock
 
 	bodyBlk := parentFunc.NewBlock(mangleName(namePrefix + "body"))
 	c.PushBlock(bodyBlk)
-	bodyGenBlk := n.Body.Codegen(scope, c).(*ir.BasicBlock)
+	bodyGenBlk := n.Body.Codegen(prog).(*ir.BasicBlock)
 
 	// If there is no terminator for the block, IE: no return
 	// branch to the merge block
@@ -251,7 +261,7 @@ func typeSize(t types.Type) int {
 	return -1
 }
 
-func binaryCast(c *Compiler, left, right value.Value) (value.Value, value.Value, types.Type) {
+func binaryCast(prog *Program, left, right value.Value) (value.Value, value.Value, types.Type) {
 	// Right and Left types
 	lt := left.Type()
 	rt := right.Type()
@@ -264,16 +274,17 @@ func binaryCast(c *Compiler, left, right value.Value) (value.Value, value.Value,
 
 	if leftPrec > rightPrec {
 		casted = lt
-		right = createTypeCast(c, right, lt)
+		right = createTypeCast(prog, right, lt)
 	} else {
 		casted = rt
-		left = createTypeCast(c, left, rt)
+		left = createTypeCast(prog, left, rt)
 	}
 	return left, right, casted
 }
 
 // createTypeCast is where most, if not all, type casting happens in the language.
-func createTypeCast(c *Compiler, in value.Value, to types.Type) value.Value {
+func createTypeCast(prog *Program, in value.Value, to types.Type) value.Value {
+	c := prog.Compiler
 	inType := in.Type()
 	fromInt := types.IsInt(inType)
 	fromFloat := types.IsFloat(inType)
@@ -353,22 +364,22 @@ func CreateBinaryOp(intstr, fltstr string, blk *ir.BasicBlock, t types.Type, lef
 }
 
 // Codegen implements Node.Codegen for BinaryNode
-func (n BinaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
+func (n BinaryNode) Codegen(prog *Program) value.Value {
 
 	// Generate the left and right nodes
-	l := n.Left.Codegen(scope, c)
-	r := n.Right.Codegen(scope, c)
+	l := n.Left.Codegen(prog)
+	r := n.Right.Codegen(prog)
 
 	// Attempt to cast them with casting precidence
 	// This means the operation `int + float` will cast the int to a float.
-	l, r, t := binaryCast(c, l, r)
+	l, r, t := binaryCast(prog, l, r)
 
 	if l == nil || r == nil {
 		n.SyntaxError()
 		log.Fatal("An operand to a binary operation `%s` was nil and failed to generate\n", n.OP)
 	}
 
-	blk := c.CurrentBlock()
+	blk := prog.Compiler.CurrentBlock()
 
 	switch n.OP {
 	case "+":
@@ -411,7 +422,10 @@ func (n BinaryNode) Codegen(scope *Scope, c *Compiler) value.Value {
 }
 
 // Codegen implements Node.Codegen for FunctionCallNode
-func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
+func (n FunctionCallNode) Codegen(prog *Program) value.Value {
+
+	scope := prog.Scope
+	c := prog.Compiler
 
 	// scopeItem, found := c.Scope.Find(n.Name)
 
@@ -424,7 +438,7 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 
 		if ac, isAccessable := arg.(Accessable); isAccessable {
 			// argStrings = append(argStrings, ac.(fmt.Stringer).String())
-			val := ac.GenAccess(scope, c)
+			val := ac.GenAccess(prog)
 
 			args = append(args, val)
 			argTypes = append(argTypes, val.Type())
@@ -448,10 +462,10 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	ns, nm := parseName(n.Name.String())
 
 	if ns == "" {
-		ns = c.Package.NamespaceName
-	} else if !c.HasDependency(ns) {
+		ns = c.Scope.NamespaceName
+	} else if !prog.Package.HasAccessToPackage(ns) {
 		n.SyntaxError()
-		log.Fatal("Package %s doesn't load package %s but attempts to call %s:%s on line %d of %s.\n", c.Package.NamespaceName, ns, ns, nm, n.Token.Line, c.Package.Source.Path)
+		log.Fatal("Package %s doesn't load package %s but attempts to call %s:%s.\n", c.Scope.NamespaceName, ns, ns, nm)
 	}
 
 	completeName := fmt.Sprintf("%s:%s", ns, nm)
@@ -469,7 +483,7 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		// _, bareName := parseName(unmangled)
 
 		n.SyntaxError()
-		log.Fatal("Unable to find function '%s' in scope of module '%s'. Mangled name: %q\n", unmangled, c.Package.NamespaceName, name)
+		log.Fatal("Unable to find function '%s' in scope of module '%s'. Mangled name: %q\n", unmangled, c.Scope.NamespaceName, name)
 	}
 
 	fnScopeItem := functionOptions[0]
@@ -486,7 +500,7 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	// This is skipped with variadic functions
 	if !callee.Sig.Variadic {
 		for i := range args {
-			args[i] = createTypeCast(c, args[i], callee.Sig.Params[i].Type())
+			args[i] = createTypeCast(prog, args[i], callee.Sig.Params[i].Type())
 		}
 	}
 
@@ -495,12 +509,14 @@ func (n FunctionCallNode) Codegen(scope *Scope, c *Compiler) value.Value {
 }
 
 // Codegen implements Node.Codegen for ReturnNode
-func (n ReturnNode) Codegen(scope *Scope, c *Compiler) value.Value {
+func (n ReturnNode) Codegen(prog *Program) value.Value {
+	c := prog.Compiler
+
 	var retVal value.Value
 
 	if c.FN.Sig.Ret != types.Void {
 		if n.Value != nil {
-			retVal = n.Value.Codegen(scope, c)
+			retVal = n.Value.Codegen(prog)
 			// retVal = createTypeCast(c, retVal, c.FN.Sig.Ret)
 		} else {
 			retVal = nil

@@ -24,7 +24,7 @@ func (n IntNode) NameString() string { return "IntNode" }
 func (n IntNode) InferType(scope *Scope) string { return "int" }
 
 // Codegen implements Node.Codegen for IntNode
-func (n IntNode) Codegen(scope *Scope, c *Compiler) value.Value {
+func (n IntNode) Codegen(prog *Program) value.Value {
 	// return llvm.ConstInt(llvm.Int64Type(), , true)
 	return constant.NewInt(n.Value, types.I64)
 }
@@ -34,6 +34,6 @@ func (n IntNode) String() string {
 }
 
 // GenAccess implements Accessable.GenAccess
-func (n IntNode) GenAccess(s *Scope, c *Compiler) value.Value {
-	return n.Codegen(s, c)
+func (n IntNode) GenAccess(prog *Program) value.Value {
+	return n.Codegen(prog)
 }

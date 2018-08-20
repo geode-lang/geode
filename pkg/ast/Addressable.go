@@ -8,5 +8,5 @@ import (
 // a node that allows the ability to read address
 // of a node.
 type Addressable interface {
-	GenAddress(*Scope, *Compiler) *ir.InstAlloca
+	GenAddress(*Program) *ir.InstAlloca
 }

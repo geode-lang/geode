@@ -31,15 +31,17 @@ func (n AssignmentNode) String() string {
 }
 
 // Codegen implements Node.Codegen for AssignmentNode
-func (n AssignmentNode) Codegen(s *Scope, c *Compiler) value.Value {
+func (n AssignmentNode) Codegen(prog *Program) value.Value {
+
+	c := prog.Compiler
 	// c.CurrentBlock().AppendInst(NewLLVMComment(n.String()))
-	targetType := n.Assignee.Type(s, c)
+	targetType := n.Assignee.Type(prog)
 	c.typeCache = targetType
 
-	val := n.Value.GenAccess(s, c)
+	val := n.Value.GenAccess(prog)
 	if !types.Equal(val.Type(), targetType) {
-		val = createTypeCast(c, val, targetType)
+		val = createTypeCast(prog, val, targetType)
 	}
-	n.Assignee.GenAssign(s, c, val)
+	n.Assignee.GenAssign(prog, val)
 	return val
 }

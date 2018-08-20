@@ -70,12 +70,15 @@ func (n FunctionNode) Arguments(scope *Scope) ([]*types.Param, []types.Type) {
 }
 
 // Declare declares some FunctionNode's sig
-func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
-	checkerr := n.Check(scope, c)
+func (n FunctionNode) Declare(prog *Program) *ir.Function {
+
+	prog.Scope = prog.Scope.SpawnChild()
+	c := prog.Compiler
+	checkerr := n.Check(prog.Scope, c)
 	if checkerr != nil {
 		log.Fatal("Check error: %s\n", checkerr.Error())
 	}
-	funcArgs, _ := n.Arguments(scope)
+	funcArgs, _ := n.Arguments(prog.Scope)
 
 	namestring := n.Name.String()
 	// We need to do some special checks if the function is main. It's special.
@@ -85,11 +88,12 @@ func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 			log.Fatal("Main function must return type int. Called for type '%s'\n", n.ReturnType)
 		}
 	} else {
-		namestring = n.MangledName(scope, c, nil)
+		namestring = n.MangledName(prog.Scope, c, nil)
 	}
 
-	ty := scope.FindType(n.ReturnType.Name).Type
+	ty := prog.Scope.FindType(n.ReturnType.Name).Type
 	ty = n.ReturnType.BuildPointerType(ty)
+
 	function := c.Module.NewFunction(namestring, ty, funcArgs...)
 
 	c.FN = function
@@ -100,7 +104,7 @@ func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 
 	function.Sig.Variadic = n.Variadic
 
-	keyName := fmt.Sprintf("%s:%s", c.Package.NamespaceName, n.Name)
+	keyName := fmt.Sprintf("%s:%s", c.Scope.NamespaceName, n.Name)
 
 	scopeItem := NewFunctionScopeItem(keyName, n, function, PublicVisibility)
 	scopeItem.SetMangled(!n.Nomangle)
@@ -108,6 +112,8 @@ func (n FunctionNode) Declare(scope *Scope, c *Compiler) *ir.Function {
 
 	// c.Module.NewGlobalDecl(fmt.Sprintf("_ret_%s", function.Name), function.Sig.Ret)
 	c.FN = nil
+
+	prog.Scope = prog.Scope.Parent
 	return function
 }
 
@@ -121,7 +127,7 @@ func (n FunctionNode) MangledName(scope *Scope, c *Compiler, generics []*Generic
 	// Parse the namespace and name from the funciton name
 	namespace, name := parseName(n.Name.String())
 	if namespace == "" {
-		namespace = c.Package.NamespaceName
+		namespace = c.Scope.NamespaceName
 	}
 
 	ns = fmt.Sprintf("%s:%s", namespace, name)
@@ -153,18 +159,21 @@ func (n FunctionNode) Check(scope *Scope, c *Compiler) error {
 
 // CodegenGeneric takes some generic type symbols, checks if they could work, and generates
 // a new function using those as types.
-func (n FunctionNode) CodegenGeneric(scope *Scope, c *Compiler, g []*GenericSymbol) value.Value {
+func (n FunctionNode) CodegenGeneric(prog *Program, g []*GenericSymbol) value.Value {
 	if len(n.Generics) != len(g) {
 		n.SyntaxError()
 		log.Fatal("Generics used in function call on '%s' are not of the correct length. Passed: %d, Expected: %d", n.Name, len(g), len(n.Generics))
 	}
 
-	return n.Codegen(scope, c)
+	return n.Codegen(prog)
 
 }
 
 // Codegen implements Node.Codegen for FunctionNode
-func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
+func (n FunctionNode) Codegen(prog *Program) value.Value {
+	scope := prog.Scope
+	c := prog.Compiler
+
 	checkerr := n.Check(scope, c)
 	if checkerr != nil {
 		n.SyntaxError()
@@ -196,7 +205,7 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		// Construct the prelude of this function
 		// The prelude contains information about
 		// initializing the runtime.
-		createPrelude(scope, c, n)
+		createPrelude(prog, n)
 		if len(function.Params()) > 0 {
 			c.CurrentBlock().AppendInst(NewLLVMComment(n.Name.String() + " arguments:"))
 		}
@@ -209,11 +218,11 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 		}
 		// c.CurrentBlock().AppendInst(NewLLVMComment(fmt.Sprintf("%s code:", n.Name.String())))
 		// Gen the body of the function
-		n.Body.Codegen(scope, c)
+		n.Body.Codegen(prog)
 		if c.CurrentBlock().Term == nil {
 			ty := scope.FindType(n.ReturnType.Name).Type
 			// log.Error("Function %s is missing a return statement in the root block. Defaulting to 0\n", n.Name)
-			v := createTypeCast(c, constant.NewInt(0, types.I64), ty)
+			v := createTypeCast(prog, constant.NewInt(0, types.I64), ty)
 			c.CurrentBlock().NewRet(v)
 		}
 		c.PopBlock()
@@ -221,11 +230,11 @@ func (n FunctionNode) Codegen(scope *Scope, c *Compiler) value.Value {
 	return function
 }
 
-func createPrelude(scope *Scope, c *Compiler, n FunctionNode) {
-	if c.FN.Name == "main" {
-		c.CurrentBlock().AppendInst(NewLLVMComment("runtime prelude:"))
+func createPrelude(prog *Program, n FunctionNode) {
+	if prog.Compiler.FN.Name == "main" {
+		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("runtime prelude:"))
 		// Initialize the garbage collector at the first value allocted to the stack.
-		QuickParseIdentifier("byte __GC_BASE_POINTER;").Codegen(scope, c)
-		QuickParseExpression("___geodegcinit(&__GC_BASE_POINTER);").Codegen(scope, c)
+		QuickParseIdentifier("byte __GC_BASE_POINTER;").Codegen(prog)
+		QuickParseExpression("___geodegcinit(&__GC_BASE_POINTER);").Codegen(prog)
 	}
 }

@@ -1,4 +1,4 @@
-is main
+is mandelbrot
 
 
 include "std:io"
@@ -46,7 +46,7 @@ func mandelhelp(float xmin, float xmax, float xstep, float ymin, float ymax, flo
 	}
 }
 
-func main int {
-	printMandel(-2.5, -1.3, 0.03, 0.04);
-	return 0;
-}
+# func main int {
+# 	printMandel(-2.5, -1.3, 0.03, 0.04);
+# 	return 0;
+# }

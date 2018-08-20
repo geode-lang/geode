@@ -35,8 +35,8 @@ func (n NamedReference) String() string {
 }
 
 // Alloca returns the nearest alloca instruction in this scope with the given name
-func (n NamedReference) Alloca(s *Scope, c *Compiler) value.Value {
-	scopeitem, found := s.Find(n.Value)
+func (n NamedReference) Alloca(prog *Program) value.Value {
+	scopeitem, found := prog.Scope.Find(n.Value)
 	if !found {
 		log.Fatal("Unable to find named reference %s\n", n)
 	}
@@ -50,22 +50,22 @@ func (n NamedReference) Alloca(s *Scope, c *Compiler) value.Value {
 }
 
 // Load returns a load instruction on a named reference with the given name
-func (n NamedReference) Load(block *ir.BasicBlock, s *Scope, c *Compiler) *ir.InstLoad {
-	return block.NewLoad(n.Alloca(s, c))
+func (n NamedReference) Load(block *ir.BasicBlock, prog *Program) *ir.InstLoad {
+	return block.NewLoad(n.Alloca(prog))
 }
 
 // GenAssign implements Assignable.GenAssign
-func (n NamedReference) GenAssign(s *Scope, c *Compiler, assignment value.Value) value.Value {
-	c.CurrentBlock().NewStore(assignment, n.Alloca(s, c))
+func (n NamedReference) GenAssign(prog *Program, assignment value.Value) value.Value {
+	prog.Compiler.CurrentBlock().NewStore(assignment, n.Alloca(prog))
 	return assignment
 }
 
 // GenAccess implements Accessable.GenAccess
-func (n NamedReference) GenAccess(s *Scope, c *Compiler) value.Value {
-	return n.Load(c.CurrentBlock(), s, c)
+func (n NamedReference) GenAccess(prog *Program) value.Value {
+	return n.Load(prog.Compiler.CurrentBlock(), prog)
 }
 
 // Type implements Assignable.Type
-func (n NamedReference) Type(s *Scope, c *Compiler) types.Type {
-	return n.Alloca(s, c).(*ir.InstAlloca).Elem
+func (n NamedReference) Type(prog *Program) types.Type {
+	return n.Alloca(prog).(*ir.InstAlloca).Elem
 }

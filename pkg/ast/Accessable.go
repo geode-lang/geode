@@ -8,5 +8,5 @@ import (
 // a node that allows the ability to read the value
 // from the node.
 type Accessable interface {
-	GenAccess(*Scope, *Compiler) value.Value
+	GenAccess(*Program) value.Value
 }

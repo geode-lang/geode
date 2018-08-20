@@ -64,21 +64,14 @@ func (c *Compiler) genInBlock(blk *ir.BasicBlock, fn func()) {
 	c.PopBlock()
 }
 
-// HasDependency ...
-func (c *Compiler) HasDependency(ns string) bool {
-	return c.Package.HasDependency(ns)
-}
-
 // NewCompiler returns a pointer to a new Compiler object.
-func NewCompiler(module *ir.Module, moduleName string, pkg *Package, namespaces map[string]*[]Node) *Compiler {
+func NewCompiler(prog *Program) *Compiler {
 	comp := &Compiler{}
-	comp.Package = pkg
-	comp.Namespaces = namespaces
-	// Initialize the module for this compiler.
-	comp.Module = module
-	comp.Name = moduleName
 
-	comp.Scope = pkg.Scope
+	// Initialize the module for this compiler.
+	comp.Module = prog.Module
+
+	comp.Scope = prog.Scope
 	comp.blocks = make([]*ir.BasicBlock, 0)
 	return comp
 }

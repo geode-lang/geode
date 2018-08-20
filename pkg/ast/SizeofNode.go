@@ -23,19 +23,19 @@ func (n SizeofNode) InferType(scope *Scope) string {
 }
 
 // Codegen implements Node.Codegen for SizeofNode
-func (n SizeofNode) Codegen(scope *Scope, c *Compiler) value.Value {
-	t := scope.FindType(n.Type.Name).Type
+func (n SizeofNode) Codegen(prog *Program) value.Value {
+	t := prog.Scope.FindType(n.Type.Name).Type
 	for i := 0; i < n.Type.PointerLevel; i++ {
 		t = types.NewPointer(t)
 	}
 
-	c.CurrentBlock().AppendInst(NewLLVMComment("sizeof(%s)", t))
+	prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("sizeof(%s)", t))
 	// https://stackoverflow.com/a/30830445
 	elemptr := constant.NewGetElementPtr(constant.NewNull(types.NewPointer(t)), constant.NewInt(1, types.I32))
-	return c.CurrentBlock().NewPtrToInt(elemptr, types.I64)
+	return prog.Compiler.CurrentBlock().NewPtrToInt(elemptr, types.I64)
 }
 
 // GenAccess implements Accessable.Access for SizeofNode
-func (n SizeofNode) GenAccess(s *Scope, c *Compiler) value.Value {
-	return n.Codegen(s, c)
+func (n SizeofNode) GenAccess(prog *Program) value.Value {
+	return n.Codegen(prog)
 }

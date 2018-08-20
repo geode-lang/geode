@@ -23,18 +23,21 @@ func (n ArrayNode) NameString() string { return "ArrayNode" }
 func (n ArrayNode) InferType(scope *Scope) string { return "void" }
 
 // GenAccess -
-func (n ArrayNode) GenAccess(s *Scope, c *Compiler) value.Value {
-	return n.Codegen(s, c)
+func (n ArrayNode) GenAccess(prog *Program) value.Value {
+	return n.Codegen(prog)
 }
 
 // Codegen implements Node.Codegen for ArrayNode
-func (n ArrayNode) Codegen(scope *Scope, c *Compiler) value.Value {
+func (n ArrayNode) Codegen(prog *Program) value.Value {
+
+	c := prog.Compiler
+
 	block := c.CurrentBlock()
 
 	var elementType types.Type
 	values := make([]value.Value, 0)
 	for _, el := range n.Elements {
-		val := el.Codegen(scope, c)
+		val := el.Codegen(prog)
 		if elementType == nil {
 			elementType = val.Type()
 		}
