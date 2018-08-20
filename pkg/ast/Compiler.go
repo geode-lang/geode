@@ -64,6 +64,7 @@ func (c *Compiler) genInBlock(blk *ir.BasicBlock, fn func()) {
 	c.PopBlock()
 }
 
+// HasDependency ...
 func (c *Compiler) HasDependency(ns string) bool {
 	return c.Package.HasDependency(ns)
 }
