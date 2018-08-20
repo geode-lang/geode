@@ -462,10 +462,10 @@ func (n FunctionCallNode) Codegen(prog *Program) value.Value {
 	ns, nm := parseName(n.Name.String())
 
 	if ns == "" {
-		ns = c.Scope.NamespaceName
+		ns = c.Scope.PackageName
 	} else if !prog.Package.HasAccessToPackage(ns) {
 		n.SyntaxError()
-		log.Fatal("Package %s doesn't load package %s but attempts to call %s:%s.\n", c.Scope.NamespaceName, ns, ns, nm)
+		log.Fatal("Package %s doesn't load package %s but attempts to call %s:%s.\n", c.Scope.PackageName, ns, ns, nm)
 	}
 
 	completeName := fmt.Sprintf("%s:%s", ns, nm)
@@ -483,7 +483,7 @@ func (n FunctionCallNode) Codegen(prog *Program) value.Value {
 		// _, bareName := parseName(unmangled)
 
 		n.SyntaxError()
-		log.Fatal("Unable to find function '%s' in scope of module '%s'. Mangled name: %q\n", unmangled, c.Scope.NamespaceName, name)
+		log.Fatal("Unable to find function '%s' in scope of module '%s'. Mangled name: %q\n", unmangled, c.Scope.PackageName, name)
 	}
 
 	fnScopeItem := functionOptions[0]

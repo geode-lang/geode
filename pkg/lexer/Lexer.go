@@ -94,7 +94,6 @@ func QuickLex(str string) []Token {
 	tokArr := make([]Token, 0)
 
 	for t := range Lex(source) {
-		// fmt.Println(t)
 		tokArr = append(tokArr, t)
 	}
 
@@ -119,26 +118,12 @@ func (l *Lexer) emit(typ TokenType) {
 		if override {
 			typ = newTyp
 		}
-		// inputRunes := []rune(l.input)
-
-		// length := utf8.RuneCountInString(l.input)
-
-		// fmt.Println("===")
-		// fmt.Println("len", length)
-		// if l.start > 1 {
-		// 	fmt.Printf("%q %q\n", inputRunes[l.start-1], tok.Value)
-		// 	tok.SpaceBefore = isSpace(inputRunes[l.start-1])
-		// }
 
 		tok.SpaceBefore = true
 
-		// if l.pos < length {
-		// 	fmt.Println("end", l.pos)
-		// 	tok.SpaceAfter = isSpace(inputRunes[l.pos])
-		// }
-
 		tok.Type = typ
 		info.AddToken(tok)
+
 		l.tokens <- tok
 	}
 	l.start = l.pos
@@ -275,7 +260,7 @@ func (l *Lexer) fatal(format string, args ...interface{}) stateFn {
 func lexIdentifer(l *Lexer) stateFn {
 	for {
 		switch r := l.next(); {
-		case isAlphaNumeric(r) || r == '\'' || r == '-':
+		case isAlphaNumeric(r) || r == '\'':
 			// absorb
 		default:
 			l.backup()

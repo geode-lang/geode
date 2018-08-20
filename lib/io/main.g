@@ -16,6 +16,10 @@ func println(string message) {
 }
 
 
+
+func system(string command) int ...
+func sleepms(float ms) ...
+
 # File io Functions
 
 # FILE is a standin for the C stdlib.h file handle struct

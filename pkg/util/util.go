@@ -3,6 +3,7 @@ package util
 import (
 	"crypto/md5"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -146,4 +147,12 @@ func HashFile(path string) string {
 	returnMD5String = hex.EncodeToString(hashInBytes)
 	return returnMD5String
 
+}
+
+// QuickHash returns the first couple chars from a sha256
+func QuickHash(in string, l int) string {
+	if l > 64 {
+		l = 64
+	}
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(in)))[:l]
 }

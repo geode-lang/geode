@@ -104,7 +104,7 @@ func (n FunctionNode) Declare(prog *Program) *ir.Function {
 
 	function.Sig.Variadic = n.Variadic
 
-	keyName := fmt.Sprintf("%s:%s", c.Scope.NamespaceName, n.Name)
+	keyName := fmt.Sprintf("%s:%s", c.Scope.PackageName, n.Name)
 
 	scopeItem := NewFunctionScopeItem(keyName, n, function, PublicVisibility)
 	scopeItem.SetMangled(!n.Nomangle)
@@ -127,7 +127,7 @@ func (n FunctionNode) MangledName(scope *Scope, c *Compiler, generics []*Generic
 	// Parse the namespace and name from the funciton name
 	namespace, name := parseName(n.Name.String())
 	if namespace == "" {
-		namespace = c.Scope.NamespaceName
+		namespace = c.Scope.PackageName
 	}
 
 	ns = fmt.Sprintf("%s:%s", namespace, name)
@@ -236,5 +236,13 @@ func createPrelude(prog *Program, n FunctionNode) {
 		// Initialize the garbage collector at the first value allocted to the stack.
 		QuickParseIdentifier("byte __GC_BASE_POINTER;").Codegen(prog)
 		QuickParseExpression("___geodegcinit(&__GC_BASE_POINTER);").Codegen(prog)
+
+		// fields := map[string]value.Value{}
+
+		// fields["foo"] = constant.NewInt(12, types.I64)
+		// fields["bar"] = constant.NewInt(42, types.I64)
+		// NewClassInstance(prog, prog.Scope.FindType("Foo").Type.(*types.StructType), fields)
+
 	}
+
 }

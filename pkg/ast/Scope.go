@@ -21,7 +21,7 @@ type Scope struct {
 	Vals             map[string]ScopeItem
 	Types            *map[string]*TypeDef
 	GenericTemplates *[]GenericNodeWrapper
-	NamespaceName    string
+	PackageName      string
 }
 
 // Add a value to this specific scope
@@ -146,7 +146,7 @@ func (s *Scope) SpawnChild() *Scope {
 	child.Parent = s
 	child.Vals = make(map[string]ScopeItem)
 	child.Types = s.Types
-	child.NamespaceName = s.NamespaceName
+	child.PackageName = s.PackageName
 	s.Children = append(s.Children, child)
 	return child
 }

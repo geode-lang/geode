@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"sort"
 	"strings"
 
 	"path/filepath"
@@ -182,38 +183,40 @@ func ReduceToDir(path string) string {
 func (p *Program) Codegen() *ir.Module {
 	p.Module = ir.NewModule()
 
-	p.Compiler = NewCompiler(p)
-	// First go through and declare all classes
-	for _, pkg := range p.Packages {
-		p.Scope.NamespaceName = pkg.Name
-		p.Package = pkg
-		for node := range FilterNodes(pkg.Nodes, nodeClass) {
-			cls := node.(ClassNode)
+	nodes := make([]*PackagedNode, 0)
 
-			cls.Declare(p)
-			cls.VerifyCorrectness(p.Scope, p.Compiler)
-		}
-	}
-
-	// go through and declare all functions
 	for _, pkg := range p.Packages {
-		p.Scope.NamespaceName = pkg.Name
-		p.Package = pkg
-		for node := range FilterNodes(pkg.Nodes, nodeFunction) {
-			fn := node.(FunctionNode)
-			fn.Declare(p)
-		}
-	}
-
-	// go through and declare all functions
-	for _, pkg := range p.Packages {
-		p.Scope.NamespaceName = pkg.Name
-		p.Package = pkg
 		for _, node := range pkg.Nodes {
-			node.Codegen(p)
+			nodes = append(nodes, PackageNode(node, pkg, p))
 		}
 	}
 
+	p.Compiler = NewCompiler(p)
+
+	for node := range FilterPackagedNodes(nodes, nodeClass) {
+		node.SetupContext()
+		node.Node.(ClassNode).Declare(p)
+	}
+
+	for node := range FilterPackagedNodes(nodes, nodeFunction) {
+		node.SetupContext()
+		node.Node.(FunctionNode).Declare(p)
+	}
+
+	for _, node := range nodes {
+		node.SetupContext()
+		node.Codegen(p)
+	}
+	// Sort the assorted items in a module because we want to have reproducable
+	// hashes in the produced code. As a sideeffect of using a hashmap for path->pkg
+	// mapping, it will be out of order most of the time.
+	sort.SliceStable(p.Module.Funcs, func(i, j int) bool {
+		return p.Module.Funcs[i].Name < p.Module.Funcs[j].Name
+	})
+
+	sort.SliceStable(p.Module.Types, func(i, j int) bool {
+		return p.Module.Funcs[i].Name < p.Module.Funcs[j].Name
+	})
 	return p.Module
 }
 
@@ -312,4 +315,49 @@ func FilterNodes(nodes []Node, t NodeType) chan Node {
 	}()
 
 	return filtered
+}
+
+// FilterPackagedNodes returns only the nodes that have the type passed in
+func FilterPackagedNodes(nodes []*PackagedNode, t NodeType) chan *PackagedNode {
+	filtered := make(chan *PackagedNode)
+	go func() {
+		for _, n := range nodes {
+			if n.Node.Kind() == t {
+				filtered <- n
+			}
+		}
+		close(filtered)
+	}()
+
+	return filtered
+}
+
+// PackagedNode wraps around a certain node and allows better codegen
+// in the context of a certain package
+type PackagedNode struct {
+	Pkg     *Package
+	Program *Program
+	Node    Node
+}
+
+// Codegen will generate the node this PackagedNode wraps
+func (p *PackagedNode) Codegen(prog *Program) {
+	p.SetupContext()
+	p.Node.Codegen(prog)
+}
+
+// SetupContext modifies the program to help with context information
+func (p *PackagedNode) SetupContext() {
+	p.Program.Package = p.Pkg
+	p.Program.Scope.PackageName = p.Pkg.Name
+}
+
+// PackageNode takes a node, it's package and the program context
+// and creates an encapsulated context for it
+func PackageNode(node Node, pkg *Package, prog *Program) *PackagedNode {
+	n := &PackagedNode{}
+	n.Node = node
+	n.Pkg = pkg
+	n.Program = prog
+	return n
 }

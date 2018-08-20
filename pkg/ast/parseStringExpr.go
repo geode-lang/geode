@@ -46,7 +46,7 @@ func UnescapeString(s string) (string, error) {
 			i++
 
 			if sr[i] == 'x' {
-				// i++
+				i++
 				hexStr := make([]rune, 0)
 				for ; i < len(sr) && isHex(sr[i]); i++ {
 					hexStr = append(hexStr, sr[i])
@@ -54,6 +54,7 @@ func UnescapeString(s string) (string, error) {
 
 				bts, _ := hex.DecodeString(string(hexStr))
 				for _, b := range bts {
+					i--
 					buff.WriteByte(b)
 				}
 				continue

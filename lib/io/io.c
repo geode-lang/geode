@@ -8,6 +8,9 @@
 #include "io.h"
 #include "../c/mem.h"
 
+#include <unistd.h>
+
+
 
 
 // the print function wrapper.
@@ -35,6 +38,11 @@ char* format(char *fmt, ...) {
 	vsnprintf(buffer, size + 1, fmt, args);
 	va_end(args);
 	return buffer;
+}
+
+
+void sleepms(double ms) {
+	usleep(ms*1000);
 }
 
 // Since geode doesn't have any way of using c structs at the time being,
