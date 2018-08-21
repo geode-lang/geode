@@ -164,7 +164,13 @@ func (n ForNode) Codegen(prog *Program) value.Value {
 }
 
 // Codegen implements Node.Codegen for CharNode
-func (n CharNode) Codegen(prog *Program) value.Value { return nil }
+func (n CharNode) Codegen(prog *Program) value.Value {
+	return constant.NewInt(int64(n.Value), types.I8)
+}
+
+func (n CharNode) GenAccess(prog *Program) value.Value {
+	return n.Codegen(prog)
+}
 
 // Codegen implements Node.Codegen for UnaryNode
 func (n UnaryNode) Codegen(prog *Program) value.Value {

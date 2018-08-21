@@ -49,7 +49,9 @@ func (n DotReference) Alloca(prog *Program) value.Value {
 	// If the type that the alloca points to is a pointer, we need to load from the pointer
 	if types.IsPointer(elemType) {
 		base = c.CurrentBlock().NewLoad(base)
+
 	}
+
 	structType := baseType.(*types.StructType)
 	index = structType.FieldIndex(n.Field.String())
 

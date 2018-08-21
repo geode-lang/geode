@@ -73,7 +73,7 @@ func (p *Parser) parseNumericExpr() Node {
 		n := CharNode{}
 		n.TokenReference.Token = p.token
 		n.NodeType = nodeChar
-		n.Value = val.(int8)
+		n.Value = val.(rune)
 		p.next()
 		return n
 	}

@@ -20,6 +20,9 @@ func (p *Parser) parsePrimary() Node {
 	case lexer.TokString:
 		return p.parseStringExpr()
 
+	case lexer.TokChar:
+		return p.parseCharExpr()
+
 	case lexer.TokLeftBrace:
 		return p.parseArrayDecl()
 	}

@@ -203,9 +203,18 @@ func (p *Program) Codegen() *ir.Module {
 		node.Node.(FunctionNode).Declare(p)
 	}
 
-	for _, node := range nodes {
+	// Codegen the types/classes
+	for node := range FilterPackagedNodes(nodes, nodeClass) {
 		node.SetupContext()
-		node.Codegen(p)
+		node.Node.(ClassNode).Codegen(p)
+	}
+
+	// Codegen the types/classes
+	for node := range FilterPackagedNodesPredicate(nodes, func(n Node) bool {
+		return n.Kind() != nodeClass
+	}) {
+		node.SetupContext()
+		node.Node.Codegen(p)
 	}
 	// Sort the assorted items in a module because we want to have reproducable
 	// hashes in the produced code. As a sideeffect of using a hashmap for path->pkg
@@ -323,6 +332,21 @@ func FilterPackagedNodes(nodes []*PackagedNode, t NodeType) chan *PackagedNode {
 	go func() {
 		for _, n := range nodes {
 			if n.Node.Kind() == t {
+				filtered <- n
+			}
+		}
+		close(filtered)
+	}()
+
+	return filtered
+}
+
+// FilterPackagedNodesPredicate returns only the nodes that pass the test given
+func FilterPackagedNodesPredicate(nodes []*PackagedNode, predicate func(n Node) bool) chan *PackagedNode {
+	filtered := make(chan *PackagedNode)
+	go func() {
+		for _, n := range nodes {
+			if predicate(n.Node) {
 				filtered <- n
 			}
 		}

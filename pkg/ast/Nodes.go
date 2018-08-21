@@ -81,7 +81,7 @@ type CharNode struct {
 	NodeType
 	TokenReference
 
-	Value int8
+	Value rune
 }
 
 // NameString implements Node.NameString

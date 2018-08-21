@@ -200,7 +200,7 @@ func lexTopLevel(l *Lexer) stateFn {
 	case r == eof:
 
 		return nil
-	case strings.IndexRune("-0123456789.", r) >= 0:
+	case strings.IndexRune("-0123456789", r) >= 0:
 		l.backup()
 		return lexNumber
 	case isAlphaNumeric(r):
@@ -247,6 +247,9 @@ func lexTopLevel(l *Lexer) stateFn {
 	case r == '"':
 		// l.backup()
 		return lexStringLiteral
+	case r == '\'':
+		// l.backup()
+		return lexCharLiteral
 	}
 	return l.fatal("unrecognized character: %#U\n", r)
 }
@@ -310,17 +313,25 @@ func lexNewline(l *Lexer) stateFn {
 }
 
 func lexSymbol(l *Lexer) stateFn {
-	var lastRune rune
+	// var lastRune rune
+
+	finalRuns := map[string]bool{
+		"...": true,
+	}
+
 	l.acceptRunPredicate(func(c rune) bool {
-		if c == lastRune || l.peek() == lastRune {
-			l.backup()
+		if finalRuns[l.value()] {
+
 			l.emit(TokOper)
-			l.next()
 		}
-		lastRune = c
+		// lastRune = c
 		return isOperator(c)
 	})
-	l.emit(TokOper)
+
+	if len(l.value()) > 0 {
+		l.emit(TokOper)
+	}
+
 	return lexTopLevel
 }
 
@@ -341,6 +352,25 @@ func lexStringLiteral(l *Lexer) stateFn {
 		}
 	}
 	return l.fatal("Unclosed string literal\n")
+}
+
+func lexCharLiteral(l *Lexer) stateFn {
+	for {
+		r := l.next()
+		if r == eof {
+			break
+		}
+
+		if r == '\\' {
+			// Skip escape ('\' and next char)
+			l.next()
+		}
+		if r == '\'' {
+			l.emit(TokChar)
+			return lexTopLevel
+		}
+	}
+	return l.fatal("Unclosed char literal\n")
 }
 
 //

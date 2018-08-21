@@ -84,3 +84,17 @@ func (p *Parser) parseStringExpr() Node {
 	p.next()
 	return n
 }
+
+func (p *Parser) parseCharExpr() Node {
+	n := CharNode{}
+
+	n.TokenReference.Token = p.token
+	n.NodeType = nodeChar
+
+	val := p.token.Value[1 : len(p.token.Value)-1]
+
+	escaped, _ := UnescapeString(val)
+	n.Value = []rune(escaped)[0]
+	p.next()
+	return n
+}

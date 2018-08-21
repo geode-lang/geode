@@ -1,15 +1,12 @@
 package ast
 
 import (
-	"fmt"
-
 	"github.com/geode-lang/geode/pkg/lexer"
 )
 
 func (p *Parser) parseDotExpr(base Reference) Reference {
 
 	n := DotReference{}
-	fmt.Println(p.token)
 	n.Token = p.token
 	n.NodeType = nodeDot
 	n.Base = base
