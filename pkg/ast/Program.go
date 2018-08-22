@@ -252,16 +252,11 @@ func (p *Program) Emit(buildDir string) string {
 		panic(writeErr)
 	}
 
-	// out, err := util.RunCommand("clang", "-flto=thin", "-Wl,-mllvm,-threads=4,-mllvm,-O0", llvmFileName, "-c", "-o", objFileName)
-	// if err != nil {
-	// 	log.Fatal("%s\n%s\n", string(out), err.Error())
-	// }
 	return llvmFileName
 }
 
 // String will get the LLVM IR from the package's compiler
 func (p *Program) String() string {
-	// ir := ""
 	ir := &bytes.Buffer{}
 	// We need to build up the IR that will be emitted
 	// so we can track this information later on.

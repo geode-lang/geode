@@ -1,7 +1,9 @@
 package ast
 
 import (
+	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/geode-lang/geode/pkg/lexer"
 	"github.com/geode-lang/llvm/ir/types"
@@ -28,6 +30,7 @@ func (t TokenReference) SyntaxError() {
 
 // Node -
 type Node interface {
+	fmt.Stringer
 	Kind() NodeType
 	SyntaxError()
 	NameString() string
@@ -84,6 +87,12 @@ type CharNode struct {
 	Value rune
 }
 
+func (n CharNode) String() string {
+	buff := &bytes.Buffer{}
+	fmt.Fprintf(buff, "CharNode")
+	return buff.String()
+}
+
 // NameString implements Node.NameString
 func (n CharNode) NameString() string { return "CharNode" }
 
@@ -99,6 +108,16 @@ type IfNode struct {
 	Then  Node
 	Else  Node
 	Index int
+}
+
+func (n IfNode) String() string {
+	buff := &bytes.Buffer{}
+	fmt.Fprintf(buff, "if %s %s", n.If, n.Then)
+
+	if n.Else != nil {
+		fmt.Fprintf(buff, " else %s", n.Else)
+	}
+	return buff.String()
 }
 
 // NameString implements Node.NameString
@@ -118,6 +137,12 @@ type ForNode struct {
 	Cond  Node
 	Step  Node
 	Body  Node
+}
+
+func (n ForNode) String() string {
+	buff := &bytes.Buffer{}
+	fmt.Fprintf(buff, "for %s; %s; %s %s", n.Init, n.Cond, n.Step, n.Body)
+	return buff.String()
 }
 
 // NameString implements Node.NameString
@@ -140,6 +165,12 @@ type UnaryNode struct {
 	Operand  Node
 }
 
+func (n UnaryNode) String() string {
+	buff := &bytes.Buffer{}
+	fmt.Fprintf(buff, "UnaryNode")
+	return buff.String()
+}
+
 // NameString implements Node.NameString
 func (n UnaryNode) NameString() string { return "UnaryNode" }
 
@@ -158,6 +189,12 @@ type BinaryNode struct {
 	Right Node
 }
 
+func (n BinaryNode) String() string {
+	buff := &bytes.Buffer{}
+	fmt.Fprintf(buff, "%s %s %s", n.Left, n.OP, n.Right)
+	return buff.String()
+}
+
 // NameString implements Node.NameString
 func (n BinaryNode) NameString() string { return "BinaryNode" }
 
@@ -167,10 +204,6 @@ func (n BinaryNode) InferType(scope *Scope) string { return n.Left.InferType(sco
 // GenAccess implements Accessable.GenAccess
 func (n BinaryNode) GenAccess(prog *Program) value.Value {
 	return n.Codegen(prog)
-}
-
-func (n BinaryNode) String() string {
-	return fmt.Sprintf("%s %s %s", n.Left, n.OP, n.Right)
 }
 
 // DependencyNode is a way of representing the need to include
@@ -189,6 +222,25 @@ type DependencyNode struct {
 
 	Paths    []string
 	CLinkage bool
+}
+
+func (n DependencyNode) String() string {
+	buff := &bytes.Buffer{}
+
+	if n.CLinkage {
+		fmt.Fprintf(buff, "link ")
+	} else {
+		fmt.Fprintf(buff, "include ")
+	}
+
+	for i, path := range n.Paths {
+		fmt.Fprintf(buff, "\"%s\"", path)
+
+		if i < len(n.Paths)-1 {
+			fmt.Fprintf(buff, ", ")
+		}
+	}
+	return buff.String()
 }
 
 // NameString implements Node.NameString
@@ -220,6 +272,12 @@ type ReturnNode struct {
 	Value Node
 }
 
+func (n ReturnNode) String() string {
+	buff := &bytes.Buffer{}
+	fmt.Fprintf(buff, "return %s", n.Value)
+	return buff.String()
+}
+
 // NameString implements Node.NameString
 func (n ReturnNode) NameString() string { return "ReturnNode" }
 
@@ -246,6 +304,21 @@ func (n FunctionCallNode) InferType(scope *Scope) string {
 	return "PLEASE IMPLEMENT ME :)"
 }
 
+func (n FunctionCallNode) String() string {
+	buff := &bytes.Buffer{}
+
+	fmt.Fprintf(buff, "%s(", n.Name)
+	for i, arg := range n.Args {
+		fmt.Fprintf(buff, "%s", arg)
+		if i < len(n.Args)-1 {
+			fmt.Fprintf(buff, ", ")
+		}
+	}
+
+	fmt.Fprintf(buff, ")")
+	return buff.String()
+}
+
 // GenAccess implements Accessable.GenAccess
 func (n FunctionCallNode) GenAccess(prog *Program) value.Value {
 	return n.Codegen(prog)
@@ -261,6 +334,12 @@ type WhileNode struct {
 	Index int
 }
 
+func (n WhileNode) String() string {
+	buff := &bytes.Buffer{}
+	fmt.Fprintf(buff, "while %s %s", n.If, n.Body)
+	return buff.String()
+}
+
 // NameString implements Node.NameString
 func (n WhileNode) NameString() string { return "WhileNode" }
 
@@ -273,6 +352,12 @@ type NamespaceNode struct {
 	TokenReference
 
 	Name string
+}
+
+func (n NamespaceNode) String() string {
+	buff := &bytes.Buffer{}
+	fmt.Fprintf(buff, "is %s", n.Name)
+	return buff.String()
 }
 
 // NameString implements Node.NameString
@@ -294,4 +379,8 @@ func (r GeodeTypeRef) BuildPointerType(t types.Type) types.Type {
 		t = types.NewPointer(t)
 	}
 	return t
+}
+
+func (r GeodeTypeRef) String() string {
+	return fmt.Sprintf("%s%s", r.Name, strings.Repeat("*", r.PointerLevel))
 }

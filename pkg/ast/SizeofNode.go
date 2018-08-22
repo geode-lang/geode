@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/geode-lang/llvm/ir/constant"
 	"github.com/geode-lang/llvm/ir/types"
 	"github.com/geode-lang/llvm/ir/value"
@@ -38,4 +40,8 @@ func (n SizeofNode) Codegen(prog *Program) value.Value {
 // GenAccess implements Accessable.Access for SizeofNode
 func (n SizeofNode) GenAccess(prog *Program) value.Value {
 	return n.Codegen(prog)
+}
+
+func (n SizeofNode) String() string {
+	return fmt.Sprintf("sizeof(%S)", n.Type)
 }

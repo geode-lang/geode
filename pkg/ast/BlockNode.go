@@ -1,6 +1,10 @@
 package ast
 
 import (
+	"bytes"
+	"fmt"
+	"strings"
+
 	"github.com/geode-lang/llvm/ir/value"
 )
 
@@ -28,4 +32,24 @@ func (n BlockNode) Codegen(prog *Program) value.Value {
 
 	prog.Scope = prog.Scope.Parent
 	return prog.Compiler.CurrentBlock()
+}
+
+var blockindentdepth = 0
+
+func (n BlockNode) String() string {
+
+	buff := &bytes.Buffer{}
+
+	fmt.Fprintf(buff, "{\n")
+
+	blockindentdepth++
+
+	for _, node := range n.Nodes {
+		fmt.Fprintf(buff, "%s%s\n", strings.Repeat("\t", blockindentdepth), node)
+	}
+
+	blockindentdepth--
+
+	fmt.Fprintf(buff, "%s}", strings.Repeat("\t", blockindentdepth))
+	return buff.String()
 }

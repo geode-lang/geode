@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/geode-lang/geode/pkg/util/log"
@@ -245,4 +246,31 @@ func createPrelude(prog *Program, n FunctionNode) {
 
 	}
 
+}
+
+func (n FunctionNode) String() string {
+	buff := &bytes.Buffer{}
+
+	fmt.Fprintf(buff, "func %s(", n.Name)
+
+	for i, arg := range n.Args {
+		fmt.Fprintf(buff, "%s", arg)
+		if i < len(n.Args)-1 || n.Variadic {
+			fmt.Fprintf(buff, ", ")
+		}
+	}
+
+	if n.Variadic {
+		fmt.Fprintf(buff, "...")
+	}
+
+	fmt.Fprintf(buff, ") %s ", n.ReturnType)
+
+	if n.External {
+		fmt.Fprintf(buff, "...")
+	} else {
+		fmt.Fprintf(buff, "%s", n.Body)
+	}
+
+	return buff.String()
 }

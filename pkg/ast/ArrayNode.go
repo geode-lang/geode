@@ -1,6 +1,9 @@
 package ast
 
 import (
+	"bytes"
+	"fmt"
+
 	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir/constant"
 	"github.com/geode-lang/llvm/ir/types"
@@ -75,4 +78,10 @@ func (n ArrayNode) Codegen(prog *Program) value.Value {
 	}
 
 	return arrayStart
+}
+
+func (n ArrayNode) String() string {
+	buff := &bytes.Buffer{}
+	fmt.Fprintf(buff, "ArrayNode")
+	return buff.String()
 }

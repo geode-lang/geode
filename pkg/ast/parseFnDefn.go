@@ -111,6 +111,7 @@ func (p *Parser) parseFnDefn() FunctionNode {
 		fn.Nomangle = true
 		p.next()
 	}
+
 	return fn
 }
 

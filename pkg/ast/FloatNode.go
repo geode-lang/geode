@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/geode-lang/llvm/ir/constant"
 	"github.com/geode-lang/llvm/ir/types"
 	"github.com/geode-lang/llvm/ir/value"
@@ -28,4 +30,8 @@ func (n FloatNode) Codegen(prog *Program) value.Value {
 // GenAccess implements Accessable.GenAccess
 func (n FloatNode) GenAccess(prog *Program) value.Value {
 	return n.Codegen(prog)
+}
+
+func (n FloatNode) String() string {
+	return fmt.Sprintf("%f", n.Value)
 }

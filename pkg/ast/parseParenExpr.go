@@ -11,6 +11,7 @@ func (p *Parser) parseParenExpr() Node {
 	if v == nil {
 		return nil
 	}
+
 	if p.token.Type != lexer.TokRightParen {
 		p.Error("expected ')'")
 		return nil

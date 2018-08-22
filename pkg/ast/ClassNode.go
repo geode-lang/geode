@@ -88,6 +88,10 @@ func structContainsTypeAnywhere(s *types.StructType, t types.Type, path ...*type
 	return false, -1, nil
 }
 
+func (n ClassNode) String() string {
+	return fmt.Sprintf("class %s {}", n.Name)
+}
+
 // Declare a class type
 func (n ClassNode) Declare(prog *Program) value.Value {
 	structDefn := types.NewStruct()

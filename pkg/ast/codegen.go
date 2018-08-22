@@ -46,21 +46,6 @@ func (n NamespaceNode) Codegen(prog *Program) value.Value { return nil }
 // Handle will do ast-level handling for a dependency node
 func (n DependencyNode) Handle(prog *Program) value.Value {
 
-	// abs, _ := filepath.Abs(prog.Compiler.Package.Source.Path)
-	// dir := path.Dir(abs)
-
-	fmt.Println(n.Paths)
-	// for _, dp := range n.Paths {
-
-	// 	depPath := path.Join(dir, dp)
-	// 	if n.CLinkage {
-	// 		prog.Compiler.Package.AddClinkage(depPath)
-	// 	} else {
-	// 		prog.Compiler.Package.LoadDep(depPath)
-	// 	}
-
-	// }
-
 	return nil
 }
 

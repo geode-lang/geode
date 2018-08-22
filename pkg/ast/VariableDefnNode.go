@@ -1,6 +1,9 @@
 package ast
 
 import (
+	"bytes"
+	"fmt"
+
 	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir"
 	"github.com/geode-lang/llvm/ir/value"
@@ -78,4 +81,14 @@ func (n VariableDefnNode) Codegen(prog *Program) value.Value {
 	block.NewStore(val, alloc)
 
 	return nil
+}
+
+func (n VariableDefnNode) String() string {
+	buff := &bytes.Buffer{}
+	fmt.Fprintf(buff, "%s %s", n.Type, n.Name)
+
+	if n.HasValue {
+		fmt.Fprintf(buff, " := %s", n.Body)
+	}
+	return buff.String()
 }

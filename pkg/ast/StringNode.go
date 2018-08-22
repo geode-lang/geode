@@ -40,3 +40,7 @@ func (n StringNode) Codegen(prog *Program) value.Value {
 func (n StringNode) GenAccess(prog *Program) value.Value {
 	return n.Codegen(prog)
 }
+
+func (n StringNode) String() string {
+	return fmt.Sprintf("%q", n.Value)
+}

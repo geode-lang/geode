@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/geode-lang/llvm/ir/types"
 	"github.com/geode-lang/llvm/ir/value"
 )
@@ -37,4 +39,8 @@ func (n CastNode) Codegen(prog *Program) value.Value {
 		t = types.NewPointer(t)
 	}
 	return createTypeCast(prog, src, t)
+}
+
+func (n CastNode) String() string {
+	return fmt.Sprintf("%s as %s", n.Source, n.Type)
 }
