@@ -40,6 +40,10 @@ type FunctionNode struct {
 	DeclKeyword    FuncDeclKeywordType
 	ImplicitReturn bool
 
+	Package       *Package
+	Compiled      bool
+	CompiledValue *ir.Function
+
 	line   int
 	column int
 }
@@ -74,30 +78,21 @@ func (n FunctionNode) Arguments(scope *Scope) ([]*types.Param, []types.Type) {
 func (n FunctionNode) Declare(prog *Program) *ir.Function {
 
 	prog.Scope = prog.Scope.SpawnChild()
-	c := prog.Compiler
-	checkerr := n.Check(prog.Scope, c)
+	checkerr := n.Check(prog.Scope, prog.Compiler)
 	if checkerr != nil {
 		log.Fatal("Check error: %s\n", checkerr.Error())
 	}
 	funcArgs, _ := n.Arguments(prog.Scope)
 
 	namestring := n.Name.String()
-	// We need to do some special checks if the function is main. It's special.
-	// For instance, it must return int type.
-	if namestring == "main" {
-		if n.ReturnType.Name != "int" {
-			log.Fatal("Main function must return type int. Called for type '%s'\n", n.ReturnType)
-		}
-	} else {
-		namestring = n.MangledName(prog.Scope, c, nil)
-	}
 
 	ty := prog.Scope.FindType(n.ReturnType.Name).Type
 	ty = n.ReturnType.BuildPointerType(ty)
 
-	function := c.Module.NewFunction(namestring, ty, funcArgs...)
+	function := prog.Compiler.Module.NewFunction(namestring, ty, funcArgs...)
 
-	c.FN = function
+	previousFunction := prog.Compiler.FN
+	prog.Compiler.FN = function
 
 	// if n.Variadic && !n.External {
 	// 	log.Fatal("Function '%s' is variadic and has a body. This only allowed for external functions.\n", n.Name)
@@ -105,35 +100,16 @@ func (n FunctionNode) Declare(prog *Program) *ir.Function {
 
 	function.Sig.Variadic = n.Variadic
 
-	keyName := fmt.Sprintf("%s:%s", c.Scope.PackageName, n.Name)
+	keyName := fmt.Sprintf("%s:%s", prog.Scope.PackageName, n.Name)
 
 	scopeItem := NewFunctionScopeItem(keyName, n, function, PublicVisibility)
 	scopeItem.SetMangled(!n.Nomangle)
-	c.Scope.Add(scopeItem)
-
-	// c.Module.NewGlobalDecl(fmt.Sprintf("_ret_%s", function.Name), function.Sig.Ret)
-	c.FN = nil
+	prog.Scope.Add(scopeItem)
 
 	prog.Scope = prog.Scope.Parent
+
+	prog.Compiler.FN = previousFunction
 	return function
-}
-
-// MangledName will return the mangled name for a function node
-func (n FunctionNode) MangledName(scope *Scope, c *Compiler, generics []*GenericSymbol) string {
-	var ns string
-	if n.Nomangle {
-		return n.Name.String()
-	}
-	_, argTypes := n.Arguments(scope)
-	// Parse the namespace and name from the funciton name
-	namespace, name := parseName(n.Name.String())
-	if namespace == "" {
-		namespace = c.Scope.PackageName
-	}
-
-	ns = fmt.Sprintf("%s:%s", namespace, name)
-	name = MangleFunctionName(ns, argTypes, n.Generics)
-	return name
 }
 
 // Check makes sure a function follows the correct limitations set by the language
@@ -172,10 +148,9 @@ func (n FunctionNode) CodegenGeneric(prog *Program, g []*GenericSymbol) value.Va
 
 // Codegen implements Node.Codegen for FunctionNode
 func (n FunctionNode) Codegen(prog *Program) value.Value {
-	scope := prog.Scope
-	c := prog.Compiler
+	prog.Scope = prog.Scope.SpawnChild()
 
-	checkerr := n.Check(scope, c)
+	checkerr := n.Check(prog.Scope, prog.Compiler)
 	if checkerr != nil {
 		n.SyntaxError()
 		log.Fatal("Check error: %s\n", checkerr.Error())
@@ -184,50 +159,49 @@ func (n FunctionNode) Codegen(prog *Program) value.Value {
 	namestring := n.Name.String()
 
 	if namestring != "main" || !n.Nomangle {
-		namestring = n.MangledName(scope, c, n.Generics)
+		namestring = fmt.Sprintf("%s:%s", prog.Package.Name, n.Name)
 	}
 
-	declared, _ := c.Scope.FindFunctions(namestring)
-
-	if len(declared) != 1 {
-		n.SyntaxError()
-		log.Fatal("Unable to find function declaration for '%s'\n", namestring)
-	}
-	function := declared[0].Value().(*ir.Function)
-	c.FN = function
+	function := n.CompiledValue // at this point it should only be compiled
+	prog.Compiler.FN = function
 
 	// If the function is external (has ... at the end) we don't build a block
 	if !n.External {
 		// Create the entrypoint to the function
 		entryBlock := ir.NewBlock(n.Name.String() + "-entry")
-		c.FN.AppendBlock(entryBlock)
-		c.PushBlock(entryBlock)
+		prog.Compiler.FN.AppendBlock(entryBlock)
+		prog.Compiler.PushBlock(entryBlock)
 
 		// Construct the prelude of this function
 		// The prelude contains information about
 		// initializing the runtime.
 		createPrelude(prog, n)
 		if len(function.Params()) > 0 {
-			c.CurrentBlock().AppendInst(NewLLVMComment(n.Name.String() + " arguments:"))
+			prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment(n.Name.String() + " arguments:"))
 		}
 		for _, arg := range function.Params() {
-			alloc := c.CurrentBlock().NewAlloca(arg.Type())
-			c.CurrentBlock().NewStore(arg, alloc)
+			alloc := prog.Compiler.CurrentBlock().NewAlloca(arg.Type())
+			prog.Compiler.CurrentBlock().NewStore(arg, alloc)
 			// Set the scope item
 			scItem := NewVariableScopeItem(arg.Name, alloc, PrivateVisibility)
-			scope.Add(scItem)
+			prog.Scope.Add(scItem)
 		}
-		// c.CurrentBlock().AppendInst(NewLLVMComment(fmt.Sprintf("%s code:", n.Name.String())))
+		// prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment(fmt.Sprintf("%s code:", n.Name.String())))
 		// Gen the body of the function
-		n.Body.Codegen(prog)
-		if c.CurrentBlock().Term == nil {
-			ty := scope.FindType(n.ReturnType.Name).Type
+		block := n.Body.Codegen(prog).(*ir.BasicBlock)
+
+		if block.Term == nil {
+
+			ty := prog.Scope.FindType(n.ReturnType.Name).Type
+
 			// log.Error("Function %s is missing a return statement in the root block. Defaulting to 0\n", n.Name)
 			v := createTypeCast(prog, constant.NewInt(0, types.I64), ty)
-			c.CurrentBlock().NewRet(v)
+			block.NewRet(v)
 		}
-		c.PopBlock()
+		prog.Compiler.PopBlock()
 	}
+
+	prog.Scope = prog.Scope.Parent
 	return function
 }
 

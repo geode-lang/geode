@@ -33,9 +33,7 @@ func (n ArrayNode) GenAccess(prog *Program) value.Value {
 // Codegen implements Node.Codegen for ArrayNode
 func (n ArrayNode) Codegen(prog *Program) value.Value {
 
-	c := prog.Compiler
-
-	block := c.CurrentBlock()
+	block := prog.Compiler.CurrentBlock()
 
 	var elementType types.Type
 	values := make([]value.Value, 0)
@@ -51,7 +49,7 @@ func (n ArrayNode) Codegen(prog *Program) value.Value {
 		}
 		values = append(values, val)
 	}
-	typ := c.typeCache
+	typ := prog.Compiler.typeCache
 
 	if len(values) > 0 {
 		typ = values[0].Type()

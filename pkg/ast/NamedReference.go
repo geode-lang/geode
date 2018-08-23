@@ -36,6 +36,7 @@ func (n NamedReference) String() string {
 
 // Alloca returns the nearest alloca instruction in this scope with the given name
 func (n NamedReference) Alloca(prog *Program) value.Value {
+
 	scopeitem, found := prog.Scope.Find(n.Value)
 	if !found {
 		log.Fatal("Unable to find named reference %s\n", n)

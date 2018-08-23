@@ -1,16 +1,9 @@
-
-
-
 #include <stdio.h>
 #include <stdarg.h>
-
+#include <unistd.h>
 
 #include "io.h"
 #include "../c/mem.h"
-
-#include <unistd.h>
-
-
 
 
 // the print function wrapper.
@@ -43,24 +36,4 @@ char* format(char *fmt, ...) {
 
 void sleepms(double ms) {
 	usleep(ms*1000);
-}
-
-// Since geode doesn't have any way of using c structs at the time being,
-// I represent FILE* as void* and just trust the user (tm) and cast.
-char* __openfile(char* path, char* mode) {
-	FILE* f = fopen(path, mode);
-	return (char*)f;
-}
-
-char __readchar(char* a) {
-	FILE* f = (FILE*)a;
-	return (char)fgetc(f);
-}
-
-int __fileeof(char* a) {
-	return feof((FILE*)a);
-}
-
-int __filewritestring(char* a, char* data) {
-	return fputs(data, (FILE*)a);
 }

@@ -33,10 +33,9 @@ func (n AssignmentNode) String() string {
 // Codegen implements Node.Codegen for AssignmentNode
 func (n AssignmentNode) Codegen(prog *Program) value.Value {
 
-	c := prog.Compiler
 	// c.CurrentBlock().AppendInst(NewLLVMComment(n.String()))
 	targetType := n.Assignee.Type(prog)
-	c.typeCache = targetType
+	prog.Compiler.typeCache = targetType
 
 	val := n.Value.GenAccess(prog)
 	if !types.Equal(val.Type(), targetType) {

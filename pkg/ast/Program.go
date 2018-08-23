@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"sort"
 	"strings"
 
 	"path/filepath"
@@ -29,6 +28,9 @@ type Program struct {
 	CLinkages     []string
 	Entry         string
 	TargetTripple string
+
+	Functions map[string]*FunctionNode
+	Classes   map[string]*ClassNode
 }
 
 // NewProgram creates a program and returns a pointer to it
@@ -179,29 +181,55 @@ func ReduceToDir(path string) string {
 	return path
 }
 
-// Codegen sets the programs module to one with nodes filled out
-func (p *Program) Codegen() *ir.Module {
+// Congeal sets the programs module to one with nodes filled out
+func (p *Program) Congeal() *ir.Module {
 	p.Module = ir.NewModule()
 
 	nodes := make([]*PackagedNode, 0)
 
+	p.Functions = make(map[string]*FunctionNode)
+	p.Classes = make(map[string]*ClassNode)
+
+	p.Compiler = NewCompiler(p)
 	for _, pkg := range p.Packages {
 		for _, node := range pkg.Nodes {
+
+			if fn, is := node.(FunctionNode); is {
+				name := fmt.Sprintf("%s:%s", pkg.Name, fn.Name)
+
+				if fn.Name.String() == "main" || pkg.Name == "_runtime" {
+					name = fn.Name.String()
+				}
+
+				fn.Package = pkg
+				// fmt.Printf(color.Cyan("Function: %s\n"), name)
+				p.Functions[name] = &fn
+			}
+
+			if cls, is := node.(ClassNode); is {
+				name := fmt.Sprintf("%s:%s", pkg.Name, cls.Name)
+
+				if pkg.Name == "_runtime" {
+					name = cls.Name
+				}
+
+				// fmt.Printf(color.Red("Class: %s\n"), name)
+				p.Classes[name] = &cls
+			}
+
 			nodes = append(nodes, PackageNode(node, pkg, p))
 		}
 	}
-
-	p.Compiler = NewCompiler(p)
 
 	for node := range FilterPackagedNodes(nodes, nodeClass) {
 		node.SetupContext()
 		node.Node.(ClassNode).Declare(p)
 	}
 
-	for node := range FilterPackagedNodes(nodes, nodeFunction) {
-		node.SetupContext()
-		node.Node.(FunctionNode).Declare(p)
-	}
+	// for node := range FilterPackagedNodes(nodes, nodeFunction) {
+	// 	node.SetupContext()
+	// 	node.Node.(FunctionNode).Declare(p)
+	// }
 
 	// Codegen the types/classes
 	for node := range FilterPackagedNodes(nodes, nodeClass) {
@@ -209,24 +237,65 @@ func (p *Program) Codegen() *ir.Module {
 		node.Node.(ClassNode).Codegen(p)
 	}
 
-	// Codegen the types/classes
-	for node := range FilterPackagedNodesPredicate(nodes, func(n Node) bool {
-		return n.Kind() != nodeClass
-	}) {
-		node.SetupContext()
-		node.Node.Codegen(p)
-	}
-	// Sort the assorted items in a module because we want to have reproducable
-	// hashes in the produced code. As a sideeffect of using a hashmap for path->pkg
-	// mapping, it will be out of order most of the time.
-	sort.SliceStable(p.Module.Funcs, func(i, j int) bool {
-		return p.Module.Funcs[i].Name < p.Module.Funcs[j].Name
-	})
+	// // Codegen the types/classes
+	// for node := range FilterPackagedNodesPredicate(nodes, func(n Node) bool {
+	// 	return n.Kind() != nodeClass
+	// }) {
+	// 	node.SetupContext()
+	// 	node.Node.Codegen(p)
+	// }
+	// // Sort the assorted items in a module because we want to have reproducable
+	// // hashes in the produced code. As a sideeffect of using a hashmap for path->pkg
+	// // mapping, it will be out of order most of the time.
+	// sort.SliceStable(p.Module.Funcs, func(i, j int) bool {
+	// 	return p.Module.Funcs[i].Name < p.Module.Funcs[j].Name
+	// })
 
-	sort.SliceStable(p.Module.Types, func(i, j int) bool {
-		return p.Module.Funcs[i].Name < p.Module.Funcs[j].Name
-	})
+	// sort.SliceStable(p.Module.Types, func(i, j int) bool {
+	// 	return p.Module.Funcs[i].Name < p.Module.Funcs[j].Name
+	// })
 	return p.Module
+}
+
+// CompileFunction takes a funciton node, detects if it is already compiled or not
+// if it isnt compiled, it will codegen, otherwise it will return the compiled one
+func (p *Program) CompileFunction(name string) *ir.Function {
+
+	previousPackage := p.Package
+	previousScope := p.Scope
+	previousCompiler := p.Compiler.Copy()
+
+	node, exists := p.Functions[name]
+	if !exists {
+		return nil
+	}
+
+	p.Package = node.Package
+	p.Scope = p.Scope.GetRoot()
+	p.Scope.PackageName = p.Package.Name
+	p.Scope = p.Scope.SpawnChild()
+
+	p.Compiler = NewCompiler(p)
+
+	if !node.Compiled {
+
+		if !node.External && node.Name.String() != "main" {
+			node.Name.Value = MangleFunctionName(fmt.Sprintf("%s:%s", node.Package.Name, node.Name.String()), nil, nil)
+		}
+
+		node.CompiledValue = node.Declare(p) // Declare first to allow recursive calls
+		node.Compiled = true
+		if !node.External {
+			node.CompiledValue = node.Codegen(p).(*ir.Function)
+		}
+
+	}
+
+	p.Package = previousPackage
+	p.Scope = previousScope
+	p.Compiler = previousCompiler
+
+	return node.CompiledValue
 }
 
 // Emit will emit the package as IR to a file then build it into an object file for further usage.
@@ -244,7 +313,6 @@ func (p *Program) Emit(buildDir string) string {
 
 	llvmFileName := fmt.Sprintf("%s.ll", outPathBase)
 
-	// objFileName := fmt.Sprintf("%s.o", outPathBase)
 	ir := p.String()
 
 	writeErr := ioutil.WriteFile(llvmFileName, []byte(ir), 0666)

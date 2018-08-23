@@ -10,13 +10,11 @@ import (
 type Compiler struct {
 	Name string
 	// A reference to the scope in the package for easier access
-	Scope      *Scope
-	Package    *Package
-	Module     *ir.Module
-	blocks     []*ir.BasicBlock
-	FN         *ir.Function // current funciton being compiled
-	Namespaces map[string]*[]Node
-	typeCache  types.Type
+	Package   *Package
+	Module    *ir.Module
+	blocks    []*ir.BasicBlock
+	FN        *ir.Function // current funciton being compiled
+	typeCache types.Type
 }
 
 // CurrentBlock -
@@ -27,6 +25,17 @@ func (c *Compiler) CurrentBlock() *ir.BasicBlock {
 	}
 	blk := (c.blocks)[l-1]
 	return blk
+}
+
+// Copy a compiler's data into a new compiler
+func (c *Compiler) Copy() *Compiler {
+	n := &Compiler{}
+	n.Package = c.Package
+	n.Module = c.Module
+	n.blocks = c.blocks
+	n.FN = c.FN
+	n.typeCache = c.typeCache
+	return n
 }
 
 // PushBlock -
@@ -71,7 +80,6 @@ func NewCompiler(prog *Program) *Compiler {
 	// Initialize the module for this compiler.
 	comp.Module = prog.Module
 
-	comp.Scope = prog.Scope
 	comp.blocks = make([]*ir.BasicBlock, 0)
 	return comp
 }

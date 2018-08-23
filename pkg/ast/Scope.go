@@ -117,7 +117,7 @@ func (s *Scope) BuildTreeString(tree treeprint.Tree) {
 	// 	tree.AddNode(fmt.Sprintf("Type: %s", t))
 	// }
 	for _, child := range s.Children {
-		branch := tree.AddBranch(fmt.Sprintf("Scope #%d (parent #%d)", child.Index, child.Parent.Index))
+		branch := tree.AddBranch(fmt.Sprintf("Scope #%d (parent #%d, ns %s)", child.Index, child.Parent.Index, child.PackageName))
 		child.BuildTreeString(branch)
 	}
 }
@@ -149,6 +149,16 @@ func (s *Scope) SpawnChild() *Scope {
 	child.PackageName = s.PackageName
 	s.Children = append(s.Children, child)
 	return child
+}
+
+// GetRoot returns the root of the scope
+func (s *Scope) GetRoot() *Scope {
+	scope := s
+
+	for scope.Parent != nil {
+		scope = scope.Parent
+	}
+	return scope
 }
 
 var scopeIndex = 0

@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"path"
 	"runtime"
-	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/geode-lang/geode/pkg/ast"
@@ -26,6 +26,7 @@ const (
 var startTime time.Time
 
 func main() {
+	// :^)
 	if runtime.GOOS == "windows" {
 		log.Fatal("The Geode Compiler does not support windows at this time.")
 	}
@@ -118,7 +119,13 @@ func (c *Context) Build(buildDir string) {
 	program.ParsePath(c.Input)
 	program.TargetTripple = c.TargetTripple
 
-	program.Codegen()
+	program.Congeal()
+
+	program.CompileFunction("main")
+
+	// fmt.Println(program.Module)
+
+	// os.Exit(0)
 
 	// // Construct a linker object
 	target := ast.BinaryTarget
@@ -163,17 +170,18 @@ func (c *Context) Run(args []string, buildDir string) {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 
-	// os.RemoveAll(buildDir) // Clean up the build dir after running
-
 	// The program exited with a failed code. So we need to exit with that same code.
 	// This is because the run command should feel like just running the binary
 	if err != nil {
-		exitCodeString := strings.Replace(err.Error(), "exit status ", "", -1)
-		exitCode, _ := strconv.Atoi(exitCodeString)
-		os.Exit(exitCode)
+
+		fmt.Println(err)
+
+		if exitError, ok := err.(*exec.ExitError); ok {
+			waitStatus := exitError.Sys().(syscall.WaitStatus)
+			os.Exit(waitStatus.ExitStatus())
+		}
 	}
 
 	// The program exited safely, so we should too
 	os.Exit(0)
-
 }

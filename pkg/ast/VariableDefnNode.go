@@ -32,9 +32,8 @@ func (n VariableDefnNode) InferType(scope *Scope) string {
 // Codegen implements Node.Codegen for VariableDefnNode
 func (n VariableDefnNode) Codegen(prog *Program) value.Value {
 	scope := prog.Scope
-	c := prog.Compiler
 
-	block := c.CurrentBlock()
+	block := prog.Compiler.CurrentBlock()
 
 	f := block.Parent
 
@@ -52,7 +51,7 @@ func (n VariableDefnNode) Codegen(prog *Program) value.Value {
 	block.AppendInst(NewLLVMComment("%s %s", ty, name))
 	alloc = createBlockAlloca(f, ty, name.String())
 
-	c.typeCache = alloc.Elem
+	prog.Compiler.typeCache = alloc.Elem
 	scItem := NewVariableScopeItem(name.String(), alloc, PrivateVisibility)
 	scope.Add(scItem)
 

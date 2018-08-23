@@ -46,9 +46,8 @@ func (n VariableNode) String() string {
 
 // Codegen implements Node.Codegen for VariableNode
 func (n VariableNode) Codegen(prog *Program) value.Value {
-	c := prog.Compiler
 
-	block := c.CurrentBlock()
+	block := prog.Compiler.CurrentBlock()
 
 	switch n.RefType {
 	case ReferenceDereference, ReferenceAccessStackAddress:

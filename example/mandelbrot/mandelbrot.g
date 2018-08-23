@@ -152,10 +152,7 @@ func main int {
 		if z > maxzoom {
 			z <- maxzoom;
 		}
-		
-		
-		
-		
+
 	}
 	
 	

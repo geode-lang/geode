@@ -33,7 +33,6 @@ func (n DotReference) BaseType(prog *Program) types.Type {
 
 // Alloca returns the nearest alloca instruction in this scope with the given name
 func (n DotReference) Alloca(prog *Program) value.Value {
-	c := prog.Compiler
 	base := n.Base.Alloca(prog)
 	index := 0
 	baseType := n.BaseType(prog)
@@ -48,7 +47,7 @@ func (n DotReference) Alloca(prog *Program) value.Value {
 
 	// If the type that the alloca points to is a pointer, we need to load from the pointer
 	if types.IsPointer(elemType) {
-		base = c.CurrentBlock().NewLoad(base)
+		base = prog.Compiler.CurrentBlock().NewLoad(base)
 
 	}
 
@@ -57,7 +56,7 @@ func (n DotReference) Alloca(prog *Program) value.Value {
 
 	zero := constant.NewInt(0, types.I32)
 	fieldOffset := constant.NewInt(int64(index), types.I32)
-	gen := c.CurrentBlock().NewGetElementPtr(base, zero, fieldOffset)
+	gen := prog.Compiler.CurrentBlock().NewGetElementPtr(base, zero, fieldOffset)
 
 	return gen
 }
