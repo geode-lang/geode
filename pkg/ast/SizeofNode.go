@@ -43,5 +43,5 @@ func (n SizeofNode) GenAccess(prog *Program) value.Value {
 }
 
 func (n SizeofNode) String() string {
-	return fmt.Sprintf("sizeof(%S)", n.Type)
+	return fmt.Sprintf("sizeof(%s)", n.Type)
 }

@@ -30,6 +30,11 @@ func (n AssignmentNode) String() string {
 	return fmt.Sprintf("%s <- %s", n.Assignee, n.Value)
 }
 
+// GenAccess returns the value of the assignment
+func (n AssignmentNode) GenAccess(prog *Program) value.Value {
+	return n.Codegen(prog)
+}
+
 // Codegen implements Node.Codegen for AssignmentNode
 func (n AssignmentNode) Codegen(prog *Program) value.Value {
 

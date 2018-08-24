@@ -1,5 +1,5 @@
-# Name       = "Hello world"
-# ExpectedOutput      = "Hello, World\n"
+# Name = "Hello world"
+# ExpectedOutput = "Hello, World\n"
 is main
 include "std:io"
 

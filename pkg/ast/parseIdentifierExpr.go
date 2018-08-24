@@ -22,6 +22,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 
 	for p.token.Is(lexer.TokDot) {
 		target = p.parseDotExpr(target)
+
 	}
 
 	var generics []*GenericSymbol
@@ -63,7 +64,6 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 				assignment.Value = access
 			} else {
 				store.SyntaxError()
-				fmt.Println(store)
 				log.Fatal("Not a valid value to assign to a variable node. (Not accessable)\n")
 			}
 			return assignment
@@ -140,7 +140,6 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 	}
 
 	if p.token.Is(lexer.TokLeftParen) {
-
 		// it was a paren, so we need to parse it as if it were a function call
 		n := FunctionCallNode{}
 		n.NodeType = nodeFnCall

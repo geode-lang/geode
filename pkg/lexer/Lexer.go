@@ -42,6 +42,7 @@ var tokenTypeOverrides = map[string]TokenType{
 	":=":      TokAssignment,
 	"...":     TokElipsis,
 	".":       TokDot,
+	"?":       TokQuestionMark,
 
 	"or": TokOper,
 	"+=": TokCompoundAssignment,
@@ -122,6 +123,8 @@ func (l *Lexer) emit(typ TokenType) {
 		tok.SpaceBefore = true
 
 		tok.Type = typ
+
+		// fmt.Println(tok.Value)
 		info.AddToken(tok)
 
 		l.tokens <- tok
@@ -377,7 +380,7 @@ func lexCharLiteral(l *Lexer) stateFn {
 // Helper Functions
 ///
 
-const operators = "&\\*+-/%:!=<>≤≥≠.←|&^"
+const operators = "&\\*+-/%:!=<>≤≥≠.←|&^?"
 
 func isOperator(r rune) bool {
 	return strings.IndexRune(operators, r) >= 0

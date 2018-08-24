@@ -10,7 +10,7 @@ export GOBIN=$(shell pwd)
 install: lib bin
 
 build:
-	@go build -v -o bin/geode ./pkg/cmd/geode
+	@go build -o bin/geode ./pkg/cmd/geode
 
 lib:
 	@rm -rf $(LIBDIR)

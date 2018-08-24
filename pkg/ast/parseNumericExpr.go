@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/geode-lang/geode/pkg/typesystem"
 	"github.com/geode-lang/geode/pkg/util/log"
+	"github.com/geode-lang/llvm/ir/types"
 )
 
 func (p *Parser) parseNumericExpr() Node {
@@ -51,7 +51,7 @@ func (p *Parser) parseNumericExpr() Node {
 		}
 	}
 
-	if t == typesystem.GeodeI64 {
+	if types.Equal(t, types.I64) {
 		n := IntNode{}
 		n.TokenReference.Token = p.token
 		n.NodeType = nodeInt
@@ -60,7 +60,7 @@ func (p *Parser) parseNumericExpr() Node {
 		return n
 	}
 
-	if t == typesystem.GeodeF64 {
+	if types.Equal(t, types.Double) {
 		n := FloatNode{}
 		n.TokenReference.Token = p.token
 		n.NodeType = nodeFloat
@@ -69,7 +69,7 @@ func (p *Parser) parseNumericExpr() Node {
 		return n
 	}
 
-	if t == typesystem.GeodeI8 {
+	if types.Equal(t, types.I8) {
 		n := CharNode{}
 		n.TokenReference.Token = p.token
 		n.NodeType = nodeChar

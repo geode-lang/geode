@@ -6,7 +6,7 @@ import (
 	"github.com/geode-lang/geode/pkg/lexer"
 )
 
-func (p *Parser) parseFnDefn() FunctionNode {
+func (p *Parser) parseFunctionNode() FunctionNode {
 	// func, pure, etc...
 	declarationKeyword := p.token.Value
 
@@ -60,7 +60,7 @@ func (p *Parser) parseFnDefn() FunctionNode {
 			if p.token.Is(lexer.TokElipsis) {
 				fn.Variadic = true
 				// Variadic functions are external, or should be. This means they shouldn't be mangled
-				// fn.Nomangle = true
+				fn.Nomangle = true
 				p.next()
 			}
 
@@ -81,10 +81,11 @@ func (p *Parser) parseFnDefn() FunctionNode {
 
 	if p.token.Is(lexer.TokIdent) {
 		fn.ReturnType = p.parseType()
-
-		// p.back()
 	} else {
-		fn.ReturnType = GeodeTypeRef{false, 0, "void"}
+		fn.ReturnType = GeodeTypeRef{}
+		fn.ReturnType.Name = "void"
+		fn.ReturnType.PointerLevel = 0
+		fn.ReturnType.Unknown = false
 	}
 
 	if p.token.Is(lexer.TokLeftCurly) {
@@ -112,10 +113,18 @@ func (p *Parser) parseFnDefn() FunctionNode {
 		p.next()
 	}
 
+	for _, arg := range fn.Args {
+		if arg.Type.Unknown {
+			fn.HasUnknownType = true
+		}
+	}
+
+	// fmt.Println(fn.Name, fn.HasUnknownType)
+
 	return fn
 }
 
 // QuickParseFunction takes a stream of tokens and lexes them into a single node
 func QuickParseFunction(src string) Node {
-	return NewQuickParser(src).parseFnDefn()
+	return NewQuickParser(src).parseFunctionNode()
 }

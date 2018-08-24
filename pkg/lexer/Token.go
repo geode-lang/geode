@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/geode-lang/geode/pkg/typesystem"
 	"github.com/geode-lang/geode/pkg/util/color"
+	"github.com/geode-lang/llvm/ir/types"
 )
 
 // TokenIsOperator will return if a given token is an operator or not
@@ -70,22 +70,22 @@ func (t *Token) SyntaxError() {
 }
 
 // InferType takes some token and guesses the type
-func (t Token) InferType() (*typesystem.VarType, interface{}) {
+func (t Token) InferType() (types.Type, interface{}) {
 	if t.Type == TokNumber {
 		intval, intErr := strconv.ParseInt(t.Value, 10, 64)
 		if intErr == nil {
-			return typesystem.GeodeI64, intval
+			return types.I64, intval
 		}
 
 		floatval, floatErr := strconv.ParseFloat(t.Value, 64)
 		if floatErr == nil {
-			return typesystem.GeodeF64, floatval
+			return types.Double, floatval
 		}
 	}
 
 	if t.Type == TokChar {
 		c := strings.Trim(t.Value, "'")[0]
-		return typesystem.GeodeI8, c
+		return types.I8, c
 	}
 
 	return nil, nil

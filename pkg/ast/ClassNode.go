@@ -102,7 +102,7 @@ func (n ClassNode) Declare(prog *Program) value.Value {
 	structDefn.SetName(name)
 
 	prog.Module.NewType(n.Name, structDefn)
-	NewTypeDef(n.Name, structDefn, -1).InjectInto(prog.Scope)
+	prog.Scope.GetRoot().RegisterType(n.Name, structDefn, -1)
 	// structDefn.Opaque = true
 
 	prog.Scope = prog.Scope.Parent
@@ -113,8 +113,7 @@ func (n ClassNode) Declare(prog *Program) value.Value {
 // Codegen implements Node.Codegen for ClassNode
 func (n ClassNode) Codegen(prog *Program) value.Value {
 
-	scope := prog.Scope
-	structDefn := scope.FindType(n.Name).Type.(*types.StructType)
+	structDefn := prog.Scope.FindType(n.Name).Type.(*types.StructType)
 
 	fieldnames := make([]string, 0, len(n.Variables))
 	fields := make([]types.Type, 0, len(n.Variables))
@@ -128,7 +127,8 @@ func (n ClassNode) Codegen(prog *Program) value.Value {
 			log.Fatal("Class '%s' has two fields/methods named '%s'\n", n.Name, f.Name)
 		}
 		names[name] = true
-		ty := scope.FindType(t).Type
+		fmt.Println(t)
+		ty := prog.Scope.FindType(t).Type
 		ty = f.Type.BuildPointerType(ty)
 		fields = append(fields, ty)
 		fieldnames = append(fieldnames, name)
@@ -137,23 +137,26 @@ func (n ClassNode) Codegen(prog *Program) value.Value {
 	thisArg := VariableDefnNode{}
 	thisArg.Name = NewNamedReference("this")
 	thisArg.Type = GeodeTypeRef{}
-	thisArg.Type.Array = false
 	thisArg.Type.Name = n.Name
 	thisArg.Type.PointerLevel = 1
 
 	structDefn.Fields = fields
 	structDefn.Names = fieldnames
 
-	methodBaseArgs := []VariableDefnNode{thisArg}
-	for _, m := range n.Methods {
-		m.Name.Value = fmt.Sprintf("class.%s.%s", n.Name, m.Name)
-		if _, found := names[m.Name.String()]; found {
-			log.Fatal("Class '%s' has two fields/methods named '%s'\n", n.Name, m.Name)
+	// methodBaseArgs := []VariableDefnNode{thisArg}
+	for _, fn := range n.Methods {
+		fn.Name.Value = fmt.Sprintf("%s:%s.%s", prog.Package.Name, n.Name, fn.Name)
+
+		if _, found := names[fn.Name.String()]; found {
+			log.Fatal("Class '%s' has two fields/methods named '%s'\n", n.Name, fn.Name)
 		}
-		names[m.Name.String()] = true
-		m.Args = append(methodBaseArgs, m.Args...)
-		m.Declare(prog)
-		m.Codegen(prog)
+		names[fn.Name.String()] = true
+		prog.RegisterFunction(fn.Name.Value, fn)
+		// prog.CompileFunction(fn.Name.Value)
+
+		// m.Args = append(methodBaseArgs, m.Args...)
+		// m.Declare(prog)
+		// m.Codegen(prog)
 	}
 
 	return nil

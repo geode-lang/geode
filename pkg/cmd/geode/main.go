@@ -19,7 +19,7 @@ import (
 
 // Some constants that represent the program in it's current compiled state
 const (
-	VERSION = "0.3.0"
+	VERSION = "0.4.0"
 	AUTHOR  = "Nick Wanninger"
 )
 
@@ -118,14 +118,10 @@ func (c *Context) Build(buildDir string) {
 	program.Entry = c.Input
 	program.ParsePath(c.Input)
 	program.TargetTripple = c.TargetTripple
-
 	program.Congeal()
 
-	program.CompileFunction("main")
-
-	// fmt.Println(program.Module)
-
-	// os.Exit(0)
+	options := ast.FunctionCompilationOptions{}
+	program.CompileFunction("main", options)
 
 	// // Construct a linker object
 	target := ast.BinaryTarget

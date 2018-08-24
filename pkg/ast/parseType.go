@@ -2,11 +2,13 @@ package ast
 
 import (
 	"github.com/geode-lang/geode/pkg/lexer"
+	"github.com/geode-lang/geode/pkg/util/log"
 )
 
-func validTypeReferenceToken(t lexer.Token) bool {
+func validTypeInfoTokens(t lexer.Token) bool {
 	allowed := map[string]bool{
 		"*": true,
+		"?": true,
 		// "[": true,
 		// "]": true,
 	}
@@ -17,7 +19,7 @@ func validTypeReferenceToken(t lexer.Token) bool {
 
 func (p *Parser) atType() bool {
 	offset := 1
-	for validTypeReferenceToken(p.peek(offset)) {
+	for validTypeInfoTokens(p.peek(offset)) {
 		offset++
 	}
 
@@ -35,6 +37,16 @@ func (p *Parser) parseType() (t GeodeTypeRef) {
 	p.next()
 
 	for {
+
+		if p.token.Is(lexer.TokQuestionMark) {
+			if t.Unknown {
+				log.Fatal("Multiple Unknown Type operators for %q used.\n", t.Name)
+			}
+
+			t.Unknown = true
+			p.next()
+			continue
+		}
 
 		if p.token.Is(lexer.TokOper) {
 			for _, c := range p.token.Value {

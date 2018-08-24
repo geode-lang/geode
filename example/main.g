@@ -1,15 +1,14 @@
 is main
 
-
-include "std:unicode"
 include "std:io"
-include "std:color"
-include "std:math"
-include "std:mem"
 
-func foo int -> 12;
+func id(type? val) type -> val;
 
 func main int {
-	int i := foo();
-	return 12;
+	
+	io:print("hello, world\n");
+	# string a := id("hello");
+	# int b := id(3);
+	# float c := id(3.14);
+	return 10;
 }

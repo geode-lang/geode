@@ -44,7 +44,7 @@ func (p *Parser) parseClassBody() []Node {
 
 		if p.token.Is(lexer.TokFuncDefn) {
 
-			nodes = append(nodes, p.parseFnDefn())
+			nodes = append(nodes, p.parseFunctionNode())
 			p.back()
 			continue
 		}

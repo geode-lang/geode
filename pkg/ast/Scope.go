@@ -1,12 +1,12 @@
 package ast
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/geode-lang/llvm/ir"
 	"github.com/geode-lang/llvm/ir/types"
 	"github.com/geode-lang/llvm/ir/value"
-	"github.com/xlab/treeprint"
 )
 
 func init() {
@@ -15,13 +15,13 @@ func init() {
 // Scope trees represent block scoping by having a root scope
 // and children scopes that point back to their parent scope.
 type Scope struct {
-	Parent           *Scope
-	Index            int
-	Children         []*Scope
-	Vals             map[string]ScopeItem
-	Types            *map[string]*TypeDef
-	GenericTemplates *[]GenericNodeWrapper
-	PackageName      string
+	Parent           *Scope                `json:"-"`
+	Index            int                   `json:"index"`
+	Children         []*Scope              `json:"children"`
+	Vals             map[string]ScopeItem  `json:"values"`
+	Types            map[string]*ScopeType `json:"types"`
+	GenericTemplates *[]GenericNodeWrapper `json:"-"`
+	PackageName      string                `json:"package_name"`
 }
 
 // Add a value to this specific scope
@@ -87,9 +87,9 @@ func (s *Scope) FindFunctions(needle string) ([]FunctionScopeItem, []GenericTemp
 }
 
 // FindType returns the type stored with a name in this scope
-func (s *Scope) FindType(name string) *TypeDef {
+func (s *Scope) FindType(name string) *ScopeType {
 
-	v, ok := (*s.Types)[name]
+	v, ok := s.Types[name]
 	if !ok {
 		if s.Parent == nil {
 			// log.Fatal("Unable to find type with name '%s' in scope\n", name)
@@ -101,25 +101,10 @@ func (s *Scope) FindType(name string) *TypeDef {
 }
 
 func (s *Scope) String() string {
-	tree := treeprint.New()
-	s.BuildTreeString(tree)
-	return tree.String()
-}
-
-// BuildTreeString is like string, but each line is returned with indents.
-// This allows displaying of nested scopes.
-func (s *Scope) BuildTreeString(tree treeprint.Tree) {
-	for val := range s.Vals {
-		tree.AddNode(fmt.Sprintf("Val: %s", val))
-	}
-
-	// for t := range *s.Types {
-	// 	tree.AddNode(fmt.Sprintf("Type: %s", t))
-	// }
-	for _, child := range s.Children {
-		branch := tree.AddBranch(fmt.Sprintf("Scope #%d (parent #%d, ns %s)", child.Index, child.Parent.Index, child.PackageName))
-		child.BuildTreeString(branch)
-	}
+	// tree := treeprint.New()
+	// s.BuildTreeString(tree)
+	j, _ := json.MarshalIndent(s, "", "    ")
+	return string(j)
 }
 
 // GetTypeName takes a type and returns the human name
@@ -130,14 +115,20 @@ func (s *Scope) GetTypeName(t types.Type) string {
 
 // InjectPrimitives injects primitve types like int, byte, etc
 func (s *Scope) InjectPrimitives() {
-	NewTypeDef("bool", types.I1, 1).InjectInto(s)
-	NewTypeDef("byte", types.I8, 2).InjectInto(s)
-	NewTypeDef("i16", types.I16, 3).InjectInto(s)
-	NewTypeDef("i32", types.I32, 4).InjectInto(s)
-	NewTypeDef("int", types.I64, 5).InjectInto(s)
-	NewTypeDef("float", types.Double, 11).InjectInto(s)
-	NewTypeDef("string", types.NewPointer(types.I8), 0).InjectInto(s)
-	NewTypeDef("void", types.Void, 0).InjectInto(s)
+	s.RegisterType("bool", types.I1, 1)
+	s.RegisterType("byte", types.I8, 2)
+	s.RegisterType("short", types.I16, 3)
+	s.RegisterType("int", types.I32, 4)
+	s.RegisterType("long", types.I64, 5)
+	s.RegisterType("float", types.Double, 11)
+	s.RegisterType("string", types.NewPointer(types.I8), 0)
+	s.RegisterType("void", types.Void, 0)
+}
+
+// RegisterType takes information about some type and binds it to this scope
+func (s *Scope) RegisterType(name string, t types.Type, prec int) {
+
+	s.Types[name] = NewScopeType(name, t, prec)
 }
 
 // SpawnChild takes a parent scope and creates a new variable scope for scoped variable access.
@@ -145,7 +136,7 @@ func (s *Scope) SpawnChild() *Scope {
 	child := NewScope()
 	child.Parent = s
 	child.Vals = make(map[string]ScopeItem)
-	child.Types = s.Types
+	child.Types = make(map[string]*ScopeType)
 	child.PackageName = s.PackageName
 	s.Children = append(s.Children, child)
 	return child
@@ -171,8 +162,7 @@ func NewScope() *Scope {
 	n.Parent = nil
 	n.Vals = make(map[string]ScopeItem)
 	n.GenericTemplates = &[]GenericNodeWrapper{}
-	typemap := make(map[string]*TypeDef)
-	n.Types = &typemap
+	n.Types = make(map[string]*ScopeType)
 	return n
 }
 
@@ -395,23 +385,18 @@ func NewVariableScopeItem(name string, value value.Value, vis Visibility) Variab
 	return item
 }
 
-// TypeDef is a storage for types in the scope. They are stored seperately from variables.
-type TypeDef struct {
+// ScopeType is a storage for types in the scope. They are stored seperately from variables.
+type ScopeType struct {
 	Type types.Type
 	Name string
 	Prec int
 }
 
-// NewTypeDef constructs a function scope item
-func NewTypeDef(name string, t types.Type, prec int) *TypeDef {
-	item := &TypeDef{}
+// NewScopeType constructs a function scope item
+func NewScopeType(name string, t types.Type, prec int) *ScopeType {
+	item := &ScopeType{}
 	item.Name = name
 	item.Type = t
 	item.Prec = prec
 	return item
-}
-
-// InjectInto will inject the type into a given scope
-func (t *TypeDef) InjectInto(s *Scope) {
-	(*s.Types)[t.Name] = t
 }

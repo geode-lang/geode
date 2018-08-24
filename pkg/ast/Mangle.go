@@ -61,11 +61,11 @@ func splitMany(s string, splits string) []string {
 const functionNamePrefix = "_X"
 
 // MangleFunctionName will mangle a function name
-func MangleFunctionName(origName string, argTypes []types.Type, generics []*GenericSymbol) string {
+func MangleFunctionName(origName string, types []types.Type) string {
 
-	name := &bytes.Buffer{}
+	buff := &bytes.Buffer{}
 
-	fmt.Fprintf(name, "%s", functionNamePrefix)
+	fmt.Fprintf(buff, "%s", functionNamePrefix)
 
 	parts := splitMany(origName, ":.")
 	for i, p := range parts {
@@ -73,14 +73,14 @@ func MangleFunctionName(origName string, argTypes []types.Type, generics []*Gene
 		if i == 0 {
 			prefix = "M"
 		}
-		fmt.Fprintf(name, ".%s%s", prefix, p)
+		fmt.Fprintf(buff, ".%s%s", prefix, p)
 	}
 
-	for _, gen := range generics {
-		fmt.Fprintf(name, ".G%s", gen.Name)
+	for _, t := range types {
+		fmt.Fprintf(buff, ".T%s", t)
 	}
 
-	return name.String()
+	return buff.String()
 }
 
 // MangleMatches returns true if the two mangled names are:

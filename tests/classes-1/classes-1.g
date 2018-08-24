@@ -7,9 +7,9 @@ is main
 class Person {
 	string name;
 	byte _byte;
-	i16 _i16;
-	i32 _i32;
-	int _int;
+	short _i16;
+	int _i32;
+	long _int;
 	float _float;
 	Person* mother;
 	Person* father;

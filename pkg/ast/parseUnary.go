@@ -12,6 +12,7 @@ func (p *Parser) parseUnary() Node {
 		"&": true,
 		"*": true,
 		"-": true,
+		"!": true,
 	}
 
 	// parse the "as"

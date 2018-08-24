@@ -3,6 +3,7 @@ package ast
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 
 	"github.com/geode-lang/llvm/ir"
@@ -10,7 +11,6 @@ import (
 	"github.com/geode-lang/llvm/ir/types"
 	"github.com/geode-lang/llvm/ir/value"
 
-	"github.com/geode-lang/geode/pkg/typesystem"
 	"github.com/geode-lang/geode/pkg/util/log"
 )
 
@@ -148,6 +148,7 @@ func (n CharNode) Codegen(prog *Program) value.Value {
 	return constant.NewInt(int64(n.Value), types.I8)
 }
 
+// GenAccess returns the value from a given CharNode
 func (n CharNode) GenAccess(prog *Program) value.Value {
 	return n.Codegen(prog)
 }
@@ -251,8 +252,8 @@ func binaryCast(prog *Program, left, right value.Value) (value.Value, value.Valu
 	var casted types.Type
 
 	// Get the cast precidence of both sides
-	leftPrec := typesystem.CastPrecidence(lt)
-	rightPrec := typesystem.CastPrecidence(rt)
+	leftPrec := prog.CastPrecidence(lt)
+	rightPrec := prog.CastPrecidence(rt)
 
 	if leftPrec > rightPrec {
 		casted = lt
@@ -262,6 +263,10 @@ func binaryCast(prog *Program, left, right value.Value) (value.Value, value.Valu
 		left = createTypeCast(prog, left, rt)
 	}
 	return left, right, casted
+}
+
+func typesAreLooselyEqual(a, b types.Type) bool {
+	return types.IsNumber(a) && types.IsNumber(b)
 }
 
 // createTypeCast is where most, if not all, type casting happens in the language.
@@ -435,26 +440,50 @@ func (n FunctionCallNode) Codegen(prog *Program) value.Value {
 
 	// name := n.Name
 
-	ns, nm := parseName(n.Name.String())
+	// fmt.Println(n.Name, reflect.TypeOf(n.Name).Name())
 
-	if ns == "" {
-		ns = prog.Scope.PackageName
-	} else if !prog.Package.HasAccessToPackage(ns) {
-		n.SyntaxError()
-		log.Fatal("Package %s doesn't load package %s but attempts to call %s:%s.\n", prog.Scope.PackageName, ns, ns, nm)
-	}
+	var searchNames []string
 
-	name := nm
+	// originalName := n.Name.String()
 
-	searchNames := []string{
-		nm,
-		fmt.Sprintf("%s:%s", ns, nm),
-		fmt.Sprintf("%s:%s", prog.Scope.PackageName, nm),
+	// dotParts := strings.Split(originalName, ".")
+
+	var name string
+
+	switch v := n.Name.(type) {
+	case DotReference:
+		// t := v.BaseType(prog)
+		// fmt.Println(v.Base.Alloca(prog))
+		for name, val := range prog.Scope.Types {
+			fmt.Println(name, val.Type)
+		}
+
+		os.Exit(1)
+		break
+	case NamedReference:
+
+		ns, nm := parseName(v.String())
+		name = nm
+		if ns == "" {
+			ns = prog.Scope.PackageName
+		} else if !prog.Package.HasAccessToPackage(ns) {
+			n.SyntaxError()
+			log.Fatal("Package %s doesn't load package %s but attempts to call %s:%s.\n", prog.Scope.PackageName, ns, ns, nm)
+		}
+		searchNames = []string{
+			nm,
+			fmt.Sprintf("%s:%s", ns, nm),
+			fmt.Sprintf("%s:%s", prog.Scope.PackageName, nm),
+		}
+	default:
+		log.Fatal("Unknown type node passed to a function call %q\n", reflect.TypeOf(n.Name).Name())
 	}
 
 	var callee *ir.Function
 	for _, name := range searchNames {
-		callee = prog.CompileFunction(name)
+		compOpts := FunctionCompilationOptions{}
+		compOpts.ArgTypes = argTypes
+		callee = prog.CompileFunction(name, compOpts)
 		if callee != nil {
 			break
 		}
@@ -468,6 +497,7 @@ func (n FunctionCallNode) Codegen(prog *Program) value.Value {
 	// This is skipped with variadic functions
 	if !callee.Sig.Variadic {
 		for i := range args {
+			// fmt.Println(callee.Sig.Params[i])
 			args[i] = createTypeCast(prog, args[i], callee.Sig.Params[i].Type())
 		}
 	}
@@ -481,11 +511,10 @@ func (n ReturnNode) Codegen(prog *Program) value.Value {
 
 	var retVal value.Value
 
-	// fmt.Println(c.FN)
 	if prog.Compiler.FN.Sig.Ret != types.Void {
 		if n.Value != nil {
 			retVal = n.Value.Codegen(prog)
-			// retVal = createTypeCast(c, retVal, c.FN.Sig.Ret)
+			retVal = createTypeCast(prog, retVal, prog.Compiler.FN.Sig.Ret)
 		} else {
 			retVal = nil
 		}

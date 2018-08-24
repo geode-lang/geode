@@ -14,23 +14,24 @@ import (
 	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir"
+	"github.com/geode-lang/llvm/ir/types"
 )
 
 // Program is a wrapper for information used
 // in codegen and dependency resolution
 type Program struct {
-	Scope         *Scope
-	Compiler      *Compiler
-	Module        *ir.Module
-	ParsedFiles   []string
-	Packages      map[string]*Package
-	Package       *Package // the currently active package
-	CLinkages     []string
-	Entry         string
-	TargetTripple string
-
-	Functions map[string]*FunctionNode
-	Classes   map[string]*ClassNode
+	Scope           *Scope
+	Compiler        *Compiler
+	Module          *ir.Module
+	ParsedFiles     []string
+	Packages        map[string]*Package
+	Package         *Package // the currently active package
+	CLinkages       []string
+	Entry           string
+	TargetTripple   string
+	TypePrecidences map[types.Type]int
+	Functions       map[string]*FunctionNode
+	Classes         map[string]*ClassNode
 }
 
 // NewProgram creates a program and returns a pointer to it
@@ -41,6 +42,17 @@ func NewProgram() *Program {
 	p.Compiler = &Compiler{}
 	p.Module = ir.NewModule()
 	p.Packages = make(map[string]*Package)
+
+	p.TypePrecidences = make(map[types.Type]int)
+	p.TypePrecidences[types.I1] = 1
+	p.TypePrecidences[types.I8] = 2
+	p.TypePrecidences[types.I16] = 3
+	p.TypePrecidences[types.I32] = 4
+	p.TypePrecidences[types.I64] = 5
+	p.TypePrecidences[types.Double] = 11
+	p.TypePrecidences[types.NewPointer(types.I8)] = 0
+	p.TypePrecidences[types.Void] = 0
+
 	return p
 }
 
@@ -72,8 +84,6 @@ func (p *Program) ParsePath(dir string) {
 	for _, file := range files {
 		p.ParseFile(file)
 	}
-
-	// for
 }
 
 // CanParse helps decide whether or not to parse a file based on previously parsed files
@@ -181,6 +191,12 @@ func ReduceToDir(path string) string {
 	return path
 }
 
+// RegisterFunction takes a name and a function and registers it in the
+// program's storage
+func (p *Program) RegisterFunction(name string, fn FunctionNode) {
+	p.Functions[name] = &fn
+}
+
 // Congeal sets the programs module to one with nodes filled out
 func (p *Program) Congeal() *ir.Module {
 	p.Module = ir.NewModule()
@@ -189,18 +205,16 @@ func (p *Program) Congeal() *ir.Module {
 
 	p.Functions = make(map[string]*FunctionNode)
 	p.Classes = make(map[string]*ClassNode)
-
 	p.Compiler = NewCompiler(p)
+
 	for _, pkg := range p.Packages {
 		for _, node := range pkg.Nodes {
 
 			if fn, is := node.(FunctionNode); is {
 				name := fmt.Sprintf("%s:%s", pkg.Name, fn.Name)
-
 				if fn.Name.String() == "main" || pkg.Name == "_runtime" {
 					name = fn.Name.String()
 				}
-
 				fn.Package = pkg
 				// fmt.Printf(color.Cyan("Function: %s\n"), name)
 				p.Functions[name] = &fn
@@ -257,10 +271,24 @@ func (p *Program) Congeal() *ir.Module {
 	return p.Module
 }
 
+// CastPrecidence takes some type and returns the precidence
+func (p *Program) CastPrecidence(t types.Type) int {
+	if val, exists := p.TypePrecidences[t]; exists {
+		return val
+	}
+	return -1
+}
+
+// FunctionCompilationOptions contains options for function compilation
+type FunctionCompilationOptions struct {
+	ArgTypes []types.Type
+}
+
 // CompileFunction takes a funciton node, detects if it is already compiled or not
 // if it isnt compiled, it will codegen, otherwise it will return the compiled one
-func (p *Program) CompileFunction(name string) *ir.Function {
+func (p *Program) CompileFunction(name string, options FunctionCompilationOptions) *ir.Function {
 
+	// Save the program state
 	previousPackage := p.Package
 	previousScope := p.Scope
 	previousCompiler := p.Compiler.Copy()
@@ -270,32 +298,74 @@ func (p *Program) CompileFunction(name string) *ir.Function {
 		return nil
 	}
 
+	// Prime the program's new state before compiling a function
 	p.Package = node.Package
 	p.Scope = p.Scope.GetRoot()
 	p.Scope.PackageName = p.Package.Name
 	p.Scope = p.Scope.SpawnChild()
-
 	p.Compiler = NewCompiler(p)
 
-	if !node.Compiled {
+	_, rawTypes := node.Arguments(p.Scope)
 
-		if !node.External && node.Name.String() != "main" {
-			node.Name.Value = MangleFunctionName(fmt.Sprintf("%s:%s", node.Package.Name, node.Name.String()), nil, nil)
+	if node.Variants == nil {
+		node.Variants = make(map[string]*ir.Function)
+	}
+
+	correctTypes := make([]types.Type, 0, len(rawTypes))
+
+	if options.ArgTypes != nil && !node.Variadic {
+
+		for i, expected := range rawTypes {
+
+			nodeParamType := node.Args[i].Type
+			given := options.ArgTypes[i]
+			unknown := nodeParamType.Unknown
+
+			if (expected != nil && given != nil) && !types.Equal(expected, given) && !typesAreLooselyEqual(given, expected) && !unknown {
+				node.Args[i].SyntaxError()
+				log.Fatal("Incorrect type passed into function %s. Given: %q, Expected: %q\n", node.Name, given, expected)
+			}
+
+			if unknown {
+				// Handling unknown types's scope definition on call
+				p.Scope.RegisterType(node.Args[i].Type.Name, given, 0)
+				correctTypes = append(correctTypes, given)
+			} else {
+				correctTypes = append(correctTypes, expected)
+			}
 		}
+	}
 
-		node.CompiledValue = node.Declare(p) // Declare first to allow recursive calls
+	// fmt.Println(node.Name, correctTypes)
+
+	var compiledVal *ir.Function
+
+	if node.Nomangle {
+		node.NameCache = node.Name.Value
+	} else {
+		node.NameCache = node.MangledName(p, correctTypes)
+	}
+
+	if f, found := node.Variants[node.NameCache]; found {
+		compiledVal = f
+	} else {
+		// if !node.External && node.Name.String() != "main" {
+		// 	node.Name.Value = node.MangledName(p, correctTypes) // MangleFunctionName(fmt.Sprintf("%s:%s", node.Package.Name, node.Name.String()), types)
+		// }
+
+		node.Variants[node.NameCache] = node.Declare(p) // Declare first to allow recursive calls
 		node.Compiled = true
 		if !node.External {
-			node.CompiledValue = node.Codegen(p).(*ir.Function)
+			node.Variants[node.NameCache] = node.Codegen(p).(*ir.Function)
 		}
 
+		compiledVal = node.Variants[node.NameCache]
 	}
 
 	p.Package = previousPackage
 	p.Scope = previousScope
 	p.Compiler = previousCompiler
-
-	return node.CompiledValue
+	return compiledVal
 }
 
 // Emit will emit the package as IR to a file then build it into an object file for further usage.

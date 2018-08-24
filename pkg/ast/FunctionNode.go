@@ -39,10 +39,19 @@ type FunctionNode struct {
 	Generics       []*GenericSymbol
 	DeclKeyword    FuncDeclKeywordType
 	ImplicitReturn bool
+	HasUnknownType bool
+	Package        *Package
+	// A cache so we can remember the name of the function to codegen
+	// This is because between the Program.CompileFunction, where we
+	// can compile variants, and the codegen section of the function,
+	// we lose state. So instead we can store it in the function node
+	// itself and just reach into the Variants map to get the correct
+	// value for the function
+	NameCache string
+	Variants  map[string]*ir.Function // A mapping from mangled names to llvm functions
 
-	Package       *Package
-	Compiled      bool
-	CompiledValue *ir.Function
+	Compiled bool
+	// CompiledValue  *ir.Function
 
 	line   int
 	column int
@@ -63,7 +72,13 @@ func (n FunctionNode) Arguments(scope *Scope) ([]*types.Param, []types.Type) {
 	for _, arg := range n.Args {
 		found := scope.FindType(arg.Type.Name)
 		if found == nil {
-			log.Fatal("Unable to find type with name %q\n", arg.Type.Name)
+			if n.HasUnknownType {
+				funcArgs = append(funcArgs, nil)
+				argTypes = append(argTypes, nil)
+				continue
+			} else {
+				log.Fatal("Unable to find type with name %q for function %s\n", arg.Type.Name, n.Name)
+			}
 		}
 		ty := found.Type
 		ty = arg.Type.BuildPointerType(ty)
@@ -84,7 +99,7 @@ func (n FunctionNode) Declare(prog *Program) *ir.Function {
 	}
 	funcArgs, _ := n.Arguments(prog.Scope)
 
-	namestring := n.Name.String()
+	namestring := n.NameCache
 
 	ty := prog.Scope.FindType(n.ReturnType.Name).Type
 	ty = n.ReturnType.BuildPointerType(ty)
@@ -93,10 +108,6 @@ func (n FunctionNode) Declare(prog *Program) *ir.Function {
 
 	previousFunction := prog.Compiler.FN
 	prog.Compiler.FN = function
-
-	// if n.Variadic && !n.External {
-	// 	log.Fatal("Function '%s' is variadic and has a body. This only allowed for external functions.\n", n.Name)
-	// }
 
 	function.Sig.Variadic = n.Variadic
 
@@ -110,6 +121,15 @@ func (n FunctionNode) Declare(prog *Program) *ir.Function {
 
 	prog.Compiler.FN = previousFunction
 	return function
+}
+
+// MangledName returns the correctly mangled name for some function
+func (n FunctionNode) MangledName(prog *Program, types []types.Type) string {
+	if n.Name.Value == "main" || n.Package.Name == "_runtime" {
+		return n.Name.Value
+	}
+	// _, types := n.Arguments(prog.Scope)
+	return MangleFunctionName(n.Name.Value, types)
 }
 
 // Check makes sure a function follows the correct limitations set by the language
@@ -162,13 +182,14 @@ func (n FunctionNode) Codegen(prog *Program) value.Value {
 		namestring = fmt.Sprintf("%s:%s", prog.Package.Name, n.Name)
 	}
 
-	function := n.CompiledValue // at this point it should only be compiled
+	function := n.Variants[n.NameCache] // at this point it should only be compiled
 	prog.Compiler.FN = function
 
 	// If the function is external (has ... at the end) we don't build a block
 	if !n.External {
 		// Create the entrypoint to the function
 		entryBlock := ir.NewBlock(n.Name.String() + "-entry")
+
 		prog.Compiler.FN.AppendBlock(entryBlock)
 		prog.Compiler.PushBlock(entryBlock)
 
@@ -206,20 +227,12 @@ func (n FunctionNode) Codegen(prog *Program) value.Value {
 }
 
 func createPrelude(prog *Program, n FunctionNode) {
-	if prog.Compiler.FN.Name == "main" {
-		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("runtime prelude:"))
-		// Initialize the garbage collector at the first value allocted to the stack.
-		QuickParseIdentifier("byte __GC_BASE_POINTER;").Codegen(prog)
-		QuickParseExpression("___geodegcinit(&__GC_BASE_POINTER);").Codegen(prog)
-
-		// fields := map[string]value.Value{}
-
-		// fields["foo"] = constant.NewInt(12, types.I64)
-		// fields["bar"] = constant.NewInt(42, types.I64)
-		// NewClassInstance(prog, prog.Scope.FindType("Foo").Type.(*types.StructType), fields)
-
-	}
-
+	// if prog.Compiler.FN.Name == "main" {
+	// 	prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("runtime prelude:"))
+	// 	// Initialize the garbage collector at the first value allocted to the stack.
+	// 	QuickParseIdentifier("byte __GC_BASE_POINTER;").Codegen(prog)
+	// 	QuickParseExpression("___geodegcinit(&__GC_BASE_POINTER);").Codegen(prog)
+	// }
 }
 
 func (n FunctionNode) String() string {

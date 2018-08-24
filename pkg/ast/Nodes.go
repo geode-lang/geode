@@ -368,8 +368,8 @@ func (n NamespaceNode) InferType(scope *Scope) string { return "void" }
 
 // GeodeTypeRef -
 type GeodeTypeRef struct {
-	Array        bool
 	PointerLevel int
+	Unknown      bool
 	Name         string
 }
 

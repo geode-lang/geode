@@ -56,6 +56,8 @@ const (
 
 	TokCompoundAssignment
 
+	TokQuestionMark
+
 	TokFor
 	TokWhile
 	TokIf
