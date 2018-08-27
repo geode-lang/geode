@@ -1,5 +1,3 @@
-# Name = "link"
-# ExpectedOutput = "42"
 is main
 
 

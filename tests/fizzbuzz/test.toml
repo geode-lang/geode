@@ -1,0 +1,6 @@
+Name = "FizzBuzz"
+CompilerStatus = 0
+RunStatus = 0
+Input = ""
+CompilerOutput = ""
+RunOutput = "FizzBuzz 1 2 Fizz 4 Buzz "

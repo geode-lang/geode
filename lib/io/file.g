@@ -1,7 +1,9 @@
 is io
 
-
+link "io.c"
 include "std:mem"
+
+
 
 # File io Functions
 
@@ -9,6 +11,10 @@ include "std:mem"
 # it doesn't need to contain any fields because size wil be
 # handled later on in the clang phase
 class FILE {}
+
+FILE* stdout := io:fopen("/dev/stdout", "w+");
+FILE* stderr := io:fopen("/dev/stderr", "w+");
+
 
 # Create external linkages to the C stdlib.h files
 func fopen(string path, string mode) FILE* ...

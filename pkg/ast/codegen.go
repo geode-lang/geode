@@ -11,6 +11,7 @@ import (
 	"github.com/geode-lang/llvm/ir/types"
 	"github.com/geode-lang/llvm/ir/value"
 
+	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/log"
 )
 
@@ -408,6 +409,10 @@ func (n BinaryNode) Codegen(prog *Program) value.Value {
 	}
 }
 
+// func (n FunctionCallNode) GenAccess(prog *Program) value.Value {
+// 	return n.Codegen(prog)
+// }
+
 // Codegen implements Node.Codegen for FunctionCallNode
 func (n FunctionCallNode) Codegen(prog *Program) value.Value {
 
@@ -502,8 +507,35 @@ func (n FunctionCallNode) Codegen(prog *Program) value.Value {
 		}
 	}
 
-	prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("%s", n.String()))
-	return prog.Compiler.CurrentBlock().NewCall(callee, args...)
+	// Varargs require type conversion to a standardized type
+	// So we will use the same type promotion c uses
+	//  if int && type != i32 -> type = i32
+	//  if fnn && type != f64 -> type = f64
+	arguments := make([]value.Value, 0, len(args))
+
+	for i, arg := range args {
+
+		if callee.Sig.Variadic && i >= len(callee.Params()) {
+			if types.IsInt(arg.Type()) {
+				if !types.Equal(arg.Type(), types.I32) {
+					arguments = append(arguments, createTypeCast(prog, arg, types.I32))
+					continue
+				}
+
+			}
+
+			if types.IsFloat(arg.Type()) {
+				if !types.Equal(arg.Type(), types.Double) {
+					arguments = append(arguments, createTypeCast(prog, arg, types.Double))
+					continue
+				}
+			}
+		}
+		arguments = append(arguments, arg)
+	}
+
+	// prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("%s", n.String()))
+	return prog.Compiler.CurrentBlock().NewCall(callee, arguments...)
 }
 
 // Codegen implements Node.Codegen for ReturnNode
@@ -514,7 +546,23 @@ func (n ReturnNode) Codegen(prog *Program) value.Value {
 	if prog.Compiler.FN.Sig.Ret != types.Void {
 		if n.Value != nil {
 			retVal = n.Value.Codegen(prog)
-			retVal = createTypeCast(prog, retVal, prog.Compiler.FN.Sig.Ret)
+			given := retVal.Type()
+			expected := prog.Compiler.FN.Sig.Ret
+			if !types.Equal(given, expected) {
+				if !(types.IsInt(given) && types.IsInt(expected)) {
+					n.SyntaxError()
+					fnName := UnmangleFunctionName(prog.Compiler.FN.Name)
+
+					expectedName, err := prog.Scope.FindTypeName(expected)
+					util.EatError(err)
+					givenName, err := prog.Scope.FindTypeName(given)
+					util.EatError(err)
+					log.Fatal("Incorrect return value for function %s. Expected: %s (%s). Given: %s (%s)\n", fnName, expectedName, expected, givenName, given)
+				} else {
+					retVal = createTypeCast(prog, retVal, prog.Compiler.FN.Sig.Ret)
+				}
+			}
+
 		} else {
 			retVal = nil
 		}

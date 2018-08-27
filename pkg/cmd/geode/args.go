@@ -22,8 +22,10 @@ var (
 	runInput = runCMD.Arg("input", "Geode source file or package").String()
 	runArgs  = runCMD.Arg("args", "Arguments to be passed into the program after building").Strings()
 
-	testCMD = app.Command("test", "Run tests")
-	testDir = testCMD.Arg("dir", "Test Directory").Default("./tests").String()
+	testCMD = app.Command("test", "Run tests in the ./tests/ directory")
+
+	newTestCMD  = app.Command("new-test", "Create a new test")
+	newTestName = newTestCMD.Arg("name", "the name of the test").Required().String()
 
 	cleanCMD = app.Command("clean", "Remove the hidden build directory")
 

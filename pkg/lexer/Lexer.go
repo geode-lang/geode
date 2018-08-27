@@ -18,7 +18,6 @@ var tokenTypeOverrides = map[string]TokenType{
 	"for":    TokFor,
 	"while":  TokWhile,
 	"func":   TokFuncDefn,
-	"λ":      TokFuncDefn,
 	// "new":     TokNew,
 	"class":   TokClassDefn,
 	"include": TokDependency,
@@ -44,11 +43,23 @@ var tokenTypeOverrides = map[string]TokenType{
 	".":       TokDot,
 	"?":       TokQuestionMark,
 
-	"or": TokOper,
 	"+=": TokCompoundAssignment,
 	"-=": TokCompoundAssignment,
 	"*=": TokCompoundAssignment,
 	"/=": TokCompoundAssignment,
+}
+
+// &\\*+-/%:!=<>≤≥≠.←|&^?
+// ⊕ ∨ ∧ :left_right_arrow: ≡
+var tokenAliasOverrides = map[string]string{
+	"≠": "!=",
+	"≤": "<=",
+	"≥": ">=",
+	"¬": "!",
+	"⊕": "^",
+	"∨": "||",
+	"∧": "&&",
+	"λ": "func",
 }
 
 // stateFn represents the state of the scanner as a function that returns the next state.
@@ -110,6 +121,13 @@ func (l *Lexer) emit(typ TokenType) {
 		tok := Token{}
 		tok.source = l.source
 		tok.Value = l.value()
+
+		alias, hasAlias := tokenAliasOverrides[tok.Value]
+		if hasAlias {
+			fmt.Println(tok.Value, alias)
+			tok.Value = alias
+		}
+
 		tok.Pos = int(l.start)
 		tok.EndPos = int(l.pos)
 		tok.Line = l.line
@@ -326,11 +344,12 @@ func lexSymbol(l *Lexer) stateFn {
 	finalRuns := map[string]bool{
 		"...": true,
 		"*":   true,
+		"*=":  true,
 		"&&":  true,
 	}
 
 	l.acceptRunPredicate(func(c rune) bool {
-		if finalRuns[l.value()] {
+		if finalRuns[l.value()] && finalRuns[l.value()] {
 			l.emit(TokOper)
 		}
 		return isOperator(c)
@@ -383,7 +402,7 @@ func lexCharLiteral(l *Lexer) stateFn {
 
 //
 // Helper Functions
-///
+//
 
 const operators = "&\\*+-/%:!=<>≤≥≠.←|&^?"
 

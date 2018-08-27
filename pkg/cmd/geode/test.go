@@ -11,53 +11,44 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
 	"syscall"
+	"unicode"
 
 	"github.com/BurntSushi/toml"
+	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/color"
+	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 // TestJob -
 type TestJob struct {
-	Name, Sourcefile                       string
-	CompilerArgs, RunArgs                  []string
-	CompilerError, RunError, ExpectedError int
-	Input                                  string
-	CompilerOutput, ExpectedOutput         string
+	Name, sourcefile                         string
+	CompilerArgs, RunArgs                    []string
+	compilerError, RunStatus, CompilerStatus int
+	Input                                    string
+	compilerOutput, RunOutput                string
 }
 
 type testResult struct {
 	TestJob        TestJob
-	CompilerError  int
-	RunError       int
-	ExpectedError  int
-	CompilerOutput string
-	ExpectedOutput string
+	compilerError  int
+	RunStatus      int
+	CompilerStatus int
+	compilerOutput string
+	RunOutput      string
 }
 
 func parseTestJob(filename string) (TestJob, error) {
 	var job TestJob
 
-	dataBytes, ferr := ioutil.ReadFile(filename)
-	if ferr != nil {
-		panic(ferr)
-	}
+	configPath := path.Join(path.Dir(filename), "test.toml")
 
-	rawLines := strings.Split(string(dataBytes), "\n")
-	configLines := make([]string, 0, len(rawLines))
-
-	for _, line := range rawLines {
-		if len(line) > 0 && line[0] == '#' {
-			configLines = append(configLines, strings.Trim(line, "# "))
-		}
-	}
-
-	config := strings.Join(configLines, "\n")
-
-	if _, err := toml.Decode(config, &job); err != nil {
+	if _, err := toml.DecodeFile(configPath, &job); err != nil {
+		// util.EatError(err)
 		return TestJob{}, err
 	}
 	return job, nil
@@ -111,7 +102,7 @@ func RunTests(testDirectory string) int {
 				fmt.Printf("%s\n", err.Error())
 				return 1
 			}
-			job.Sourcefile = path
+			job.sourcefile = path
 
 			jobs = append(jobs, job)
 		}
@@ -122,45 +113,47 @@ func RunTests(testDirectory string) int {
 	results := make(chan testResult, len(jobs))
 
 	testRunCount := 0
-	for i, j := range jobs {
-		go func(job TestJob, index int) {
+
+	util.RunCommand("geode", "clean")
+
+	go func() {
+		for _, job := range jobs {
 			outBuf := new(bytes.Buffer)
-			outpath := fmt.Sprintf("%s_test", job.Sourcefile)
+			outpath := fmt.Sprintf("%s_test", job.sourcefile)
 
 			// Compile the test program
 			buildArgs := []string{"build"}
 			buildArgs = append(buildArgs, job.CompilerArgs...)
-			buildArgs = append(buildArgs, "-O")
-			buildArgs = append(buildArgs, "-o", outpath, job.Sourcefile)
+			buildArgs = append(buildArgs, "-o", outpath, job.sourcefile)
 
 			outBuf.Reset()
 
 			var err error
 			res := testResult{TestJob: job}
 
-			res.CompilerError, err = runCommand(outBuf, "", "geode", buildArgs)
+			res.compilerError, err = runCommand(outBuf, "", "geode", buildArgs)
 			if err != nil {
 				fmt.Printf("Error while building test:\n%s\n", err.Error())
 				os.Exit(1)
 			}
-			res.CompilerOutput = outBuf.String()
+			res.compilerOutput = outBuf.String()
 
-			if res.CompilerError != 0 {
+			if res.compilerError != 0 {
 				results <- res
-				res.RunError = -1
+				res.RunStatus = -1
 				return
 			}
 
 			// Run the test program
 			outBuf.Reset()
 
-			res.RunError, err = runCommand(outBuf, job.Input, fmt.Sprintf("./%s", outpath), job.RunArgs)
+			res.RunStatus, err = runCommand(outBuf, job.Input, fmt.Sprintf("./%s", outpath), job.RunArgs)
 			if err != nil {
 				fmt.Printf("Error while running test:\n%s\n", err.Error())
 				os.Exit(1)
 			}
 
-			res.ExpectedOutput = outBuf.String()
+			res.RunOutput = outBuf.String()
 
 			// Remove test executable
 			if err := os.Remove(outpath); err != nil {
@@ -174,8 +167,8 @@ func RunTests(testDirectory string) int {
 			if testRunCount == len(jobs) {
 				close(results)
 			}
-		}(j, i)
-	}
+		}
+	}()
 
 	// Check results
 	numSucceses := 0
@@ -188,32 +181,34 @@ func RunTests(testDirectory string) int {
 
 		// Check build errors
 
-		if (res.TestJob.CompilerError == -1 && res.CompilerError != res.ExpectedError) || (res.CompilerError == res.TestJob.CompilerError) {
+		fmt.Println(res.TestJob.CompilerStatus)
+
+		if (res.TestJob.compilerError == -1 && res.compilerError != res.TestJob.CompilerStatus) || (res.compilerError == res.TestJob.compilerError) {
 		} else {
-			fmt.Printf("  CompilerError:\n    ")
+			fmt.Printf("  CompilerStatus:\n    ")
 			msg := color.Red("✗")
-			fmt.Printf("%s. Expected %d\n    ", msg, res.TestJob.CompilerError)
-			fmt.Printf("Got %d\n", res.CompilerError)
+			fmt.Printf("%s. Expected %d\n    ", msg, res.TestJob.compilerError)
+			fmt.Printf("Got %d\n", res.TestJob.CompilerStatus)
 			failure = true
 		}
 
 		// Check run errors
-		if res.RunError == res.TestJob.RunError {
+		if res.RunStatus == res.TestJob.RunStatus {
 		} else {
-			fmt.Printf("  RunError:\n    ")
+			fmt.Printf("  RunStatus:\n    ")
 			msg := color.Red("✗")
-			fmt.Printf("%s. Expected %d\n    ", msg, res.TestJob.RunError)
-			fmt.Printf("Got %d\n", res.RunError)
+			fmt.Printf("%s. Expected %d\n    ", msg, res.TestJob.RunStatus)
+			fmt.Printf("Got %d\n", res.RunStatus)
 			failure = true
 		}
 
 		// Check run errors
-		if res.ExpectedOutput == res.TestJob.ExpectedOutput {
+		if res.RunOutput == res.TestJob.RunOutput {
 		} else {
-			fmt.Printf("  ExpectedOutput:\n    ")
+			fmt.Printf("  RunOutput:\n    ")
 			msg := color.Red("✗")
-			fmt.Printf("%s. Expected %s\n    ", msg, res.TestJob.ExpectedOutput)
-			fmt.Printf("Got %s\n", res.ExpectedOutput)
+			fmt.Printf("%s. Expected %s\n    ", msg, res.TestJob.RunOutput)
+			fmt.Printf("Got %s\n", res.RunOutput)
 			failure = true
 		}
 
@@ -265,4 +260,62 @@ func runCommand(out io.Writer, input string, cmd string, args []string) (int, er
 	}
 
 	return 0, nil
+}
+
+var testTemplate = `# {{NAME}}
+is main
+
+func main int {
+	# Test code here.
+	return 0;
+}
+`
+
+func isValidPathRune(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsDigit(r)
+}
+
+func cleanTestName(name string) string {
+	src := []rune(name)
+	runes := make([]rune, 0, len(src))
+
+	for _, r := range src {
+		if isValidPathRune(r) {
+			runes = append(runes, r)
+		} else if r == ' ' {
+			runes = append(runes, '-')
+		}
+	}
+	return string(runes)
+}
+
+// CreateTestCMD uese the os args to create a test
+func CreateTestCMD() {
+	name := cleanTestName(*newTestName)
+	dirPath := fmt.Sprintf("./tests/%s", name)
+	sourcePath := path.Join(dirPath, fmt.Sprintf("%s.g", name))
+
+	configPath := path.Join(dirPath, "test.toml")
+
+	stats, _ := os.Stat(dirPath)
+	if stats != nil && stats.IsDir() {
+		log.Fatal("Test %q already exists\n", name)
+	}
+	os.MkdirAll(dirPath, os.ModePerm)
+
+	fileContent := strings.Replace(testTemplate, "{{NAME}}", *newTestName, -1)
+
+	ioutil.WriteFile(sourcePath, []byte(fileContent), os.ModePerm)
+
+	// Write the config
+
+	job := TestJob{}
+	job.Name = *newTestName
+
+	buff := &bytes.Buffer{}
+	toml.NewEncoder(buff).Encode(job)
+
+	ioutil.WriteFile(configPath, buff.Bytes(), os.ModePerm)
+
+	fmt.Printf("Test %q created in %q\n", name, sourcePath)
 }

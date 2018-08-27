@@ -1,0 +1,5 @@
+Name = "global variables 3"
+RunStatus = 3
+CompilerStatus = 0
+Input = ""
+RunOutput = "called"

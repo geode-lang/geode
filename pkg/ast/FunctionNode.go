@@ -36,7 +36,6 @@ type FunctionNode struct {
 	Variadic       bool
 	Nomangle       bool
 	ReturnType     GeodeTypeRef
-	Generics       []*GenericSymbol
 	DeclKeyword    FuncDeclKeywordType
 	ImplicitReturn bool
 	HasUnknownType bool
@@ -129,7 +128,7 @@ func (n FunctionNode) MangledName(prog *Program, types []types.Type) string {
 		return n.Name.Value
 	}
 	// _, types := n.Arguments(prog.Scope)
-	return MangleFunctionName(n.Name.Value, types)
+	return MangleFunctionName(fmt.Sprintf("%s:%s", n.Package.Name, n.Name.Value), types)
 }
 
 // Check makes sure a function follows the correct limitations set by the language
@@ -152,18 +151,6 @@ func (n FunctionNode) Check(scope *Scope, c *Compiler) error {
 		}
 	}
 	return nil
-}
-
-// CodegenGeneric takes some generic type symbols, checks if they could work, and generates
-// a new function using those as types.
-func (n FunctionNode) CodegenGeneric(prog *Program, g []*GenericSymbol) value.Value {
-	if len(n.Generics) != len(g) {
-		n.SyntaxError()
-		log.Fatal("Generics used in function call on '%s' are not of the correct length. Passed: %d, Expected: %d", n.Name, len(g), len(n.Generics))
-	}
-
-	return n.Codegen(prog)
-
 }
 
 // Codegen implements Node.Codegen for FunctionNode
@@ -198,7 +185,7 @@ func (n FunctionNode) Codegen(prog *Program) value.Value {
 		// initializing the runtime.
 		createPrelude(prog, n)
 		if len(function.Params()) > 0 {
-			prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment(n.Name.String() + " arguments:"))
+			// prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment(n.Name.String() + " arguments:"))
 		}
 		for _, arg := range function.Params() {
 			alloc := prog.Compiler.CurrentBlock().NewAlloca(arg.Type())
@@ -228,7 +215,12 @@ func (n FunctionNode) Codegen(prog *Program) value.Value {
 
 func createPrelude(prog *Program, n FunctionNode) {
 	if prog.Compiler.FN.Name == "main" {
-		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("runtime prelude:"))
+
+		for _, init := range prog.Initializations {
+			init.Codegen(prog)
+		}
+
+		// prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("runtime prelude:"))
 		// Initialize the garbage collector at the first value allocted to the stack.
 		QuickParseIdentifier("byte __GC_BASE_POINTER;").Codegen(prog)
 		QuickParseExpression("___geodegcinit(&__GC_BASE_POINTER);").Codegen(prog)

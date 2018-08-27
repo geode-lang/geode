@@ -51,15 +51,11 @@ func (n ArrayNode) Codegen(prog *Program) value.Value {
 	}
 	typ := prog.Compiler.typeCache
 
-	if len(values) > 0 {
-		typ = values[0].Type()
-	} else {
-		typ = typ.(*types.PointerType).Elem
-	}
+	itemType := typ.(*types.PointerType).Elem
 
-	typ = types.NewArray(typ, int64(n.Length))
+	arrayType := types.NewArray(itemType, int64(n.Length))
 
-	alloca := block.NewAlloca(typ)
+	alloca := block.NewAlloca(arrayType)
 
 	zero := constant.NewInt(int64(0), types.I64)
 	one := constant.NewInt(int64(1), types.I64)
@@ -72,7 +68,7 @@ func (n ArrayNode) Codegen(prog *Program) value.Value {
 			offset = block.NewGetElementPtr(offset, one)
 		}
 
-		block.NewStore(val, offset)
+		block.NewStore(createTypeCast(prog, val, itemType), offset)
 	}
 
 	return arrayStart

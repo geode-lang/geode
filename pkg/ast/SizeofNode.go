@@ -31,7 +31,7 @@ func (n SizeofNode) Codegen(prog *Program) value.Value {
 		t = types.NewPointer(t)
 	}
 
-	prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("sizeof(%s)", t))
+	// prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("sizeof(%s)", t))
 	// https://stackoverflow.com/a/30830445
 	elemptr := constant.NewGetElementPtr(constant.NewNull(types.NewPointer(t)), constant.NewInt(1, types.I32))
 	return prog.Compiler.CurrentBlock().NewPtrToInt(elemptr, types.I64)

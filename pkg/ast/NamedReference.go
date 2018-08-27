@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir"
 	"github.com/geode-lang/llvm/ir/types"
@@ -37,17 +39,28 @@ func (n NamedReference) String() string {
 // Alloca returns the nearest alloca instruction in this scope with the given name
 func (n NamedReference) Alloca(prog *Program) value.Value {
 
-	scopeitem, found := prog.Scope.Find(n.Value)
+	searchPaths := make([]string, 0)
+	searchPaths = append(searchPaths, n.Value)
+	searchPaths = append(searchPaths, fmt.Sprintf("%s:%s", prog.Package.Name, n.Value))
+
+	scopeitem, found := prog.Scope.Find(searchPaths)
 	if !found {
 		log.Fatal("Unable to find named reference %s\n", n)
 	}
 
-	alloc, cast := scopeitem.(VariableScopeItem).Value().(*ir.InstAlloca)
-	if !cast {
-		log.Fatal("Cast from scope item to alloca with named reference %s failed\n", n)
+	var alloc value.Value
+	success := false
+
+	if alloc, success = scopeitem.(VariableScopeItem).Value().(*ir.InstAlloca); success {
+		return alloc
 	}
 
-	return alloc
+	if alloc, success = scopeitem.(VariableScopeItem).Value().(*ir.Global); success {
+		return alloc
+	}
+
+	log.Fatal("Unknown Type in VariableScopeItem in search paths: %s\n", searchPaths)
+	return nil
 }
 
 // Load returns a load instruction on a named reference with the given name
@@ -57,7 +70,8 @@ func (n NamedReference) Load(block *ir.BasicBlock, prog *Program) *ir.InstLoad {
 
 // GenAssign implements Assignable.GenAssign
 func (n NamedReference) GenAssign(prog *Program, assignment value.Value) value.Value {
-	prog.Compiler.CurrentBlock().NewStore(assignment, n.Alloca(prog))
+	alloca := n.Alloca(prog)
+	prog.Compiler.CurrentBlock().NewStore(assignment, alloca)
 	return assignment
 }
 
@@ -68,5 +82,14 @@ func (n NamedReference) GenAccess(prog *Program) value.Value {
 
 // Type implements Assignable.Type
 func (n NamedReference) Type(prog *Program) types.Type {
-	return n.Alloca(prog).(*ir.InstAlloca).Elem
+	ref := n.Alloca(prog)
+
+	if alloca, success := ref.(*ir.InstAlloca); success {
+		return alloca.Elem
+	}
+
+	if global, success := ref.(*ir.Global); success {
+		return global.Type().(*types.PointerType).Elem
+	}
+	return types.Void
 }

@@ -38,14 +38,16 @@ func (n AssignmentNode) GenAccess(prog *Program) value.Value {
 // Codegen implements Node.Codegen for AssignmentNode
 func (n AssignmentNode) Codegen(prog *Program) value.Value {
 
-	// c.CurrentBlock().AppendInst(NewLLVMComment(n.String()))
+	prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment(n.String()))
 	targetType := n.Assignee.Type(prog)
 	prog.Compiler.typeCache = targetType
 
 	val := n.Value.GenAccess(prog)
+
 	if !types.Equal(val.Type(), targetType) {
 		val = createTypeCast(prog, val, targetType)
 	}
+
 	n.Assignee.GenAssign(prog, val)
 	return val
 }

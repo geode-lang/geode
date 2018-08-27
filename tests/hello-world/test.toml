@@ -1,0 +1,6 @@
+Name = "Hello world"
+CompilerStatus = 0
+RunStatus = 0
+Input = ""
+CompilerOutput = ""
+RunOutput = "Hello, World\n"

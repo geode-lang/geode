@@ -1,5 +1,3 @@
-# Name = "while"
-# ExpectedOutput = "255"
 is main
 include "std:io"
 

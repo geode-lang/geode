@@ -32,6 +32,7 @@ type Program struct {
 	TypePrecidences map[types.Type]int
 	Functions       map[string]*FunctionNode
 	Classes         map[string]*ClassNode
+	Initializations []*GlobalVariableDeclNode
 }
 
 // NewProgram creates a program and returns a pointer to it
@@ -42,6 +43,7 @@ func NewProgram() *Program {
 	p.Compiler = &Compiler{}
 	p.Module = ir.NewModule()
 	p.Packages = make(map[string]*Package)
+	p.Initializations = make([]*GlobalVariableDeclNode, 0)
 
 	p.TypePrecidences = make(map[types.Type]int)
 	p.TypePrecidences[types.I1] = 1
@@ -221,14 +223,11 @@ func (p *Program) Congeal() *ir.Module {
 
 			if cls, is := node.(ClassNode); is {
 				name := fmt.Sprintf("%s:%s", pkg.Name, cls.Name)
-
 				if pkg.Name == "_runtime" {
 					name = cls.Name
 				}
-
 				p.Classes[name] = &cls
 			}
-
 			nodes = append(nodes, PackageNode(node, pkg, p))
 		}
 	}
@@ -238,34 +237,22 @@ func (p *Program) Congeal() *ir.Module {
 		node.Node.(ClassNode).Declare(p)
 	}
 
-	// for node := range FilterPackagedNodes(nodes, nodeFunction) {
-	// 	node.SetupContext()
-	// 	node.Node.(FunctionNode).Declare(p)
-	// }
-
 	// Codegen the types/classes
 	for node := range FilterPackagedNodes(nodes, nodeClass) {
 		node.SetupContext()
 		node.Node.(ClassNode).Codegen(p)
 	}
 
-	// // Codegen the types/classes
-	// for node := range FilterPackagedNodesPredicate(nodes, func(n Node) bool {
-	// 	return n.Kind() != nodeClass
-	// }) {
-	// 	node.SetupContext()
-	// 	node.Node.Codegen(p)
-	// }
-	// // Sort the assorted items in a module because we want to have reproducable
-	// // hashes in the produced code. As a sideeffect of using a hashmap for path->pkg
-	// // mapping, it will be out of order most of the time.
-	// sort.SliceStable(p.Module.Funcs, func(i, j int) bool {
-	// 	return p.Module.Funcs[i].Name < p.Module.Funcs[j].Name
-	// })
+	for node := range FilterPackagedNodes(nodes, nodeGlobalDecl) {
+		node.SetupContext()
+		node.Node.(GlobalVariableDeclNode).Declare(p)
+	}
 
-	// sort.SliceStable(p.Module.Types, func(i, j int) bool {
-	// 	return p.Module.Funcs[i].Name < p.Module.Funcs[j].Name
-	// })
+	// err := sem.Check(p.Module)
+	// if err != nil {
+	// 	log.Fatal("Semantic Check Error: %s\n", err)
+	// }
+
 	return p.Module
 }
 
@@ -280,6 +267,11 @@ func (p *Program) CastPrecidence(t types.Type) int {
 // FunctionCompilationOptions contains options for function compilation
 type FunctionCompilationOptions struct {
 	ArgTypes []types.Type
+}
+
+// RegisterGlobalVariableInitialization -
+func (p *Program) RegisterGlobalVariableInitialization(node *GlobalVariableDeclNode) {
+	p.Initializations = append(p.Initializations, node)
 }
 
 // CompileFunction takes a funciton node, detects if it is already compiled or not
@@ -396,7 +388,6 @@ func (p *Program) String() string {
 	// so we can track this information later on.
 	fmt.Fprintf(ir, "target datalayout = %q\n", "e-m:o-i64:64-f80:128-n8:16:32:64-S128")
 	fmt.Fprintf(ir, "target triple = %q\n", p.TargetTripple)
-	fmt.Fprintf(ir, "\n")
 
 	// Append the module information
 	fmt.Fprintf(ir, "\n%s", p.Compiler.Module.String())

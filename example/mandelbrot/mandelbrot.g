@@ -113,19 +113,19 @@ func main int {
 		}
 		
 		if input = 'x' {
-			z *= 2.0;
+			z <- z * 2.0;
 		}
 		
 		if input = 'z' {
-			z /= 2.0;
+			z <- z / 2.0;
 		}
 		
 		if input = 's' {
-			iter *= 2;
+			iter <- iter * 2;
 		}
 		
 		if input = 'a' {
-			iter /= 2;
+			iter <- iter / 2;
 		
 		}
 		

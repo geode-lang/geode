@@ -19,6 +19,8 @@ type VariableDefnNode struct {
 	Name      NamedReference
 	Body      Node
 	MustInfer bool
+
+	Package *Package
 }
 
 // NameString implements Node.NameString
@@ -35,6 +37,8 @@ func (n VariableDefnNode) Codegen(prog *Program) value.Value {
 
 	block := prog.Compiler.CurrentBlock()
 
+	n.Package = prog.Package
+
 	f := block.Parent
 
 	name := n.Name
@@ -48,7 +52,7 @@ func (n VariableDefnNode) Codegen(prog *Program) value.Value {
 	}
 	ty := found.Type
 	ty = n.Type.BuildPointerType(ty)
-	block.AppendInst(NewLLVMComment("%s %s", ty, name))
+	// block.AppendInst(NewLLVMComment("%s %s", ty, name))
 	alloc = createBlockAlloca(f, ty, name.String())
 
 	prog.Compiler.typeCache = alloc.Elem
@@ -61,7 +65,7 @@ func (n VariableDefnNode) Codegen(prog *Program) value.Value {
 		if n.Body != nil {
 			val = n.Body.Codegen(prog)
 			if val == nil {
-				return val // nil
+				return val
 			}
 		}
 
@@ -74,8 +78,6 @@ func (n VariableDefnNode) Codegen(prog *Program) value.Value {
 		}
 		return nil
 	}
-
-	block.AppendInst(NewLLVMComment("%s <- %s", name, val.Type()))
 
 	block.NewStore(val, alloc)
 

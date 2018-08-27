@@ -18,6 +18,10 @@ func validTypeInfoTokens(t lexer.Token) bool {
 }
 
 func (p *Parser) atType() bool {
+
+	if !p.token.Is(lexer.TokIdent) {
+		return false
+	}
 	offset := 1
 	for validTypeInfoTokens(p.peek(offset)) {
 		offset++

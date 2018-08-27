@@ -1,6 +1,3 @@
-# Name = "classes 2 (Assigning and Accessing)"
-# ExpectedOutput = "Bob Smith"
-
 is main
 
 include "std:io"

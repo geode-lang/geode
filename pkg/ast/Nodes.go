@@ -72,6 +72,7 @@ const (
 	nodeSizeof                = "nodeSizeof"
 	nodeCast                  = "nodeCast"
 	nodeBool                  = "nodeBool"
+	nodeGlobalDecl            = "nodeGlobalDecl"
 )
 
 //
@@ -291,9 +292,8 @@ type FunctionCallNode struct {
 	NodeType
 	TokenReference
 
-	Name     Reference
-	Args     []Node
-	Generics []*GenericSymbol
+	Name Reference
+	Args []Node
 }
 
 // NameString implements Node.NameString

@@ -1,0 +1,6 @@
+Name = "fibonacci"
+CompilerStatus = 0
+RunStatus = 0
+Input = ""
+CompilerOutput = ""
+RunOutput = "832040"

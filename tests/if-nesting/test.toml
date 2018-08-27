@@ -1,0 +1,7 @@
+Name = "Conditional nesting"
+RunArgs = ["1", "2", "3"]
+CompilerStatus = 0
+RunStatus = 0
+Input = ""
+CompilerOutput = ""
+RunOutput = "2 3 4 4 end 4\n"

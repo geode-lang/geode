@@ -1,5 +1,3 @@
-# Name = "FizzBuzz"
-# ExpectedOutput = "FizzBuzz 1 2 Fizz 4 Buzz "
 is main
 include "std:io"
 

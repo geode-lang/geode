@@ -1,5 +1,3 @@
-# Name = "fibonacci"
-# ExpectedOutput = "832040"
 is main
 include "std:io"
 

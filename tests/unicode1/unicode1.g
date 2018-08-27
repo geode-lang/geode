@@ -1,5 +1,3 @@
-# Name = "Unicode 1: Function Names"
-# ExpectedOutput = ""
 is main
 func 유니코드테스트 void {}
 

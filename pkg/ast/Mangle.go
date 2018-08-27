@@ -17,8 +17,9 @@ type ManglePartType int
 // Parts of a mangled name
 const (
 	NamespaceMangle ManglePartType = iota
-	NameMangle      ManglePartType = iota
-	GenericMangle   ManglePartType = iota
+	NameMangle
+	TypeMangle
+	GenericMangle
 )
 
 // ManglePart -
@@ -58,7 +59,8 @@ func splitMany(s string, splits string) []string {
 // This is the prefix that will prefix all function names.
 // c++ uses _Z, I feel like an equally random value works fine
 // so I will use X
-const functionNamePrefix = "_X"
+const functionNamePrefix = "_F"
+const globalVariableNamePrefix = "_V"
 
 // MangleFunctionName will mangle a function name
 func MangleFunctionName(origName string, types []types.Type) string {
@@ -80,6 +82,24 @@ func MangleFunctionName(origName string, types []types.Type) string {
 		fmt.Fprintf(buff, ".T%s", t)
 	}
 
+	return buff.String()
+}
+
+// MangleVariableName will mangle a Variable name
+func MangleVariableName(origName string) string {
+
+	buff := &bytes.Buffer{}
+
+	fmt.Fprintf(buff, "%s", globalVariableNamePrefix)
+
+	parts := splitMany(origName, ":.")
+	for i, p := range parts {
+		prefix := "N"
+		if i == 0 {
+			prefix = "M"
+		}
+		fmt.Fprintf(buff, ".%s%s", prefix, p)
+	}
 	return buff.String()
 }
 
@@ -125,6 +145,7 @@ func GetMangleParts(mangled string) []ManglePart {
 	typeCharRefs := map[byte]ManglePartType{
 		'M': NamespaceMangle,
 		'N': NameMangle,
+		'T': TypeMangle,
 		'G': GenericMangle,
 	}
 

@@ -4,9 +4,9 @@ package lexer
 
 import "strconv"
 
-const _TokenType_name = "TokErrorTokNoEmitTokWhitespaceTokCharTokStringTokNumberTokBoolTokDotTokElipsisTokOperTokNamespaceAccessTokOperatorStartTokStarTokPlusTokMinusTokDivTokExpTokLTTokLTETokGTTokGTETokOperatorEndTokSemiColonTokDefereferenceTokReferenceTokAssignmentTokEqualityTokRightParenTokLeftParenTokRightCurlyTokLeftCurlyTokRightBraceTokLeftBraceTokRightArrowTokLeftArrowTokSizeofTokCompoundAssignmentTokForTokWhileTokIfTokElseTokReturnTokFuncDefnTokClassDefnTokNamespaceTokNewTokAsTokDependencyTokTypeTokCommaTokIdentTokComment"
+const _TokenType_name = "TokErrorTokNoEmitTokWhitespaceTokCharTokStringTokNumberTokBoolTokDotTokElipsisTokOperTokNamespaceAccessTokOperatorStartTokStarTokPlusTokMinusTokDivTokExpTokLTTokLTETokGTTokGTETokOperatorEndTokSemiColonTokDefereferenceTokReferenceTokAssignmentTokEqualityTokRightParenTokLeftParenTokRightCurlyTokLeftCurlyTokRightBraceTokLeftBraceTokRightArrowTokLeftArrowTokSizeofTokCompoundAssignmentTokQuestionMarkTokForTokWhileTokIfTokElseTokReturnTokFuncDefnTokClassDefnTokNamespaceTokNewTokAsTokDependencyTokTypeTokCommaTokIdentTokComment"
 
-var _TokenType_index = [...]uint16{0, 8, 17, 30, 37, 46, 55, 62, 68, 78, 85, 103, 119, 126, 133, 141, 147, 153, 158, 164, 169, 175, 189, 201, 217, 229, 242, 253, 266, 278, 291, 303, 316, 328, 341, 353, 362, 383, 389, 397, 402, 409, 418, 429, 441, 453, 459, 464, 477, 484, 492, 500, 510}
+var _TokenType_index = [...]uint16{0, 8, 17, 30, 37, 46, 55, 62, 68, 78, 85, 103, 119, 126, 133, 141, 147, 153, 158, 164, 169, 175, 189, 201, 217, 229, 242, 253, 266, 278, 291, 303, 316, 328, 341, 353, 362, 383, 398, 404, 412, 417, 424, 433, 444, 456, 468, 474, 479, 492, 499, 507, 515, 525}
 
 func (i TokenType) String() string {
 	if i < 0 || i >= TokenType(len(_TokenType_index)-1) {

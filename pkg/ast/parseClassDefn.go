@@ -19,6 +19,7 @@ func (p *Parser) parseClassDefn() Node {
 	nodes := p.parseClassBody()
 	n.Variables = make([]VariableDefnNode, 0)
 	n.Methods = make([]FunctionNode, 0)
+
 	for _, node := range nodes {
 		switch node.Kind() {
 		case nodeVariableDecl:
@@ -36,6 +37,7 @@ func (p *Parser) parseClassDefn() Node {
 }
 
 func (p *Parser) parseClassBody() []Node {
+
 	p.requires(lexer.TokLeftCurly)
 	nodes := make([]Node, 0)
 

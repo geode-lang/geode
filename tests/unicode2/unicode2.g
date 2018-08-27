@@ -1,6 +1,3 @@
-# Name = "Unicode 2: Variable Names"
-# ExpectedOutput = ""
-# RunError = 3
 is main
 
 func main int {

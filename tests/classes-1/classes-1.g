@@ -1,6 +1,3 @@
-# Name = "classes 1 (Type Declaration)"
-# ExpectedOutput = ""
-
 is main
 
 

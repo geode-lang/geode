@@ -155,3 +155,12 @@ func QuickHash(in string, l int) string {
 	}
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(in)))[:l]
 }
+
+// EatError takes an error and if it is nil, ignores it.
+// otherwise it is a fatal error
+func EatError(e error) {
+	if e != nil {
+		log.Fatal("%s\n", e)
+	}
+
+}

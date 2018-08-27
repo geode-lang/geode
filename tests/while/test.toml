@@ -1,0 +1,6 @@
+Name = "while"
+CompilerStatus = 0
+RunStatus = 0
+Input = ""
+CompilerOutput = ""
+RunOutput = "255"

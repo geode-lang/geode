@@ -146,6 +146,10 @@ func (p *Parser) parseTopLevelStmt() Node {
 		return p.parseClassDefn()
 	case lexer.TokFuncDefn:
 		return p.parseFunctionNode()
+	case lexer.TokIdent:
+		node := p.parseGlobalVariableDecl()
+		return node
+
 		// case lexer.TokType:
 		// 	log.Debug("parseTopLevelStmt - TokFuncDefn\n")
 		// 	return p.parseVariableDefn(true)

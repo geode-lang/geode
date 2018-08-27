@@ -15,13 +15,12 @@ func init() {
 // Scope trees represent block scoping by having a root scope
 // and children scopes that point back to their parent scope.
 type Scope struct {
-	Parent           *Scope                `json:"-"`
-	Index            int                   `json:"index"`
-	Children         []*Scope              `json:"children"`
-	Vals             map[string]ScopeItem  `json:"values"`
-	Types            map[string]*ScopeType `json:"types"`
-	GenericTemplates *[]GenericNodeWrapper `json:"-"`
-	PackageName      string                `json:"package_name"`
+	Parent      *Scope                `json:"-"`
+	Index       int                   `json:"index"`
+	Children    []*Scope              `json:"children"`
+	Vals        map[string]ScopeItem  `json:"values"`
+	Types       map[string]*ScopeType `json:"types"`
+	PackageName string                `json:"package_name"`
 }
 
 // Add a value to this specific scope
@@ -29,25 +28,19 @@ func (s *Scope) Add(val ScopeItem) {
 	s.Vals[val.Name()] = val
 }
 
-// AddGenericTemplate creates and adds a generic template to the Scope
-func (s *Scope) AddGenericTemplate(node Node, generics []GenericSymbol) {
-	n := GenericNodeWrapper{}
-	n.node = node
-	n.generics = generics
-	templates := append(*s.GenericTemplates, n)
-	s.GenericTemplates = &templates
-}
-
 // Find will traverse the scope tree to find some definition of a symbol
-func (s *Scope) Find(name string) (ScopeItem, bool) {
+func (s *Scope) Find(searchPaths []string) (ScopeItem, bool) {
 	for _, v := range s.Vals {
 		u := v.Name()
-		if u == name {
-			return v, true
+
+		for _, name := range searchPaths {
+			if u == name {
+				return v, true
+			}
 		}
 	}
 	if s.Parent != nil {
-		return s.Parent.Find(name)
+		return s.Parent.Find(searchPaths)
 	}
 	return nil, false
 }
@@ -100,6 +93,22 @@ func (s *Scope) FindType(name string) *ScopeType {
 	return v
 }
 
+// FindTypeName returns the geode defined type name
+// for an llvm type representation
+func (s *Scope) FindTypeName(t types.Type) (string, error) {
+
+	for _, val := range s.Types {
+		if types.Equal(val.Type, t) {
+			return val.Name, nil
+		}
+	}
+
+	if s.Parent == nil {
+		return "", fmt.Errorf("unable to find type %s in any scope", t)
+	}
+	return s.Parent.FindTypeName(t)
+}
+
 func (s *Scope) String() string {
 	// tree := treeprint.New()
 	// s.BuildTreeString(tree)
@@ -120,10 +129,12 @@ func (s *Scope) InjectPrimitives() {
 	s.RegisterType("short", types.I16, 3)
 	s.RegisterType("int", types.I32, 4)
 	s.RegisterType("long", types.I64, 5)
+
+	s.RegisterType("big", types.NewInt(128), 128)
+	s.RegisterType("large", types.NewInt(256), 256)
+	s.RegisterType("huge", types.NewInt(512), 512)
+
 	s.RegisterType("float", types.Double, 11)
-	s.RegisterType("i128", types.NewInt(128), 128)
-	s.RegisterType("i256", types.NewInt(256), 256)
-	s.RegisterType("i512", types.NewInt(512), 512)
 	s.RegisterType("string", types.NewPointer(types.I8), 0)
 	s.RegisterType("void", types.Void, 0)
 }
@@ -164,7 +175,6 @@ func NewScope() *Scope {
 	scopeIndex++
 	n.Parent = nil
 	n.Vals = make(map[string]ScopeItem)
-	n.GenericTemplates = &[]GenericNodeWrapper{}
 	n.Types = make(map[string]*ScopeType)
 	return n
 }
@@ -383,7 +393,10 @@ func NewVariableScopeItem(name string, value value.Value, vis Visibility) Variab
 	//      for int i := 0; i < 200; i <- i + 1 {}
 	// LLVM would complain in the second loop because `i` has already been defined in this "function"
 	// even if the scopes are different.
-	value.(*ir.InstAlloca).Name = fmt.Sprintf("_%s%d", item.name, varIndex)
+	if v, is := value.(*ir.InstAlloca); is {
+		v.Name = fmt.Sprintf("_%s%d", item.name, varIndex)
+	}
+
 	varIndex++
 	return item
 }

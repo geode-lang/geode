@@ -1,5 +1,3 @@
-# Name = "Unicode 3: String contents"
-# ExpectedOutput = "යුනිකෝඩ්"
 is main
 
 include "std:io"

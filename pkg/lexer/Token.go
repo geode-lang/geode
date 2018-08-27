@@ -57,7 +57,7 @@ func (t *Token) SyntaxError() {
 	src = strings.Replace(src, "\t", "    ", -1)
 	lines := strings.Split(src, "\n")
 
-	location := fmt.Sprintf("%s:%d:%d-%d", t.source.Path, t.Line, t.Column, t.Column+len(t.Value))
+	location := fmt.Sprintf("%s:%d", t.source.Path, t.Line)
 	// Start printing
 	fmt.Fprintf(buf, "\nSyntax error: (%s)\n", location)
 	fmt.Fprintf(buf, color.Blue("   |\n"))

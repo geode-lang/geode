@@ -71,7 +71,10 @@ func main() {
 		context.Run(*runArgs, buildDir)
 
 	case testCMD.FullCommand():
-		RunTests(*testDir)
+		RunTests("./tests")
+
+	case newTestCMD.FullCommand():
+		CreateTestCMD()
 
 	case cleanCMD.FullCommand():
 		os.RemoveAll(buildDir)
