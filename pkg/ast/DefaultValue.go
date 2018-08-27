@@ -14,7 +14,7 @@ func DefaultValue(t types.Type) value.Value {
 	}
 
 	if types.IsFloat(t) {
-		return constant.NewFloat(0, t.(*types.IntType))
+		return constant.NewFloat(0, t.(*types.FloatType))
 	}
 
 	if types.IsStruct(t) {
@@ -22,6 +22,4 @@ func DefaultValue(t types.Type) value.Value {
 	}
 
 	return nil
-
-	// return constant.NewNull(t)
 }

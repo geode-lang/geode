@@ -104,7 +104,6 @@ func GetTmp() string {
 func PurgeCache() {
 	cacheDir := GetCacheDir()
 
-	fmt.Println(cacheDir)
 	os.MkdirAll(cacheDir, os.ModePerm)
 
 	files, _ := ioutil.ReadDir(cacheDir)

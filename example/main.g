@@ -1,14 +1,13 @@
 is main
 
 include "std:io"
-
-func id(type? val) type -> val;
+include "std:encoding"
 
 func main int {
-	
-	io:print("hello, world\n");
-	# string a := id("hello");
-	# int b := id(3);
-	# float c := id(3.14);
-	return 10;
+	float a := 1;
+	while true {
+		io:print("%8f: %s\n", a, encoding:base64(a));
+		a += (a / 1000.0);
+	}
+	return 0;
 }

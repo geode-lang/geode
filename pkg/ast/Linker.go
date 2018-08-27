@@ -186,8 +186,6 @@ func (l *Linker) Run() {
 	linkArgs = append(linkArgs, "-o", filename)
 
 	out, err := util.RunCommand(linker, linkArgs...)
-	// fmt.Println(string(out))
-
 	if err != nil {
 		log.Fatal("failed to run command `%s %s`: `%s`\n\n%s",
 			linker, strings.Join(linkArgs, " "),

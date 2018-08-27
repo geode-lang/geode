@@ -127,7 +127,6 @@ func (n ClassNode) Codegen(prog *Program) value.Value {
 			log.Fatal("Class '%s' has two fields/methods named '%s'\n", n.Name, f.Name)
 		}
 		names[name] = true
-		fmt.Println(t)
 		ty := prog.Scope.FindType(t).Type
 		ty = f.Type.BuildPointerType(ty)
 		fields = append(fields, ty)

@@ -13,5 +13,6 @@ func (p *Parser) parseExpression() Node {
 	if p.token.Is(lexer.TokAs) {
 		return p.parseCastExpr(lhs)
 	}
+
 	return p.parseBinaryOpRHS(1, lhs)
 }

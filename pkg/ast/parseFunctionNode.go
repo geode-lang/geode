@@ -119,8 +119,6 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 		}
 	}
 
-	// fmt.Println(fn.Name, fn.HasUnknownType)
-
 	return fn
 }
 

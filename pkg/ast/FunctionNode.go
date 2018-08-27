@@ -227,12 +227,12 @@ func (n FunctionNode) Codegen(prog *Program) value.Value {
 }
 
 func createPrelude(prog *Program, n FunctionNode) {
-	// if prog.Compiler.FN.Name == "main" {
-	// 	prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("runtime prelude:"))
-	// 	// Initialize the garbage collector at the first value allocted to the stack.
-	// 	QuickParseIdentifier("byte __GC_BASE_POINTER;").Codegen(prog)
-	// 	QuickParseExpression("___geodegcinit(&__GC_BASE_POINTER);").Codegen(prog)
-	// }
+	if prog.Compiler.FN.Name == "main" {
+		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("runtime prelude:"))
+		// Initialize the garbage collector at the first value allocted to the stack.
+		QuickParseIdentifier("byte __GC_BASE_POINTER;").Codegen(prog)
+		QuickParseExpression("___geodegcinit(&__GC_BASE_POINTER);").Codegen(prog)
+	}
 }
 
 func (n FunctionNode) String() string {

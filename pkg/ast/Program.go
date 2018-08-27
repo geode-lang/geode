@@ -216,7 +216,6 @@ func (p *Program) Congeal() *ir.Module {
 					name = fn.Name.String()
 				}
 				fn.Package = pkg
-				// fmt.Printf(color.Cyan("Function: %s\n"), name)
 				p.Functions[name] = &fn
 			}
 
@@ -227,7 +226,6 @@ func (p *Program) Congeal() *ir.Module {
 					name = cls.Name
 				}
 
-				// fmt.Printf(color.Red("Class: %s\n"), name)
 				p.Classes[name] = &cls
 			}
 
@@ -335,8 +333,6 @@ func (p *Program) CompileFunction(name string, options FunctionCompilationOption
 			}
 		}
 	}
-
-	// fmt.Println(node.Name, correctTypes)
 
 	var compiledVal *ir.Function
 

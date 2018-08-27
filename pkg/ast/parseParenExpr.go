@@ -17,5 +17,6 @@ func (p *Parser) parseParenExpr() Node {
 		return nil
 	}
 	p.next()
+
 	return v
 }

@@ -135,26 +135,23 @@ func main int {
 		if iter = 0 {
 			iter <- 1;
 		}
-	
+
 		if input = '\x03' || input = 'q' {
 			clear();
 			return 0;
 		}
-		
-		
-		
+
 		# Furthest you are allowed to zoom in
 		if z < minzoom {
 			z <- minzoom;
 		}
-		
+
 		# Furthest you are allowed to zoom out
 		if z > maxzoom {
 			z <- maxzoom;
 		}
 
 	}
-	
-	
+
 	return 0;
 }

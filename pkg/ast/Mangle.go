@@ -158,32 +158,6 @@ func GetMangleParts(mangled string) []ManglePart {
 		parts = append(parts, part)
 	}
 
-	// for i := 0; i < len(mangled); i++ {
-	// 	c := mangled[i:]
-	// 	val := readNumber(c)
-	// 	if val != 0 {
-
-	// 		typeChar := mangled[i-1]
-
-	// 		typ, ok := typeCharRefs[typeChar]
-	// 		if !ok {
-	// 			log.Fatal("Invalid typechar in mangled name %s: %c\n", mangled, typeChar)
-	// 		}
-
-	// 		i += len(strconv.Itoa(val)) - 1
-	// 		start := i + 1
-	// 		end := start + val
-	// 		i += val
-
-	// 		part := ManglePart{}
-
-	// 		part.partType = typ
-	// 		part.value = mangled[start:end]
-
-	// 		parts = append(parts, part)
-
-	// 	}
-	// }
 	return parts
 }
 

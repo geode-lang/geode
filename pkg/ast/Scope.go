@@ -121,6 +121,9 @@ func (s *Scope) InjectPrimitives() {
 	s.RegisterType("int", types.I32, 4)
 	s.RegisterType("long", types.I64, 5)
 	s.RegisterType("float", types.Double, 11)
+	s.RegisterType("i128", types.NewInt(128), 128)
+	s.RegisterType("i256", types.NewInt(256), 256)
+	s.RegisterType("i512", types.NewInt(512), 512)
 	s.RegisterType("string", types.NewPointer(types.I8), 0)
 	s.RegisterType("void", types.Void, 0)
 }

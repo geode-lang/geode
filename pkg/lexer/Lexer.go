@@ -12,14 +12,14 @@ import (
 )
 
 var tokenTypeOverrides = map[string]TokenType{
-	"return":  TokReturn,
-	"if":      TokIf,
-	"else":    TokElse,
-	"for":     TokFor,
-	"while":   TokWhile,
-	"func":    TokFuncDefn,
-	"λ":       TokFuncDefn,
-	"new":     TokNew,
+	"return": TokReturn,
+	"if":     TokIf,
+	"else":   TokElse,
+	"for":    TokFor,
+	"while":  TokWhile,
+	"func":   TokFuncDefn,
+	"λ":      TokFuncDefn,
+	// "new":     TokNew,
 	"class":   TokClassDefn,
 	"include": TokDependency,
 	"link":    TokDependency,
@@ -246,6 +246,7 @@ func lexTopLevel(l *Lexer) stateFn {
 		return lexTopLevel
 
 	case isOperator(r):
+		l.backup()
 		return lexSymbol
 	case r == '"':
 		// l.backup()
@@ -316,18 +317,22 @@ func lexNewline(l *Lexer) stateFn {
 }
 
 func lexSymbol(l *Lexer) stateFn {
-	// var lastRune rune
 
+	// If the lexer's state ever results in an of these runs,
+	// the lexer will emit that value. the finalRuns are a list
+	// of the maxiumum repeats of tokens. They will be a list
+	// of valid tokens in the language as repeats that aren't in
+	// this list must be invalid
 	finalRuns := map[string]bool{
 		"...": true,
+		"*":   true,
+		"&&":  true,
 	}
 
 	l.acceptRunPredicate(func(c rune) bool {
 		if finalRuns[l.value()] {
-
 			l.emit(TokOper)
 		}
-		// lastRune = c
 		return isOperator(c)
 	})
 

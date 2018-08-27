@@ -17,8 +17,6 @@ var PrintVerbose = false
 
 func log(msg string) {
 	fmt.Printf("%s", msg)
-	// f, _ := os.OpenFile("/tmp/geode.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	// f.Write([]byte(msg))
 }
 
 // Printf -

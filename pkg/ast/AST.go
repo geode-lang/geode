@@ -1,7 +1,6 @@
 package ast
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/geode-lang/geode/pkg/lexer"
@@ -154,7 +153,6 @@ func (p *Parser) parseTopLevelStmt() Node {
 
 	p.token.SyntaxError()
 
-	fmt.Println(p.token)
 	p.Error("Invalid syntax in root\n")
 	return nil
 }
