@@ -18,6 +18,8 @@ bin
 
 lib/include/gc/
 
+gc
+
 .idea
 
 debug

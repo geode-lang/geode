@@ -13,10 +13,10 @@ install: install.lib install.bin
 clean: gc.clean
 	@geode clean
 
-build: gc
+build: gc.all
 	@go build -o bin/geode ./pkg/cmd/geode
 
-install.lib: gc
+install.lib: gc.all
 	@rm -rf $(LIBDIR)
 	@mkdir -p $(LIBDIR)
 	@cp -a lib/* $(LIBDIR)
@@ -35,10 +35,22 @@ gc.clean:
 	rm -rf lib/gc/*
 	rm -rf lib/include/gc
 
-gc: lib/gc/gc.a
+gc.all: gc lib/gc/gc.a
 
 lib/gc/gc.a:
 	cd gc && make -f Makefile.direct
 	cp gc/gc.a lib/gc/gc.a
 	mkdir -p lib/include/gc
 	cp -a gc/include/ lib/include/gc
+	
+	
+gc:
+	mkdir -p dl
+	wget -O dl/libatomic_ops.tar.gz https://github.com/ivmai/libatomic_ops/releases/download/v7.6.6/libatomic_ops-7.6.6.tar.gz
+	wget -O dl/gc.tar.gz https://github.com/ivmai/bdwgc/releases/download/v7.6.8/gc-7.6.8.tar.gz
+	rm -rf gc
+	tar -C ./ -xvf dl/gc.tar.gz
+	mv gc-* gc
+	tar -C ./ -xvf dl/libatomic_ops.tar.gz
+	mv libatomic_ops* gc/libatomic_ops	
+	rm -rf dl
