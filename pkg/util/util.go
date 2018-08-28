@@ -33,10 +33,9 @@ func RunCommand(command string, args ...string) ([]byte, error) {
 	}
 	title := fmt.Sprintf("Command Execution (%s)", tmpcmd)
 
-	fullcommand := fmt.Sprintf("%s %s", command, strings.Join(args, " "))
 	// fmt.Println(fullcommand)
 	log.Timed(title, func() {
-		cmd := exec.Command("bash", "-c", fullcommand)
+		cmd := exec.Command(command, args...)
 		out, err = cmd.CombinedOutput()
 	})
 
