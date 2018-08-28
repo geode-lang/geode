@@ -151,8 +151,10 @@ func (l *Linker) Run() {
 		}
 
 	}
-
+	fmt.Println("helo")
 	for i, obj := range l.objectPaths {
+
+		fmt.Println(obj)
 		outbase := path.Join(l.buildDir, obj)
 
 		extension := filepath.Ext(outbase)

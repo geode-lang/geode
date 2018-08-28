@@ -28,7 +28,7 @@ gen:
 	@go generate -v ./...
 
 
-all: build lib bin
+all: build install.lib install.bin
 
 gc.clean:
 	find gc -name "*.o" | xargs rm -rf "{}"
