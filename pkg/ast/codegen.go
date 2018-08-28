@@ -283,6 +283,16 @@ func createTypeCast(prog *Program, in value.Value, to types.Type) value.Value {
 	inSize := typeSize(inType)
 	outSize := typeSize(to)
 
+	if c, ok := in.(*constant.Int); ok && types.IsInt(to) {
+		c.Typ = to.(*types.IntType)
+		return c
+	}
+
+	if c, ok := in.(*constant.Float); ok && types.IsFloat(to) {
+		c.Typ = to.(*types.FloatType)
+		return c
+	}
+
 	if types.Equal(to, types.Void) {
 		return nil
 	}
@@ -322,6 +332,10 @@ func createTypeCast(prog *Program, in value.Value, to types.Type) value.Value {
 	// If the cast would not change the type, just return the in value
 	if types.Equal(inType, to) {
 		return in
+	}
+
+	if types.IsPointer(inType) && types.IsInt(to) {
+		return prog.Compiler.CurrentBlock().NewPtrToInt(in, to)
 	}
 
 	log.Fatal("Failed to typecast type %s to %s\n", inType.String(), to)
@@ -557,6 +571,7 @@ func (n ReturnNode) Codegen(prog *Program) value.Value {
 					util.EatError(err)
 					givenName, err := prog.Scope.FindTypeName(given)
 					util.EatError(err)
+					n.SyntaxError()
 					log.Fatal("Incorrect return value for function %s. Expected: %s (%s). Given: %s (%s)\n", fnName, expectedName, expected, givenName, given)
 				} else {
 					retVal = createTypeCast(prog, retVal, prog.Compiler.FN.Sig.Ret)

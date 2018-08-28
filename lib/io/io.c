@@ -3,7 +3,8 @@
 #include <unistd.h>
 
 #include "io.h"
-#include "../c/mem.h"
+#include "../include/mem.h"
+#include "../include/gc/gc.h"
 
 
 // the print function wrapper.
@@ -23,7 +24,7 @@ char* format(char *fmt, ...) {
 	va_end(checkArgs);
 	
 	// Allocate memory for the string
-	char* buffer = gcmalloc(size + 1);
+	char* buffer = GC_malloc(size + 1);
 	
 	// Reparse the args... There is no way around this, sadly
 	va_list args;

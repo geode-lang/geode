@@ -240,6 +240,8 @@ func (p *Program) Congeal() *ir.Module {
 	// Codegen the types/classes
 	for node := range FilterPackagedNodes(nodes, nodeClass) {
 		node.SetupContext()
+		err := node.Node.(ClassNode).VerifyCorrectness(p)
+		util.EatError(err)
 		node.Node.(ClassNode).Codegen(p)
 	}
 

@@ -5,6 +5,7 @@ import (
 )
 
 func (p *Parser) parsePrimary() Node {
+
 	// fmt.Println(lexer.GetTokenName(p.token.Type))
 	switch p.token.Type {
 	case lexer.TokSizeof:

@@ -6,19 +6,22 @@ include "std:color"
 include "std:math"
 
 
+Color last_color := color:new_rgb(0, 0, 0);
+
+
 func printdensity(int d, int iter) {
 	Color c;
+	
 	if d > iter {
 		c <- color:new_rgb(0,0,0);
 	} else {
-		# c <- color:new_rgb(d % 255, d % 255, d % 255);
 		c <- color:hsv_to_rgb(d * 10.0, 1.0, 1.0);
 	}
 
-	io:print("\x1b[48;2;%d;%d;%dm", c.r as int, c.g as int, c.b as int);
-	io:print(" "); # Each "pixel" of the mandelbrot is simply a space with a background color
-	io:print("\x1b[0m"); # Reset the background color
-	return;
+
+let a := io:format("\x1b[48;2;%d;%d;%dm ", c.r as int, c.g as int, c.b as int);
+io:fputs(a, io:stdout);
+io:fputs("\x1b[0m", io:stdout);
 }
 
 
@@ -49,10 +52,10 @@ func printMandel(float realstart, float imagstart, float zoom, int iter, float w
 
 func mandelhelp(float xmin, float xmax, float xstep, float ymin, float ymax, float ystep, int iter) {
 
-	io:print("x: %.40f\n", xmin);
-	io:print("y: %.40f\n", ymin);
-	io:print("zoom: %f\n", xstep);
-	io:print("iter: %d\n", iter);
+	# io:print("x: %.40f\n", xmin);
+	# io:print("y: %.40f\n", ymin);
+	# io:print("zoom: %f\n", xstep);
+	# io:print("iter: %d\n", iter);
 	
 	float max := 0;
 	
@@ -61,8 +64,10 @@ func mandelhelp(float xmin, float xmax, float xstep, float ymin, float ymax, flo
 			float cov := mandelconverge(x,y, iter);
 			printdensity(cov, iter);
 		}
-		io:print("\n");
+		io:fputs("\n", io:stdout);
 	}
+	
+	io:fflush(io:stdout);
 	
 }
 

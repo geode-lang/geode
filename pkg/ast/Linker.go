@@ -159,25 +159,33 @@ func (l *Linker) Run() {
 		if extension == ".ll" {
 			// outbase = obj
 		}
-		outbase = outbase[0 : len(outbase)-len(extension)]
 
-		hash := util.HashFile(obj)
+		if extension == ".a" {
 
-		cachefile := outbase + ".cache"
-		objFile := outbase + ".o"
-
-		cachedat, err := ioutil.ReadFile(cachefile)
-		if err != nil || strings.Compare(string(cachedat), hash) != 0 {
-			os.MkdirAll(path.Dir(outbase), os.ModePerm)
-			// the file doesnt exist, we need to compile it
-			out, err := util.RunCommand("clang", "-c", "-o", objFile, obj)
-			if err != nil {
-				log.Fatal("(%s) %s\n", err, string(out))
-			}
-			// fmt.Println(string(out), err)
-			ioutil.WriteFile(cachefile, []byte(hash), os.ModePerm)
 		}
-		l.objectPaths[i] = objFile
+
+		if extension == ".c" {
+			outbase = outbase[0 : len(outbase)-len(extension)]
+
+			hash := util.HashFile(obj)
+
+			cachefile := outbase + ".cache"
+			objFile := outbase + ".o"
+
+			cachedat, err := ioutil.ReadFile(cachefile)
+			if err != nil || strings.Compare(string(cachedat), hash) != 0 {
+				os.MkdirAll(path.Dir(outbase), os.ModePerm)
+				// the file doesnt exist, we need to compile it
+				out, err := util.RunCommand("clang", "-c", "-o", objFile, obj)
+				if err != nil {
+					log.Fatal("(%s) %s\n", err, string(out))
+				}
+				// fmt.Println(string(out), err)
+				ioutil.WriteFile(cachefile, []byte(hash), os.ModePerm)
+			}
+			l.objectPaths[i] = objFile
+		}
+
 	}
 	// Append input files to the end of the command
 	linkArgs = append(linkArgs, l.objectPaths...)

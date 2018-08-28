@@ -28,7 +28,7 @@ func (p *Parser) parseBlockStmt() BlockNode {
 			continue
 		}
 
-		if p.token.Is(lexer.TokIdent) {
+		if p.token.Is(lexer.TokIdent, lexer.TokLet) {
 			blk.Nodes = append(blk.Nodes, p.parseIdentifierExpr(true))
 			p.allowSemiColon()
 			continue

@@ -5,8 +5,6 @@ import (
 	"fmt"
 
 	"github.com/geode-lang/llvm/ir"
-	"github.com/geode-lang/llvm/ir/constant"
-	"github.com/geode-lang/llvm/ir/types"
 	"github.com/geode-lang/llvm/ir/value"
 )
 
@@ -44,22 +42,7 @@ func (n GlobalVariableDeclNode) Declare(prog *Program) value.Value {
 
 	varType := n.Type.BuildPointerType(prog.Scope.FindType(n.Type.Name).Type)
 
-	var init constant.Constant
-
-	if types.IsInt(varType) {
-		init = constant.NewInt(0, varType)
-	}
-
-	if types.IsFloat(varType) {
-		init = constant.NewFloat(0.0, varType)
-	}
-
-	if types.IsStruct(varType) {
-		init = constant.NewStruct()
-	}
-	if types.IsPointer(varType) {
-		init = constant.NewNull(varType)
-	}
+	init := DefaultValue(varType)
 
 	decl := prog.Module.NewGlobalDef(name, init)
 
@@ -82,17 +65,20 @@ func (n GlobalVariableDeclNode) Declare(prog *Program) value.Value {
 // Codegen a global variable declaration
 func (n GlobalVariableDeclNode) Codegen(prog *Program) value.Value {
 
-	assign := AssignmentNode{}
+	if n.Body != nil {
+		assign := AssignmentNode{}
 
-	assign.NodeType = nodeAssignment
+		assign.NodeType = nodeAssignment
 
-	assign.Token = n.Token
+		assign.Token = n.Token
 
-	assign.Assignee = n.Name
+		assign.Assignee = n.Name
 
-	assign.Value = n.Body.(Accessable)
+		assign.Value = n.Body.(Accessable)
 
-	return assign.Codegen(prog)
+		return assign.Codegen(prog)
+	}
+	return nil
 }
 
 func (n GlobalVariableDeclNode) String() string {

@@ -1,10 +1,21 @@
 is main
 
 include "std:io"
+include "std:mem"
 
-int a := 3 + 3;
+func foo() int {
+	let data := mem:get(10);
+	
+	for int i := 0; i < 10; i += 1 {
+		data[i] <- i;
+	}
+	return data[4];
+}
 
-func main int {
-	io:fputs(io:format("%d", a), io:stderr);
+func main int {	
+	let i := 1000;
+	while true {
+		io:print("%d\n", foo());
+	}
 	return 0;
 }

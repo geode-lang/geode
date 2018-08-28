@@ -110,8 +110,6 @@ func (s *Scope) FindTypeName(t types.Type) (string, error) {
 }
 
 func (s *Scope) String() string {
-	// tree := treeprint.New()
-	// s.BuildTreeString(tree)
 	j, _ := json.MarshalIndent(s, "", "    ")
 	return string(j)
 }

@@ -1,12 +1,9 @@
 is primes
 
 include "std:io"
-
 func main int {
-	int i := 0;
-	
+	let i := 0;
 	while true {
-		# bool is_prime := check_prime(i);
 		if check_prime(i) {
 			io:print("%d\n", i);
 		}
@@ -17,7 +14,6 @@ func main int {
 
 
 func check_prime(int a) bool {
-	
 	if a % 2 = 0 {
 		return false;
 	}

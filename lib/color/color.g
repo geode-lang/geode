@@ -41,3 +41,8 @@ func hsv_to_rgb(float h, float s, float v) Color {
 	col.b <- (col.b + m) * 255;
 	return col;
 }
+
+
+func equal(Color a, Color b) bool {
+	return a.r = b.r && a.g = b.g && a.b = c.b;
+}

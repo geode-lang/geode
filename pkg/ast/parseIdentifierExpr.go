@@ -7,7 +7,7 @@ import (
 
 func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 
-	if allowVariableDefn && p.atType() {
+	if allowVariableDefn && (p.atType() || p.token.Is(lexer.TokLet)) {
 		return p.parseVariableDefn(true)
 	}
 
@@ -22,8 +22,6 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 		target = p.parseDotExpr(target)
 
 	}
-
-	// p.next()
 
 	// Is the next value a paren? If it isnt it is a normal variable reference
 	if !p.token.Is(lexer.TokLeftParen) {

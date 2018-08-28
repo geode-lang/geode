@@ -51,6 +51,10 @@ func (n ArrayNode) Codegen(prog *Program) value.Value {
 	}
 	typ := prog.Compiler.typeCache
 
+	if typ == nil {
+		typ = types.NewPointer(values[0].Type())
+	}
+
 	itemType := typ.(*types.PointerType).Elem
 
 	arrayType := types.NewArray(itemType, int64(n.Length))

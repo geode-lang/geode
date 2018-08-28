@@ -1,4 +1,5 @@
 #include "tgc.h"
+#include "../include/xmalloc.h"
 
 static size_t tgc_hash(void *ptr) {
   return ((uintptr_t)ptr) >> 3;
@@ -114,6 +115,8 @@ static size_t tgc_ideal_size(tgc_t* gc, size_t size) {
   for (i = 0;; i++) {
     if (last * i >= size) { return last * i; }
   }
+  
+  return size;
   return 0;
 }
 
@@ -124,7 +127,7 @@ static int tgc_rehash(tgc_t* gc, size_t new_size) {
   size_t old_size = gc->nslots;
   
   gc->nslots = new_size;
-  gc->items = calloc(gc->nslots, sizeof(tgc_ptr_t));
+  gc->items = xcalloc(gc->nslots, sizeof(tgc_ptr_t));
   
   if (gc->items == NULL) {
     gc->nslots = old_size;
@@ -140,7 +143,7 @@ static int tgc_rehash(tgc_t* gc, size_t new_size) {
     }
   }
   
-  free(old_items);
+  xfree(old_items);
   
   return 1;
 }
@@ -248,7 +251,7 @@ void tgc_sweep(tgc_t *gc) {
     gc->nfrees++;
   }
 
-  gc->frees = realloc(gc->frees, sizeof(tgc_ptr_t) * gc->nfrees);
+  gc->frees = xrealloc(gc->frees, sizeof(tgc_ptr_t) * gc->nfrees);
   if (gc->frees == NULL) { return; }
   
   i = 0; k = 0;
@@ -292,11 +295,11 @@ void tgc_sweep(tgc_t *gc) {
       // printf("Freeing %p\n", gc->frees[i].ptr);
       // Erase memory before freeing
       memset(gc->frees[i].ptr, 0, gc->frees[i].size);
-      free(gc->frees[i].ptr);
+      xfree(gc->frees[i].ptr);
     }
   }
   
-  free(gc->frees);
+  xfree(gc->frees);
   gc->frees = NULL;
   gc->nfrees = 0;
   
@@ -319,8 +322,8 @@ void tgc_start(tgc_t *gc, void *stk) {
 
 void tgc_stop(tgc_t *gc) {
   tgc_sweep(gc);
-  free(gc->items);
-  free(gc->frees);
+  xfree(gc->items);
+  xfree(gc->frees);
 }
 
 void tgc_pause(tgc_t *gc) {
@@ -354,7 +357,7 @@ static void *tgc_add(
     return ptr;
   } else {
     gc->nitems--;
-    free(ptr);
+    xfree(ptr);
     return NULL;
   }
 }
@@ -376,7 +379,7 @@ void *tgc_calloc(tgc_t *gc, size_t num, size_t size) {
 void *tgc_realloc(tgc_t *gc, void *ptr, size_t size) {
   
   tgc_ptr_t *p;
-  void *qtr = realloc(ptr, size);
+  void *qtr = xrealloc(ptr, size);
   
   if (qtr == NULL) {
     tgc_rem(gc, ptr);
@@ -415,13 +418,13 @@ void tgc_free(tgc_t *gc, void *ptr) {
     // Erase memory before freeing
     memset(ptr, 0, p->size);
     
-    free(ptr);
+    xfree(ptr);
     tgc_rem(gc, ptr);
   }
 }
 
 void *tgc_alloc_opt(tgc_t *gc, size_t size, int flags, void(*dtor)(void*)) {
-  void *ptr = malloc(size);
+  void *ptr = xmalloc(size);
   
   if (ptr != NULL) {
     ptr = tgc_add(gc, ptr, size, flags, dtor);
@@ -432,7 +435,7 @@ void *tgc_alloc_opt(tgc_t *gc, size_t size, int flags, void(*dtor)(void*)) {
 void *tgc_calloc_opt(
   tgc_t *gc, size_t num, size_t size, 
   int flags, void(*dtor)(void*)) {
-  void *ptr = calloc(num, size);
+  void *ptr = xcalloc(num, size);
   if (ptr != NULL) {
     ptr = tgc_add(gc, ptr, num * size, flags, dtor);
   }

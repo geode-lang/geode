@@ -3,23 +3,37 @@ package ast
 import (
 	"github.com/geode-lang/llvm/ir/constant"
 	"github.com/geode-lang/llvm/ir/types"
-	"github.com/geode-lang/llvm/ir/value"
 )
 
 // DefaultValue takes some type and returns a default value for it.
-func DefaultValue(t types.Type) value.Value {
+func DefaultValue(t types.Type) constant.Constant {
+
+	var value constant.Constant
 
 	if types.IsInt(t) {
-		return constant.NewInt(0, t.(*types.IntType))
+		value = constant.NewInt(0, t)
 	}
 
 	if types.IsFloat(t) {
-		return constant.NewFloat(0, t.(*types.FloatType))
+		value = constant.NewFloat(0.0, t)
 	}
 
 	if types.IsStruct(t) {
-		return nil
+
+		structType := t.(*types.StructType)
+
+		fields := make([]constant.Constant, 0, len(structType.Fields))
+		for _, fieldType := range structType.Fields {
+			fields = append(fields, DefaultValue(fieldType))
+		}
+		stct := constant.NewStruct(fields...)
+		stct.Typ = structType
+		value = stct
 	}
 
-	return nil
+	if types.IsPointer(t) {
+		value = constant.NewNull(t)
+	}
+
+	return value
 }

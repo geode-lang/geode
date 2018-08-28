@@ -4,7 +4,7 @@ package lexer
 
 import "strconv"
 
-const _TokenType_name = "TokErrorTokNoEmitTokWhitespaceTokCharTokStringTokNumberTokBoolTokDotTokElipsisTokOperTokNamespaceAccessTokOperatorStartTokStarTokPlusTokMinusTokDivTokExpTokLTTokLTETokGTTokGTETokOperatorEndTokSemiColonTokDefereferenceTokReferenceTokAssignmentTokEqualityTokRightParenTokLeftParenTokRightCurlyTokLeftCurlyTokRightBraceTokLeftBraceTokRightArrowTokLeftArrowTokSizeofTokCompoundAssignmentTokQuestionMarkTokForTokWhileTokIfTokElseTokReturnTokFuncDefnTokClassDefnTokNamespaceTokNewTokAsTokDependencyTokTypeTokCommaTokIdentTokComment"
+const _TokenType_name = "TokErrorTokNoEmitTokWhitespaceTokCharTokStringTokNumberTokBoolTokDotTokElipsisTokOperTokNamespaceAccessTokOperatorStartTokStarTokPlusTokMinusTokDivTokExpTokLTTokLTETokGTTokGTETokOperatorEndTokSemiColonTokDefereferenceTokReferenceTokAssignmentTokEqualityTokRightParenTokLeftParenTokRightCurlyTokLeftCurlyTokRightBraceTokLeftBraceTokRightArrowTokLeftArrowTokSizeofTokCompoundAssignmentTokQuestionMarkTokForTokWhileTokIfTokElseTokReturnTokFuncDefnTokClassDefnTokNamespaceTokLetTokAsTokDependencyTokTypeTokCommaTokIdentTokComment"
 
 var _TokenType_index = [...]uint16{0, 8, 17, 30, 37, 46, 55, 62, 68, 78, 85, 103, 119, 126, 133, 141, 147, 153, 158, 164, 169, 175, 189, 201, 217, 229, 242, 253, 266, 278, 291, 303, 316, 328, 341, 353, 362, 383, 398, 404, 412, 417, 424, 433, 444, 456, 468, 474, 479, 492, 499, 507, 515, 525}
 

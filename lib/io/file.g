@@ -14,6 +14,7 @@ class FILE {}
 
 FILE* stdout := io:fopen("/dev/stdout", "w+");
 FILE* stderr := io:fopen("/dev/stderr", "w+");
+FILE* stdin := io:fopen("/dev/stdin", "r+");
 
 
 # Create external linkages to the C stdlib.h files
@@ -31,8 +32,8 @@ func fflush(FILE* handle) int ...
 func fputs(string str, FILE* handle) ...
 
 
-# readFile returns the full content of a file
-func readFile(string path) string {
+# read_file returns the full content of a file
+func read_file(string path) string {
 	FILE* f := fopen(path, "r");
 	
 	fseek(f, 0, 2);
@@ -43,5 +44,6 @@ func readFile(string path) string {
 	fread(data, fsize, 1, f);
 	# ensure the string is null terminated
 	data[fsize] <- 0;
+	fclose(f);
 	return data;
 }

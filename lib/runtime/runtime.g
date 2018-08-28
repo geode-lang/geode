@@ -1,6 +1,6 @@
 is _runtime
 
-link "../tgc/tgc.c"
 link "_runtime.c"
+link "../gc/gc.a"
 
-func ___geodegcinit(byte* stk) ...
+func __runtimeinit() ...

@@ -66,7 +66,7 @@ const (
 	TokFuncDefn
 	TokClassDefn
 	TokNamespace
-	TokNew
+	TokLet
 	TokAs
 
 	TokDependency

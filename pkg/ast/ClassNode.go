@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/geode-lang/geode/pkg/util/color"
@@ -38,13 +39,13 @@ func (n ClassNode) InferType(scope *Scope) string { return "void" }
 //    class Bar {
 //        Foo b;
 //    }
-func (n ClassNode) VerifyCorrectness(scope *Scope, c *Compiler) bool {
-	base := scope.FindType(n.Name).Type.(*types.StructType)
+func (n ClassNode) VerifyCorrectness(prog *Program) error {
+	base := prog.Scope.FindType(n.Name).Type.(*types.StructType)
 
 	for _, f := range n.Variables {
 		fieldName := f.Name.String()
 		t := f.Type.Name
-		ty := scope.FindType(t).Type
+		ty := prog.Scope.FindType(t).Type
 		ty = f.Type.BuildPointerType(ty)
 
 		// Pointer types should be correct
@@ -55,8 +56,7 @@ func (n ClassNode) VerifyCorrectness(scope *Scope, c *Compiler) bool {
 		if types.IsStruct(ty) {
 			// If the type is a direct reference back to the base class, it is invalid. It must be a pointer type
 			if types.Equal(base, ty) {
-				fmt.Printf("Class '%s' has a circular reference in it's fields. Field '%s' should be a pointer to a '%s' instead.\n", n.Name, f.Name, n.Name)
-				return false
+				return fmt.Errorf("class '%s' has a circular reference in it's fields. Field '%s' should be a pointer to a '%s' instead", n.Name, f.Name, n.Name)
 			}
 
 			// Now we need to check if the struct has a non-pointer reference back to this class.
@@ -64,13 +64,15 @@ func (n ClassNode) VerifyCorrectness(scope *Scope, c *Compiler) bool {
 			structT := ty.(*types.StructType)
 
 			if contains, _, _ := structContainsTypeAnywhere(structT, base, structT); contains {
-				fmt.Printf("* Problem: class %s has a field %s of type %s which eventually back references %s (would consume 'infinite' stack memory)\n", color.Green(n.Name), color.Blue(fieldName), color.Red(t), color.Green(n.Name))
-				fmt.Printf("  Solution: Either change %s to a pointer or remove the back-reference from %s\n\n", color.Blue(fieldName), color.Red(t))
-				return false
+				buff := &bytes.Buffer{}
+				fmt.Fprintf(buff, "\n")
+				fmt.Fprintf(buff, "* Problem: class %s has a field %s of type %s which eventually back references %s (would consume 'infinite' stack memory)\n", color.Green(n.Name), color.Blue(fieldName), color.Red(t), color.Green(n.Name))
+				fmt.Fprintf(buff, "  Solution: Either change %s to a pointer or remove the back-reference from %s\n\n", color.Blue(fieldName), color.Red(t))
+				return fmt.Errorf("%s", buff)
 			}
 		}
 	}
-	return true
+	return nil
 }
 
 func structContainsTypeAnywhere(s *types.StructType, t types.Type, path ...*types.StructType) (bool, int, []*types.StructType) {

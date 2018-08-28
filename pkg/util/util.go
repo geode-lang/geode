@@ -24,14 +24,19 @@ func RunCommand(command string, args ...string) ([]byte, error) {
 	var out []byte
 	var err error
 
+	log.Verbose("%s %s\n", command, strings.Join(args, " "))
+
 	tmpcmd := command + " " + strings.Join(args, " ")
 	maxLen := 500
 	if len(tmpcmd) > maxLen {
 		tmpcmd = tmpcmd[:maxLen-3] + "..."
 	}
 	title := fmt.Sprintf("Command Execution (%s)", tmpcmd)
+
+	fullcommand := fmt.Sprintf("%s %s", command, strings.Join(args, " "))
+	// fmt.Println(fullcommand)
 	log.Timed(title, func() {
-		cmd := exec.Command(command, args...)
+		cmd := exec.Command("bash", "-c", fullcommand)
 		out, err = cmd.CombinedOutput()
 	})
 

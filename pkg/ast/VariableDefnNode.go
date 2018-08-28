@@ -6,6 +6,7 @@ import (
 
 	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir"
+	"github.com/geode-lang/llvm/ir/types"
 	"github.com/geode-lang/llvm/ir/value"
 )
 
@@ -14,11 +15,11 @@ type VariableDefnNode struct {
 	NodeType
 	TokenReference
 
-	Type      GeodeTypeRef
-	HasValue  bool
-	Name      NamedReference
-	Body      Node
-	MustInfer bool
+	Type           GeodeTypeRef
+	HasValue       bool
+	Name           NamedReference
+	Body           Node
+	NeedsInference bool
 
 	Package *Package
 }
@@ -33,6 +34,11 @@ func (n VariableDefnNode) InferType(scope *Scope) string {
 
 // Codegen implements Node.Codegen for VariableDefnNode
 func (n VariableDefnNode) Codegen(prog *Program) value.Value {
+
+	var alloc *ir.InstAlloca
+	var val value.Value
+	var valType types.Type
+
 	scope := prog.Scope
 
 	block := prog.Compiler.CurrentBlock()
@@ -43,40 +49,44 @@ func (n VariableDefnNode) Codegen(prog *Program) value.Value {
 
 	name := n.Name
 
-	var alloc *ir.InstAlloca
-	var val value.Value
+	prog.Compiler.typeCache = nil
 
-	found := scope.FindType(n.Type.Name)
-	if found == nil {
-		log.Fatal("Unable to find type named %q\n", n.Type.Name)
+	if !n.NeedsInference {
+		found := scope.FindType(n.Type.Name)
+		if found == nil {
+			n.SyntaxError()
+			log.Fatal("Unable to find type named %q for variable declaration\n", n.Type.Name)
+		}
+		valType = found.Type
+		valType = n.Type.BuildPointerType(valType)
+	} else {
+
+		if n.HasValue && n.Body != nil {
+			val = n.Body.Codegen(prog)
+		}
+		valType = val.Type()
 	}
-	ty := found.Type
-	ty = n.Type.BuildPointerType(ty)
-	// block.AppendInst(NewLLVMComment("%s %s", ty, name))
-	alloc = createBlockAlloca(f, ty, name.String())
+
+	alloc = createBlockAlloca(f, valType, name.String())
+
+	if !n.NeedsInference {
+		prog.Compiler.typeCache = valType
+		if n.HasValue && n.Body != nil {
+			val = n.Body.Codegen(prog)
+		}
+	}
 
 	prog.Compiler.typeCache = alloc.Elem
 	scItem := NewVariableScopeItem(name.String(), alloc, PrivateVisibility)
 	scope.Add(scItem)
 
-	if n.HasValue {
-
-		// Construct the body
-		if n.Body != nil {
-			val = n.Body.Codegen(prog)
-			if val == nil {
-				return val
-			}
-		}
-
+	if !n.NeedsInference && val != nil {
 		val = createTypeCast(prog, val, alloc.Elem)
+	}
 
-	} else {
-		defa := DefaultValue(alloc.Elem)
-		if defa != nil {
-			block.NewStore(defa, alloc)
-		}
-		return nil
+	// If the value is nil, we need to pull the default value for a given type.
+	if val == nil {
+		val = DefaultValue(alloc.Elem)
 	}
 
 	block.NewStore(val, alloc)

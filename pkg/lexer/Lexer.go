@@ -18,6 +18,7 @@ var tokenTypeOverrides = map[string]TokenType{
 	"for":    TokFor,
 	"while":  TokWhile,
 	"func":   TokFuncDefn,
+	"let":    TokLet,
 	// "new":     TokNew,
 	"class":   TokClassDefn,
 	"include": TokDependency,
@@ -124,7 +125,6 @@ func (l *Lexer) emit(typ TokenType) {
 
 		alias, hasAlias := tokenAliasOverrides[tok.Value]
 		if hasAlias {
-			fmt.Println(tok.Value, alias)
 			tok.Value = alias
 		}
 
