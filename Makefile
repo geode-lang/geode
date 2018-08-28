@@ -7,21 +7,21 @@ LIBDIR = /usr/local/lib/geodelib
 # tell go to install to the current directory
 export GOBIN=$(shell pwd)
 
-install: lib bin clean
+install: install.lib install.bin
 
 
 clean: gc.clean
 	@geode clean
 
-build:
+build: gc
 	@go build -o bin/geode ./pkg/cmd/geode
 
-lib: gc
+install.lib: gc
 	@rm -rf $(LIBDIR)
 	@mkdir -p $(LIBDIR)
 	@cp -a lib/* $(LIBDIR)
 	
-bin:
+install.bin:
 	@install ./bin/geode /usr/local/bin
 
 gen:
