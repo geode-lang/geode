@@ -1,4 +1,4 @@
-.PHONY: install build lib bin
+.PHONY: install build install.lib install.bin gc.clean gc.all
 
 default: build
 
@@ -9,13 +9,6 @@ export GOBIN=$(shell pwd)
 
 install: install.lib install.bin
 
-
-clean: gc.clean
-	@geode clean
-
-build: gc.all
-	@go build -o bin/geode ./pkg/cmd/geode
-
 install.lib: gc.all
 	@rm -rf $(LIBDIR)
 	@mkdir -p $(LIBDIR)
@@ -24,6 +17,15 @@ install.lib: gc.all
 install.bin:
 	@install ./bin/geode /usr/local/bin
 
+
+
+clean: gc.clean
+	@geode clean
+
+build: gc.all
+	@go build -o bin/geode ./pkg/cmd/geode
+
+
 gen:
 	@go generate -v ./...
 
@@ -31,7 +33,7 @@ gen:
 all: build install.lib install.bin
 
 gc.clean:
-	find gc -name "*.o" | xargs rm -rf "{}"
+	rm -rf gc
 	rm -rf lib/gc/*
 	rm -rf lib/include/gc
 
