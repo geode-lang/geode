@@ -24,6 +24,8 @@ func RunCommand(command string, args ...string) ([]byte, error) {
 	var out []byte
 	var err error
 
+	// fmt.Printf("%s %s\n", command, strings.Join(args, " "))
+
 	log.Verbose("%s %s\n", command, strings.Join(args, " "))
 
 	tmpcmd := command + " " + strings.Join(args, " ")
