@@ -39,6 +39,7 @@ gc.all: gc lib/gc/gc.a
 
 lib/gc/gc.a:
 	cd gc && make -f Makefile.direct
+	mkdir -p lib/gc/
 	cp gc/gc.a lib/gc/gc.a
 	mkdir -p lib/include/gc
 	cp -a gc/include/ lib/include/gc
