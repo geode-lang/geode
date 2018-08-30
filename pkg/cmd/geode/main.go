@@ -19,7 +19,7 @@ import (
 
 // Some constants that represent the program in it's current compiled state
 const (
-	VERSION = "0.4.0"
+	VERSION = "0.4.1"
 	AUTHOR  = "Nick Wanninger"
 )
 
@@ -80,7 +80,7 @@ func main() {
 		os.RemoveAll(buildDir)
 
 	case versionCMD.FullCommand():
-		fmt.Printf("%s", VERSION)
+		fmt.Println(VERSION)
 		os.Exit(0)
 	case infoCMD.FullCommand():
 		log.Timed("information gathering", func() {

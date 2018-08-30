@@ -23,34 +23,79 @@ PLATFORMS_ARM="linux freebsd netbsd"
 ##############################################################
 
 
-VERSION=`geode --version`
+VERSION=`geode version`
 
 
 type setopt >/dev/null 2>&1
 
-cd "pkg/cmd/geode"
+
+make clean
+rm -rf release
+
+
 
 SCRIPT_NAME=`basename "$0"`
 SOURCE_FILE=`echo $@ | sed 's/\.go//'`
 CURRENT_DIRECTORY=${PWD##*/}
-OUTPUT="../../../release" # if no src file given, use current dir name
+WORKDIR="./release" # if no src file given, use current dir name
+
+
+WORKDIRABS=`realpath $WORKDIR`
+GODIRABS=`realpath ./pkg/cmd/geode`
+
+
+echo $WORKDIRABS
+
+echo $GODIRABS
+
+mkdir -p $WORKDIRABS
 
 printf "TARGET           PATH\n"
 echo   "========================================"
 
 
-mkdir -p working
-
 for PLATFORM in $PLATFORMS; do
-  mkdir -p working/$PLATFORM
+  
+  cd $WORKDIRABS
   
   GOOS=${PLATFORM%/*}
   GOARCH=${PLATFORM#*/}
-  BIN_FILENAME="${OUTPUT}/geode-$VERSION-${GOOS}-${GOARCH}"
-  if [[ "${GOOS}" == "windows" ]]; then BIN_FILENAME="${BIN_FILENAME}.exe"; fi
+  
+  NAME="geode-$VERSION-$GOOS-$GOARCH"
+  
+  TARGETDIR="$WORKDIRABS/$NAME"
+  TARGETBINDIR="$TARGETDIR/bin"
+
+  TARNAME="$NAME.tar"
+
+  mkdir -p $TARGETDIR
+  mkdir -p $TARGETBINDIR
+  
+  BIN_FILENAME="$TARGETBINDIR/geode"
+  pwd
+  
+  cp -a "../lib" "$TARGETDIR"
+  cp "../Makefile" "$TARGETDIR"
+  cp "../stdlib.mk" "$TARGETDIR"
+  
+  # Special case for windows - add .exe
+  if [[ "${GOOS}" == "windows" ]]; then
+    BIN_FILENAME="${BIN_FILENAME}.exe";
+  fi
+  
+  
+  
+  cd $GODIRABS
   CMD="GOOS=${GOOS} GOARCH=${GOARCH} go build -o ${BIN_FILENAME} $@"
-  printf "%.20s %22s\n" "${GOOS}-${GOARCH}" "release/${GOOS}-${GOARCH}"
+  echo $CMD
   eval $CMD || exit 1
+  cd $WORKDIRABS
+  
+  
+  tar -cf $TARNAME $NAME
+  rm -rf $TARGETDIR
+  
+  # printf "%.20s %22s\n" "${GOOS}-${GOARCH}" "`realpath $TARNAME`"
   
 done
 

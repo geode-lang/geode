@@ -31,7 +31,6 @@ func fflush(FILE* handle) int ...
 
 func fputs(string str, FILE* handle) ...
 
-
 # read_file returns the full content of a file
 func read_file(string path) string {
 	FILE* f := fopen(path, "r");
