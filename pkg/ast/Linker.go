@@ -102,7 +102,7 @@ func (l *Linker) Run() {
 	linker := "clang"
 	linkArgs := make([]string, 0)
 
-	linkArgs = append(linkArgs, "-g")
+	// linkArgs = append(linkArgs, "-g")
 	if l.target == BinaryTarget {
 		linkArgs = append(linkArgs, "-lm", "-lc")
 	}
