@@ -41,9 +41,9 @@ gen:
 default:
 
 lib.clean:
-	rm -rf gc
-	rm -rf lib/gc/*
-	rm -rf lib/include/gc
+	@rm -rf gc
+	@rm -rf lib/gc/*
+	@rm -rf lib/include/gc
 
 $(GCPATH):
 	mkdir -p dl

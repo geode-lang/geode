@@ -15,6 +15,7 @@ func (p *Parser) parseBlockStmt() BlockNode {
 	blk.NodeType = nodeBlock
 	p.Next()
 	for {
+		p.globTerminator()
 
 		if p.token.Is(lexer.TokReturn) {
 			blk.Nodes = append(blk.Nodes, p.parseReturnStmt())

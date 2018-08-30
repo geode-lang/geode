@@ -7,13 +7,9 @@
 #
 PLATFORMS="darwin/amd64" # amd64 only as of go1.5
 PLATFORMS="$PLATFORMS linux/amd64"
-PLATFORMS="$PLATFORMS linux/ppc64 linux/ppc64le"
-PLATFORMS="$PLATFORMS linux/mips64 linux/mips64le"
 PLATFORMS="$PLATFORMS freebsd/amd64"
 PLATFORMS="$PLATFORMS netbsd/amd64"
 PLATFORMS="$PLATFORMS openbsd/amd64"
-PLATFORMS="$PLATFORMS dragonfly/amd64"
-PLATFORMS="$PLATFORMS solaris/amd64"
 
 
 PLATFORMS_ARM="linux freebsd netbsd"
@@ -43,15 +39,15 @@ WORKDIR="./release" # if no src file given, use current dir name
 WORKDIRABS=`realpath $WORKDIR`
 GODIRABS=`realpath ./pkg/cmd/geode`
 
+README=$(cat << EOF
+Installation instructions:
+ - run "sudo make install"
+ - run "geode version". Verify it is v$VERSION
+EOF
+)
 
-echo $WORKDIRABS
-
-echo $GODIRABS
 
 mkdir -p $WORKDIRABS
-
-printf "TARGET           PATH\n"
-echo   "========================================"
 
 
 for PLATFORM in $PLATFORMS; do
@@ -66,17 +62,18 @@ for PLATFORM in $PLATFORMS; do
   TARGETDIR="$WORKDIRABS/$NAME"
   TARGETBINDIR="$TARGETDIR/bin"
 
-  TARNAME="$NAME.tar"
+  TARNAME="$NAME.tar.xz"
 
   mkdir -p $TARGETDIR
   mkdir -p $TARGETBINDIR
   
   BIN_FILENAME="$TARGETBINDIR/geode"
-  pwd
   
   cp -a "../lib" "$TARGETDIR"
   cp "../Makefile" "$TARGETDIR"
-  cp "../stdlib.mk" "$TARGETDIR"
+  
+  
+  echo "$README" > "$TARGETDIR/README"
   
   # Special case for windows - add .exe
   if [[ "${GOOS}" == "windows" ]]; then
@@ -87,15 +84,14 @@ for PLATFORM in $PLATFORMS; do
   
   cd $GODIRABS
   CMD="GOOS=${GOOS} GOARCH=${GOARCH} go build -o ${BIN_FILENAME} $@"
-  echo $CMD
   eval $CMD || exit 1
   cd $WORKDIRABS
   
   
-  tar -cf $TARNAME $NAME
+  tar -cJf $TARNAME $NAME
   rm -rf $TARGETDIR
   
-  # printf "%.20s %22s\n" "${GOOS}-${GOARCH}" "`realpath $TARNAME`"
+  printf "%.20s %22s\n" "${GOOS}-${GOARCH}" "`realpath $TARNAME`"
   
 done
 
