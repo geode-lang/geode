@@ -1,8 +1,6 @@
 package ast
 
 import (
-	"fmt"
-
 	"github.com/geode-lang/geode/pkg/lexer"
 )
 
@@ -95,7 +93,6 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 		implReturn := ReturnNode{}
 		implReturn.Value = implReturnValue
 		fn.Body.Nodes = []Node{implReturn}
-		fmt.Println(implReturn)
 		p.globTerminator()
 	} else if p.token.Is(lexer.TokElipsis) {
 		fn.External = true

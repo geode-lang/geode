@@ -22,6 +22,10 @@ PLATFORMS_ARM="linux freebsd netbsd"
 # Shouldn't really need to modify anything below this line.  #
 ##############################################################
 
+
+VERSION=`geode --version`
+
+
 type setopt >/dev/null 2>&1
 
 cd "pkg/cmd/geode"
@@ -35,12 +39,19 @@ printf "TARGET           PATH\n"
 echo   "========================================"
 
 
+mkdir -p working
+
 for PLATFORM in $PLATFORMS; do
+  mkdir -p working/$PLATFORM
+  
   GOOS=${PLATFORM%/*}
   GOARCH=${PLATFORM#*/}
-  BIN_FILENAME="${OUTPUT}/geode-${GOOS}-${GOARCH}"
+  BIN_FILENAME="${OUTPUT}/geode-$VERSION-${GOOS}-${GOARCH}"
   if [[ "${GOOS}" == "windows" ]]; then BIN_FILENAME="${BIN_FILENAME}.exe"; fi
   CMD="GOOS=${GOOS} GOARCH=${GOARCH} go build -o ${BIN_FILENAME} $@"
   printf "%.20s %22s\n" "${GOOS}-${GOARCH}" "release/${GOOS}-${GOARCH}"
   eval $CMD || exit 1
+  
 done
+
+# rm -rf working

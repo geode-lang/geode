@@ -5,13 +5,14 @@ import (
 )
 
 var (
-	app             = kingpin.New("geode", "Compiler for the Geode Programming Language").Version(VERSION).Author(AUTHOR)
+	app             = kingpin.New("geode", "Compiler for the Geode Programming Language").Author(AUTHOR)
 	dumpResult      = app.Flag("dump", "Print either llvm or ASM code after compiled (llvm by default, asm if --asm is passed)").Short('S').Bool()
 	buildOutput     = app.Flag("output", "Output binary name.").Short('o').Default("a.out").String()
 	optimize        = app.Flag("optimize", "Enable full optimization").Short('O').Bool()
 	printVerbose    = app.Flag("verbose", "Enable verbose printing").Short('v').Bool()
 	disableEmission = app.Flag("disable-emission", "Disable emission and only run through the syntax checking process").Bool()
-	// logLevel = app.Flag("loglevel", "Set the level of logging to show").Default("info").Enum("info", "verbose")
+
+	versionCMD = app.Command("version", "Display the version")
 
 	buildCMD      = app.Command("build", "Build an executable.")
 	buildInput    = buildCMD.Arg("input", "Geode source file or package").Default(".").String()

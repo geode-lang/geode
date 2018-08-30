@@ -79,6 +79,9 @@ func main() {
 	case cleanCMD.FullCommand():
 		os.RemoveAll(buildDir)
 
+	case versionCMD.FullCommand():
+		fmt.Printf("%s", VERSION)
+		os.Exit(0)
 	case infoCMD.FullCommand():
 		log.Timed("information gathering", func() {
 			context := NewContext(*infoInput, "/tmp/geodeinfooutput")
