@@ -13,20 +13,13 @@ func (p *Parser) parseForStmt() Node {
 	n.NodeType = nodeFor
 	n.Index = forStmtIndex
 	forStmtIndex++
-	p.next()
+	p.Next()
 
 	n.Init = p.parseIdentifierExpr(true)
-	p.requires(lexer.TokSemiColon)
-
-	p.next()
 
 	n.Cond = p.parseExpression()
-	p.requires(lexer.TokSemiColon)
-	p.next()
-
 	n.Step = p.parseExpression()
 
-	p.requires(lexer.TokLeftCurly)
 	n.Body = p.parseBlockStmt()
 
 	return n

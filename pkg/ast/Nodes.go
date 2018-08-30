@@ -178,35 +178,6 @@ func (n UnaryNode) NameString() string { return "UnaryNode" }
 // InferType implements Node.InferType
 func (n UnaryNode) InferType(scope *Scope) string { return n.Operand.InferType(scope) }
 
-//
-// BinaryNode is a binary operation representation
-type BinaryNode struct {
-	NodeType
-	TokenReference
-	Accessable
-
-	OP    string
-	Left  Node
-	Right Node
-}
-
-func (n BinaryNode) String() string {
-	buff := &bytes.Buffer{}
-	fmt.Fprintf(buff, "%s %s %s", n.Left, n.OP, n.Right)
-	return buff.String()
-}
-
-// NameString implements Node.NameString
-func (n BinaryNode) NameString() string { return "BinaryNode" }
-
-// InferType implements Node.InferType
-func (n BinaryNode) InferType(scope *Scope) string { return n.Left.InferType(scope) }
-
-// GenAccess implements Accessable.GenAccess
-func (n BinaryNode) GenAccess(prog *Program) value.Value {
-	return n.Codegen(prog)
-}
-
 // DependencyNode is a way of representing the need to include
 // a dependency or multiple dependencies. It also works to link
 // a c program as well. Paths contains a list of paths to the dependencies

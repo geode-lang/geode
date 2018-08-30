@@ -26,7 +26,7 @@ func (p *Parser) parseNumericExpr() Node {
 				log.Fatal("Error decoding hex token\n")
 			}
 			n.Value = parsed
-			p.next()
+			p.Next()
 			return n
 		}
 	}
@@ -46,7 +46,7 @@ func (p *Parser) parseNumericExpr() Node {
 				log.Fatal("Error decoding binary token\n")
 			}
 			n.Value = parsed
-			p.next()
+			p.Next()
 			return n
 		}
 	}
@@ -56,7 +56,7 @@ func (p *Parser) parseNumericExpr() Node {
 		n.TokenReference.Token = p.token
 		n.NodeType = nodeInt
 		n.Value = val.(int64)
-		p.next()
+		p.Next()
 		return n
 	}
 
@@ -65,7 +65,7 @@ func (p *Parser) parseNumericExpr() Node {
 		n.TokenReference.Token = p.token
 		n.NodeType = nodeFloat
 		n.Value = val.(float64)
-		p.next()
+		p.Next()
 		return n
 	}
 
@@ -74,11 +74,11 @@ func (p *Parser) parseNumericExpr() Node {
 		n.TokenReference.Token = p.token
 		n.NodeType = nodeChar
 		n.Value = val.(rune)
-		p.next()
+		p.Next()
 		return n
 	}
 
-	p.Error("invalid number syntax")
+	p.Errorf("invalid number syntax")
 
 	return nil
 }

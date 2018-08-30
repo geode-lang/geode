@@ -14,7 +14,7 @@ func (p *Parser) parseVariableDefn(allowDefn bool) VariableDefnNode {
 
 	if p.token.Is(lexer.TokLet) {
 		n.NeedsInference = true
-		p.next()
+		p.Next()
 
 	} else if p.atType() {
 		n.Type = p.parseType()
@@ -26,7 +26,7 @@ func (p *Parser) parseVariableDefn(allowDefn bool) VariableDefnNode {
 
 	if p.token.Is(lexer.TokIdent) {
 		n.Name = NewNamedReference(p.token.Value)
-		p.next()
+		p.Next()
 	} else if p.token.Is(lexer.TokAssignment) {
 
 	} else {
@@ -37,7 +37,7 @@ func (p *Parser) parseVariableDefn(allowDefn bool) VariableDefnNode {
 	if p.token.Is(lexer.TokAssignment) {
 		if allowDefn {
 			n.HasValue = true
-			p.next()
+			p.Next()
 			n.Body = p.parseExpression()
 		} else {
 			log.Fatal("Variable Initialization of '%s' is not allowed in it's context\n", n.Name)

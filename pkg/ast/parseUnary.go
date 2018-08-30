@@ -27,7 +27,7 @@ func (p *Parser) parseUnary() Node {
 
 	unaryOp := p.token.Value
 
-	p.next()
+	p.Next()
 	operand := p.parseUnary()
 	if unaryOp == "&" {
 		if operand.Kind() == nodeVariable {

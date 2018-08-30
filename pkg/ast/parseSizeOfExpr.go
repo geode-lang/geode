@@ -10,14 +10,14 @@ func (p *Parser) parseSizeofExpr() SizeofNode {
 	n := SizeofNode{}
 	n.NodeType = nodeSizeof
 	n.Token = p.token
-	p.next()
+	p.Next()
 
 	p.requires(lexer.TokLeftParen)
-	p.next()
+	p.Next()
 
 	n.Type = p.parseType()
 	p.requires(lexer.TokRightParen)
-	p.next()
+	p.Next()
 
 	return n
 }

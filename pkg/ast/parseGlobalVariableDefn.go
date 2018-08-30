@@ -16,7 +16,7 @@ func (p *Parser) parseGlobalVariableDecl() GlobalVariableDeclNode {
 
 		if p.token.Is(lexer.TokIdent) {
 			n.Name = NewNamedReference(p.token.Value)
-			p.next()
+			p.Next()
 		} else if p.token.Is(lexer.TokAssignment) {
 
 		} else {
@@ -30,16 +30,16 @@ func (p *Parser) parseGlobalVariableDecl() GlobalVariableDeclNode {
 	}
 
 	if p.token.Is(lexer.TokAssignment) {
-		p.next()
+		p.Next()
 		n.Body = p.parseExpression()
 	} else if p.token.Is(lexer.TokElipsis) {
 		n.External = true
-		p.next()
+		p.Next()
 	}
 
 	if !n.External {
-		p.allowSemiColon()
-		p.next()
+		p.globTerminator()
+		// p.Next()
 	}
 
 	return n

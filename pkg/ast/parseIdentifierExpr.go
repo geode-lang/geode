@@ -23,6 +23,8 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 
 	}
 
+	defer p.globTerminator()
+
 	// Is the next value a paren? If it isnt it is a normal variable reference
 	if !p.token.Is(lexer.TokLeftParen) {
 		n := VariableNode{}
@@ -41,7 +43,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 
 			assignment.Assignee = toStore
 
-			p.next()
+			p.Next()
 
 			store := p.parseExpression()
 			if access, isAccess := store.(Accessable); isAccess {
@@ -60,7 +62,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 			assignment.Token = p.token
 			assignment.NodeType = nodeAssignment
 			assignment.Assignee = target
-			p.next()
+			p.Next()
 
 			// The left side is just a reference to the variable.
 			left := VariableNode{}
@@ -103,7 +105,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 					log.Fatal("Array subscript is not Assignable\n")
 				}
 
-				p.next()
+				p.Next()
 
 				val := p.parseExpression()
 
@@ -131,10 +133,10 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 		n.Name = target
 		n.NodeType = nodeFunctionCall
 
-		for p.next(); p.token.Type != lexer.TokRightParen; {
+		for p.Next(); p.token.Type != lexer.TokRightParen; {
 			switch p.token.Type {
 			case lexer.TokComma:
-				p.next()
+				p.Next()
 			default:
 
 				arg := p.parseExpression()
@@ -144,7 +146,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 				n.Args = append(n.Args, arg)
 			}
 		}
-		p.next()
+		p.Next()
 
 		return n
 	}

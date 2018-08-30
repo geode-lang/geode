@@ -342,87 +342,6 @@ func createTypeCast(prog *Program, in value.Value, to types.Type) value.Value {
 	return nil
 }
 
-func createCmp(blk *ir.BasicBlock, i ir.IntPred, f ir.FloatPred, t types.Type, left, right value.Value) value.Value {
-	if types.IsInt(t) {
-		return blk.NewICmp(i, left, right)
-	}
-	if types.IsFloat(t) {
-		return blk.NewFCmp(f, left, right)
-	}
-	log.Fatal("Creation of rem instruction failed. `%s % %s`\n", left.Type(), right.Type())
-	return nil
-}
-
-// CreateBinaryOp produces a geode binary op (just a wrapper around geode-lang/llvm's binary instructions)
-func CreateBinaryOp(intstr, fltstr string, blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
-	var inst *GeodeBinaryInstr
-	if types.IsInt(t) {
-		inst = NewGeodeBinaryInstr(intstr, left, right)
-	} else {
-		inst = NewGeodeBinaryInstr(fltstr, left, right)
-	}
-	blk.AppendInst(inst)
-	return inst
-}
-
-// Codegen implements Node.Codegen for BinaryNode
-func (n BinaryNode) Codegen(prog *Program) value.Value {
-
-	// Generate the left and right nodes
-	l := n.Left.Codegen(prog)
-	r := n.Right.Codegen(prog)
-
-	// Attempt to cast them with casting precidence
-	// This means the operation `int + float` will cast the int to a float.
-	l, r, t := binaryCast(prog, l, r)
-
-	if l == nil || r == nil {
-		n.SyntaxError()
-		log.Fatal("An operand to a binary operation `%s` was nil and failed to generate\n", n.OP)
-	}
-
-	blk := prog.Compiler.CurrentBlock()
-
-	switch n.OP {
-	case "+":
-		return CreateBinaryOp("add", "fadd", blk, t, l, r)
-	case "-":
-		return CreateBinaryOp("sub", "fsub", blk, t, l, r)
-	case "*":
-		return CreateBinaryOp("mul", "fmul", blk, t, l, r)
-	case "/":
-		return CreateBinaryOp("sdiv", "fdiv", blk, t, l, r)
-	case "%":
-		return CreateBinaryOp("srem", "frem", blk, t, l, r)
-	case ">>":
-		return CreateBinaryOp("lshr", "lshr", blk, t, l, r)
-	case "<<":
-		return CreateBinaryOp("shl", "shl", blk, t, l, r)
-	case "||":
-		return CreateBinaryOp("or", "or", blk, t, l, r)
-	case "&&":
-		return CreateBinaryOp("and", "and", blk, t, l, r)
-	case "^":
-		return CreateBinaryOp("xor", "xor", blk, t, l, r)
-
-	case "=":
-		return createCmp(blk, ir.IntEQ, ir.FloatOEQ, t, l, r)
-	case "!=", "≠":
-		return createCmp(blk, ir.IntNE, ir.FloatONE, t, l, r)
-	case ">":
-		return createCmp(blk, ir.IntSGT, ir.FloatOGT, t, l, r)
-
-	case ">=":
-		return createCmp(blk, ir.IntSGE, ir.FloatOGE, t, l, r)
-	case "<":
-		return createCmp(blk, ir.IntSLT, ir.FloatOLT, t, l, r)
-	case "<=":
-		return createCmp(blk, ir.IntSLE, ir.FloatOLE, t, l, r)
-	default:
-		return codegenError("invalid binary operator")
-	}
-}
-
 // func (n FunctionCallNode) GenAccess(prog *Program) value.Value {
 // 	return n.Codegen(prog)
 // }
@@ -566,7 +485,6 @@ func (n ReturnNode) Codegen(prog *Program) value.Value {
 				if !(types.IsInt(given) && types.IsInt(expected)) {
 					n.SyntaxError()
 					fnName := UnmangleFunctionName(prog.Compiler.FN.Name)
-
 					expectedName, err := prog.Scope.FindTypeName(expected)
 					util.EatError(err)
 					givenName, err := prog.Scope.FindTypeName(given)
@@ -577,7 +495,6 @@ func (n ReturnNode) Codegen(prog *Program) value.Value {
 					retVal = createTypeCast(prog, retVal, prog.Compiler.FN.Sig.Ret)
 				}
 			}
-
 		} else {
 			retVal = nil
 		}

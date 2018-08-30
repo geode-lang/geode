@@ -9,6 +9,6 @@ func (p *Parser) parseBooleanExpr() BooleanNode {
 	n.TokenReference.Token = p.token
 	n.NodeType = nodeBool
 	n.Value = p.token.Value
-	p.next()
+	p.Next()
 	return n
 }

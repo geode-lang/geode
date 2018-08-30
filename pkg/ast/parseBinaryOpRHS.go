@@ -18,7 +18,7 @@ func (p *Parser) parseBinaryOpRHS(exprPrec int, lhs Node) Node {
 			return lhs
 		}
 		binOp := p.token.Value
-		p.next()
+		p.Next()
 
 		rhs := p.parseUnary()
 		if rhs == nil {

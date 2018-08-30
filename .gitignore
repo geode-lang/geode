@@ -8,6 +8,7 @@
 *.o
 *.out
 build
+release
 vendor/
 .DS_Store
 .vscode

@@ -8,7 +8,7 @@ func (p *Parser) parseCastExpr(source Node) Node {
 	n.Token = p.token
 	n.NodeType = nodeCast
 	n.Source = source
-	p.next()
+	p.Next()
 	n.Type = p.parseType()
 
 	return n

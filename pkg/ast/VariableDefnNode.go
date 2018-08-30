@@ -96,7 +96,12 @@ func (n VariableDefnNode) Codegen(prog *Program) value.Value {
 
 func (n VariableDefnNode) String() string {
 	buff := &bytes.Buffer{}
-	fmt.Fprintf(buff, "%s %s", n.Type, n.Name)
+
+	if n.NeedsInference {
+		fmt.Fprintf(buff, "let %s", n.Name)
+	} else {
+		fmt.Fprintf(buff, "%s %s", n.Type, n.Name)
+	}
 
 	if n.HasValue {
 		fmt.Fprintf(buff, " := %s", n.Body)

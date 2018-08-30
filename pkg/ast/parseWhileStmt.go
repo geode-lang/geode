@@ -13,7 +13,7 @@ func (p *Parser) parseWhileStmt() Node {
 	n.NodeType = nodeWhile
 	n.Index = whileStmtIndex
 	whileStmtIndex++
-	p.next()
+	p.Next()
 
 	n.If = p.parseExpression()
 	p.requires(lexer.TokLeftCurly)

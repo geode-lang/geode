@@ -19,10 +19,10 @@ func (p *Parser) parseName() (string, error) {
 		} else {
 			return "", fmt.Errorf("Invalid Name Reference")
 		}
-		p.next()
+		p.Next()
 		if p.token.Is(lexer.TokNamespaceAccess) {
 			name += p.token.Value
-			p.next()
+			p.Next()
 			continue
 		}
 		break

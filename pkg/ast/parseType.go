@@ -23,11 +23,11 @@ func (p *Parser) atType() bool {
 		return false
 	}
 	offset := 1
-	for validTypeInfoTokens(p.peek(offset)) {
+	for validTypeInfoTokens(p.Peek(offset)) {
 		offset++
 	}
 
-	if p.peek(offset).Type == lexer.TokIdent {
+	if p.Peek(offset).Type == lexer.TokIdent {
 		return true
 	}
 
@@ -38,7 +38,7 @@ func (p *Parser) parseType() (t GeodeTypeRef) {
 	p.requires(lexer.TokIdent)
 
 	t.Name = p.token.Value
-	p.next()
+	p.Next()
 
 	for {
 
@@ -48,7 +48,7 @@ func (p *Parser) parseType() (t GeodeTypeRef) {
 			}
 
 			t.Unknown = true
-			p.next()
+			p.Next()
 			continue
 		}
 
@@ -59,7 +59,7 @@ func (p *Parser) parseType() (t GeodeTypeRef) {
 				}
 			}
 
-			p.next()
+			p.Next()
 			continue
 		}
 

@@ -25,6 +25,23 @@ func NewQuickParser(source string) *Parser {
 	return p
 }
 
+func (p *Parser) fork() *Parser {
+	n := &Parser{}
+
+	n.binaryOpPrecedence = p.binaryOpPrecedence
+	n.tokenIndex = p.tokenIndex
+	n.token = p.token
+	n.tokens = p.tokens
+	n.token = p.token
+
+	return n
+}
+
+func (p *Parser) reset() {
+	p.tokenIndex = 0
+	p.move(0)
+}
+
 // Parse creates and runs a new lexer, that returns the
 // chan that the nodes will be passed through with
 func Parse(tokens chan lexer.Token) <-chan Node {
@@ -76,7 +93,6 @@ func (p *Parser) parse() {
 			break
 		}
 	}
-
 	close(p.topLevelNodes)
 }
 
@@ -86,19 +102,22 @@ func (p *Parser) requires(t lexer.TokenType) {
 	}
 
 	p.token.SyntaxError()
-	p.Error("Required token '%s' is missing. Has '%s' instead.\n", t.String(), p.token.Type.String())
+	p.Errorf("Required token '%s' is missing. Has '%s' instead.\n", t.String(), p.token.Type.String())
 }
 
-func (p *Parser) back() lexer.Token {
+// Back walks the parser back one token
+func (p *Parser) Back() lexer.Token {
 	return p.move(-1)
 }
-func (p *Parser) next() lexer.Token {
+
+// Next advances the parser's state
+func (p *Parser) Next() lexer.Token {
 	return p.move(1)
 }
 
 func (p *Parser) move(o int) lexer.Token {
 	p.tokenIndex += o
-	p.token = p.peek(0)
+	p.token = p.Peek(0)
 	return p.token
 }
 
@@ -108,18 +127,22 @@ type ParserSaveState struct {
 	index int
 }
 
-func (p *Parser) save() ParserSaveState {
+// Save returns a state that can be restored from
+func (p *Parser) Save() ParserSaveState {
 	return ParserSaveState{
 		index: p.tokenIndex,
 	}
 }
 
-func (p *Parser) restore(state ParserSaveState) {
+// Restore takes a state that was previously saved and
+// restores the parser's state
+func (p *Parser) Restore(state ParserSaveState) {
 	p.tokenIndex = state.index
 	p.move(0) // make sure to update the token and whatnot, this is the easiest way.
 }
 
-func (p *Parser) peek(o int) lexer.Token {
+// Peek returns the token at an integer offset from the current index
+func (p *Parser) Peek(o int) lexer.Token {
 	target := p.tokenIndex + o
 	if target < 0 || target > len(p.tokens)-1 {
 		return lexer.Token{}
@@ -127,13 +150,10 @@ func (p *Parser) peek(o int) lexer.Token {
 	return p.tokens[target]
 }
 
-func (p *Parser) allowSemiColon() {
-	p.requires(lexer.TokSemiColon)
-	// fmt.Println(p.token)
-	// if p.token.Is(lexer.TokSemiColon) {
-	// 	p.next()
-	// 	fmt.Println("->", p.token)
-	// }
+func (p *Parser) globTerminator() {
+	if p.token.Is(lexer.TokSemiColon) {
+		p.Next()
+	}
 }
 
 func (p *Parser) parseTopLevelStmt() Node {
@@ -149,15 +169,9 @@ func (p *Parser) parseTopLevelStmt() Node {
 	case lexer.TokIdent:
 		node := p.parseGlobalVariableDecl()
 		return node
-
-		// case lexer.TokType:
-		// 	log.Debug("parseTopLevelStmt - TokFuncDefn\n")
-		// 	return p.parseVariableDefn(true)
 	}
-
 	p.token.SyntaxError()
-
-	p.Error("Invalid syntax in root\n")
+	p.Errorf("Invalid syntax in root\n")
 	return nil
 }
 
@@ -165,8 +179,9 @@ func (p *Parser) getTokenPrecedence(token string) int {
 	return p.binaryOpPrecedence[token]
 }
 
-// Error is a helper function to make logging easier
-func (p *Parser) Error(format string, args ...interface{}) {
+// Errorf is a helper function to make logging easier
+func (p *Parser) Errorf(format string, args ...interface{}) {
+	p.token.SyntaxError()
 	log.Fatal(format, args...)
 	os.Exit(1)
 }

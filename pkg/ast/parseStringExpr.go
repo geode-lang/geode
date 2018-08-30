@@ -81,7 +81,7 @@ func (p *Parser) parseStringExpr() Node {
 	escaped, _ := UnescapeString(val)
 
 	n.Value = escaped
-	p.next()
+	p.Next()
 	return n
 }
 
@@ -95,6 +95,6 @@ func (p *Parser) parseCharExpr() Node {
 
 	escaped, _ := UnescapeString(val)
 	n.Value = []rune(escaped)[0]
-	p.next()
+	p.Next()
 	return n
 }

@@ -126,6 +126,23 @@ func (c *Context) Build(buildDir string) {
 	options := ast.FunctionCompilationOptions{}
 	program.CompileFunction("main", options)
 
+	// for _, pkg := range program.Packages {
+	// 	fmt.Println("============================")
+	// 	for file := range pkg.Files {
+	// 		fmt.Println(color.Green(file))
+	// 	}
+	// 	fmt.Println("============================")
+
+	// 	buff := &bytes.Buffer{}
+	// 	for _, node := range pkg.Nodes {
+	// 		fmt.Fprintf(buff, "%s\n\n", node)
+	// 	}
+
+	// 	fmt.Println(buff)
+	// }
+
+	// os.Exit(0)
+
 	// // Construct a linker object
 	target := ast.BinaryTarget
 	if *emitASM {
@@ -173,9 +190,10 @@ func (c *Context) Run(args []string, buildDir string) {
 	// This is because the run command should feel like just running the binary
 	if err != nil {
 
-		fmt.Println(err)
+		// pretty.Print(err)
 
 		if exitError, ok := err.(*exec.ExitError); ok {
+
 			waitStatus := exitError.Sys().(syscall.WaitStatus)
 			os.Exit(waitStatus.ExitStatus())
 		}

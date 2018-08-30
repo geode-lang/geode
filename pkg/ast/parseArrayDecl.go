@@ -9,7 +9,7 @@ func (p *Parser) parseArrayDecl() Node {
 	n := ArrayNode{}
 	n.NodeType = nodeArray
 	p.requires(lexer.TokLeftBrace)
-	p.next()
+	p.Next()
 	elements := make([]Node, 0)
 
 	for {
@@ -17,7 +17,7 @@ func (p *Parser) parseArrayDecl() Node {
 			break
 		}
 		if p.token.Is(lexer.TokComma) {
-			p.next()
+			p.Next()
 			continue
 		}
 		elements = append(elements, p.parseExpression())
@@ -26,7 +26,7 @@ func (p *Parser) parseArrayDecl() Node {
 	n.Elements = elements
 	n.Length = len(elements)
 	p.requires(lexer.TokRightBrace)
-	p.next()
+	p.Next()
 
 	return n
 }

@@ -11,10 +11,10 @@ func (p *Parser) parseDotExpr(base Reference) Reference {
 	n.NodeType = nodeDot
 	n.Base = base
 	p.requires(lexer.TokDot)
-	p.next()
+	p.Next()
 	p.requires(lexer.TokIdent)
 	n.Field = NewNamedReference(p.token.Value)
-	p.next()
+	p.Next()
 
 	if p.token.Is(lexer.TokDot) {
 		return p.parseDotExpr(n)

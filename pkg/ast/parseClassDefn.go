@@ -10,12 +10,12 @@ func (p *Parser) parseClassDefn() Node {
 	n.TokenReference.Token = p.token
 	n.NodeType = nodeClass
 
-	p.next()
+	p.Next()
 
 	p.requires(lexer.TokIdent)
 	n.Name = p.token.Value
 
-	p.next()
+	p.Next()
 	nodes := p.parseClassBody()
 	n.Variables = make([]VariableDefnNode, 0)
 	n.Methods = make([]FunctionNode, 0)
@@ -29,7 +29,7 @@ func (p *Parser) parseClassDefn() Node {
 		}
 	}
 
-	// p.next()
+	// p.Next()
 
 	// return nil for now. This causes the program to think the
 	// stream of nodes/tokens has ended
@@ -40,21 +40,24 @@ func (p *Parser) parseClassBody() []Node {
 
 	p.requires(lexer.TokLeftCurly)
 	nodes := make([]Node, 0)
+	p.Next()
 
 	for {
-		p.next()
+
+		// fmt.Println(p.token)
+		// p.Next()
 
 		if p.token.Is(lexer.TokFuncDefn) {
 
 			nodes = append(nodes, p.parseFunctionNode())
-			p.back()
+			p.Back()
 			continue
 		}
 
 		if p.atType() {
 			// No initializer is allowed in class variable defns
 			nodes = append(nodes, p.parseVariableDefn(false))
-			p.allowSemiColon()
+			p.globTerminator()
 			continue
 		}
 
@@ -63,7 +66,7 @@ func (p *Parser) parseClassBody() []Node {
 			break
 		}
 	}
-	p.next()
+	p.Next()
 
 	return nodes
 }

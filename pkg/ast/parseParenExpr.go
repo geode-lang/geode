@@ -6,17 +6,17 @@ import (
 
 func (p *Parser) parseParenExpr() Node {
 	// skip over the parens
-	p.next()
+	p.Next()
 	v := p.parseExpression()
 	if v == nil {
 		return nil
 	}
 
 	if p.token.Type != lexer.TokRightParen {
-		p.Error("expected ')'")
+		p.Errorf("expected ')'")
 		return nil
 	}
-	p.next()
+	p.Next()
 
 	return v
 }

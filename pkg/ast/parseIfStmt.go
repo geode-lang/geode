@@ -14,7 +14,7 @@ func (p *Parser) parseIfStmt() Node {
 	n.Index = ifStmtIndex
 	ifStmtIndex++
 
-	p.next()
+	p.Next()
 
 	n.If = p.parseExpression()
 
@@ -23,10 +23,10 @@ func (p *Parser) parseIfStmt() Node {
 	n.Then = p.parseBlockStmt()
 
 	if p.token.Is(lexer.TokElse) {
-		// fmt.Println(p.token)
-		p.next()
+		p.Next()
 		n.Else = p.parseBlockStmt()
 	}
+
 	// increment the ifstmtindex for the next time around
 	return n
 }

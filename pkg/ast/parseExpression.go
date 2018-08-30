@@ -14,5 +14,7 @@ func (p *Parser) parseExpression() Node {
 		return p.parseCastExpr(lhs)
 	}
 
+	defer p.globTerminator()
+
 	return p.parseBinaryOpRHS(1, lhs)
 }

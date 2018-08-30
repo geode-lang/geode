@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/geode-lang/geode/pkg/lexer"
 )
 
@@ -16,7 +18,7 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 	fn.line = p.token.Line
 	fn.column = p.token.Column
 
-	p.next()
+	p.Next()
 
 	if declarationKeyword == "pure" || declarationKeyword == "λ" {
 		fn.DeclKeyword = DeclKeywordPure
@@ -24,7 +26,7 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 
 	if p.token.Type == lexer.TokIdent && p.token.Value == "nomangle" {
 		fn.Nomangle = true
-		p.next()
+		p.Next()
 	}
 
 	rawNameString, _ := p.parseName()
@@ -40,7 +42,7 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 	// }
 
 	if p.token.Type == lexer.TokLeftParen {
-		p.next()
+		p.Next()
 
 		for {
 
@@ -53,18 +55,18 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 				fn.Variadic = true
 				// Variadic functions are external, or should be. This means they shouldn't be mangled
 				fn.Nomangle = true
-				p.next()
+				p.Next()
 			}
 
 			// Break out case (not a comma, or a right paren)
 			if p.token.Is(lexer.TokRightParen) {
-				p.next()
+				p.Next()
 				break
 			}
 
 			if p.token.Is(lexer.TokComma) {
 				// Skip over the comma
-				p.next()
+				p.Next()
 				continue
 			}
 		}
@@ -81,28 +83,25 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 	}
 
 	if p.token.Is(lexer.TokLeftCurly) {
-		fn.Body = p.parseBlockStmt()
+		fn.BodyParser = p.forkBlockParser()
 	} else if p.token.Is(lexer.TokRightArrow) {
 		fn.Body = BlockNode{}
 		fn.Body.NodeType = nodeBlock
 		fn.Body.Nodes = make([]Node, 0)
 		fn.ImplicitReturn = true
-		p.next()
+		p.Next()
 
 		implReturnValue := p.parseExpression()
 		implReturn := ReturnNode{}
 		implReturn.Value = implReturnValue
 		fn.Body.Nodes = []Node{implReturn}
-		if p.token.Is(lexer.TokSemiColon) {
-			p.next()
-		} else {
-			p.Error("Missing semicolon after implicit return in function %q", fn.Name)
-		}
+		fmt.Println(implReturn)
+		p.globTerminator()
 	} else if p.token.Is(lexer.TokElipsis) {
 		fn.External = true
 		// External functions should not be mangled
 		fn.Nomangle = true
-		p.next()
+		p.Next()
 	}
 
 	for _, arg := range fn.Args {

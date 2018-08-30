@@ -32,6 +32,7 @@ type FunctionNode struct {
 	Name           NamedReference
 	Args           []VariableDefnNode
 	Body           BlockNode
+	BodyParser     *Parser // the parser that can build the body block on demand
 	External       bool
 	Variadic       bool
 	Nomangle       bool
@@ -116,6 +117,8 @@ func (n FunctionNode) Declare(prog *Program) *ir.Function {
 	scopeItem.SetMangled(!n.Nomangle)
 	prog.Scope.Add(scopeItem)
 
+	// function.CallConv = ir.CallConvCold
+
 	prog.Scope = prog.Scope.Parent
 
 	prog.Compiler.FN = previousFunction
@@ -196,6 +199,11 @@ func (n FunctionNode) Codegen(prog *Program) value.Value {
 		}
 		// prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment(fmt.Sprintf("%s code:", n.Name.String())))
 		// Gen the body of the function
+
+		if n.BodyParser != nil {
+			n.Body = n.BodyParser.parseBlockStmt()
+		}
+
 		block := n.Body.Codegen(prog).(*ir.BasicBlock)
 
 		if block.Term == nil {
@@ -215,13 +223,13 @@ func (n FunctionNode) Codegen(prog *Program) value.Value {
 
 func createPrelude(prog *Program, n FunctionNode) {
 	if prog.Compiler.FN.Name == "main" {
-
 		prog.Compiler.CurrentBlock().AppendInst(NewLLVMRaw(""))
 		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("Runtime prelude"))
 		prog.Compiler.CurrentBlock().AppendInst(NewLLVMRaw(""))
 		// Initialize the garbage collector at the first value allocted to the stack.
 		// QuickParseIdentifier("").Codegen(prog)
-		QuickParseExpression("__runtimeinit();").Codegen(prog)
+		QuickParseExpression("GC_init();").Codegen(prog)
+		QuickParseExpression("GC_enable_incremental();").Codegen(prog)
 
 		prog.Compiler.CurrentBlock().AppendInst(NewLLVMRaw(""))
 		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("Global Initializations"))

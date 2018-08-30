@@ -9,10 +9,10 @@ func (p *Parser) parseNamespace() Node {
 	n := NamespaceNode{}
 	n.TokenReference.Token = p.token
 	n.NodeType = nodeNamespace
-	p.next()
+	p.Next()
 
 	p.requires(lexer.TokIdent)
 	n.Name = p.token.Value
-	p.next()
+	p.Next()
 	return n
 }

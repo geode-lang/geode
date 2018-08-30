@@ -10,7 +10,7 @@ func (p *Parser) parseSubscriptExpr(source Accessable) Node {
 	subN := SubscriptNode{}
 	subN.Source = source
 	p.requires(lexer.TokLeftBrace)
-	p.next()
+	p.Next()
 	index := p.parseExpression()
 
 	if indexAc, isAccessable := index.(Accessable); isAccessable {
@@ -20,6 +20,6 @@ func (p *Parser) parseSubscriptExpr(source Accessable) Node {
 		log.Fatal("Unable to index by an expression that isn't an accessable value\n")
 	}
 	p.requires(lexer.TokRightBrace)
-	p.next()
+	p.Next()
 	return subN
 }

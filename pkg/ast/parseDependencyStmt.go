@@ -14,7 +14,7 @@ func (p *Parser) parseDependencyStmt() Node {
 	if p.token.Value == "link" {
 		d.CLinkage = true
 	}
-	p.next()
+	p.Next()
 
 	d.Paths = make([]string, 0)
 
@@ -22,7 +22,7 @@ func (p *Parser) parseDependencyStmt() Node {
 		p.requires(lexer.TokString)
 		thisPath := strings.Trim(p.token.Value, "\"")
 		d.Paths = append(d.Paths, thisPath)
-		p.next()
+		p.Next()
 		if p.token.Type != lexer.TokComma {
 			break
 		}
