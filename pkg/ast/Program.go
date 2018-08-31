@@ -15,6 +15,7 @@ import (
 	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir"
 	"github.com/geode-lang/llvm/ir/types"
+	"github.com/geode-lang/llvm/ir/value"
 )
 
 // Program is a wrapper for information used
@@ -33,6 +34,7 @@ type Program struct {
 	Functions       map[string]*FunctionNode
 	Classes         map[string]*ClassNode
 	Initializations []*GlobalVariableDeclNode
+	StringDefs      map[string]*ir.Global
 }
 
 // NewProgram creates a program and returns a pointer to it
@@ -44,6 +46,7 @@ func NewProgram() *Program {
 	p.Module = ir.NewModule()
 	p.Packages = make(map[string]*Package)
 	p.Initializations = make([]*GlobalVariableDeclNode, 0)
+	p.StringDefs = make(map[string]*ir.Global, 0)
 
 	p.TypePrecidences = make(map[types.Type]int)
 	p.TypePrecidences[types.I1] = 1
@@ -356,6 +359,12 @@ func (p *Program) CompileFunction(name string, options FunctionCompilationOption
 	p.Scope = previousScope
 	p.Compiler = previousCompiler
 	return compiledVal
+}
+
+// NewRuntimeFunctionCall returns an instance of a function call to a runtime funciton
+func (p *Program) NewRuntimeFunctionCall(name string, args ...value.Value) *ir.InstCall {
+	fn := p.CompileFunction(name, FunctionCompilationOptions{})
+	return p.Compiler.CurrentBlock().NewCall(fn, args...)
 }
 
 // Emit will emit the package as IR to a file then build it into an object file for further usage.

@@ -391,9 +391,9 @@ func NewVariableScopeItem(name string, value value.Value, vis Visibility) Variab
 	//      for int i := 0; i < 200; i <- i + 1 {}
 	// LLVM would complain in the second loop because `i` has already been defined in this "function"
 	// even if the scopes are different.
-	if v, is := value.(*ir.InstAlloca); is {
-		v.Name = fmt.Sprintf("_%s%d", item.name, varIndex)
-	}
+	// if v, is := value.(*ir.InstAlloca); is {
+	// 	v.Name = fmt.Sprintf("_%s%d", item.name, varIndex)
+	// }
 
 	varIndex++
 	return item

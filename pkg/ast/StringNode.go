@@ -3,7 +3,7 @@ package ast
 import (
 	"fmt"
 
-	"github.com/geode-lang/geode/pkg/util"
+	"github.com/geode-lang/llvm/ir"
 	"github.com/geode-lang/llvm/ir/constant"
 	"github.com/geode-lang/llvm/ir/types"
 	"github.com/geode-lang/llvm/ir/value"
@@ -28,12 +28,23 @@ var strIndex = 0
 // Codegen implements Node.Codegen for StringNode
 func (n StringNode) Codegen(prog *Program) value.Value {
 
-	name := fmt.Sprintf(".str_%s_%d", util.QuickHash(n.Value, 8), strIndex)
-	strIndex++
-	str := prog.Compiler.Module.NewGlobalDef(name, newCharArray(n.Value))
-	// str.IsConst = true
+	var str *ir.Global
+
+	if found, exists := prog.StringDefs[n.Value]; exists {
+		str = found
+	} else {
+		name := fmt.Sprintf(".str.%X", strIndex)
+		strIndex++
+		str = prog.Compiler.Module.NewGlobalDef(name, newCharArray(n.Value))
+		str.IsConst = true
+		prog.StringDefs[n.Value] = str
+	}
+
 	zero := constant.NewInt(0, types.I32)
-	return constant.NewGetElementPtr(str, zero, zero)
+	value := constant.NewGetElementPtr(str, zero, zero)
+	length := constant.NewInt(int64(len([]byte(n.Value))+1), types.I32)
+	copy := prog.NewRuntimeFunctionCall("raw_copy", value, length)
+	return copy
 }
 
 // GenAccess implements Accessable.GenAccess

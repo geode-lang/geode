@@ -223,24 +223,17 @@ func (n FunctionNode) Codegen(prog *Program) value.Value {
 
 func createPrelude(prog *Program, n FunctionNode) {
 	if prog.Compiler.FN.Name == "main" {
-		prog.Compiler.CurrentBlock().AppendInst(NewLLVMRaw(""))
 		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("Runtime prelude"))
-		prog.Compiler.CurrentBlock().AppendInst(NewLLVMRaw(""))
 		// Initialize the garbage collector at the first value allocted to the stack.
-		// QuickParseIdentifier("").Codegen(prog)
 		QuickParseExpression("GC_init();").Codegen(prog)
 		QuickParseExpression("GC_enable_incremental();").Codegen(prog)
 
-		prog.Compiler.CurrentBlock().AppendInst(NewLLVMRaw(""))
 		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("Global Initializations"))
-		prog.Compiler.CurrentBlock().AppendInst(NewLLVMRaw(""))
 		for _, init := range prog.Initializations {
 			init.Codegen(prog)
 		}
 
-		prog.Compiler.CurrentBlock().AppendInst(NewLLVMRaw(""))
 		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("User Code"))
-		prog.Compiler.CurrentBlock().AppendInst(NewLLVMRaw(""))
 	}
 }
 

@@ -523,7 +523,7 @@ func createBlockAlloca(f *ir.Function, elemType types.Type, name string) *ir.Ins
 	// Create a new allocation in the root of the function
 	alloca := f.Blocks[0].NewAlloca(elemType)
 	// Set the name of the allocation (the variable name)
-	alloca.SetName(name)
+	// alloca.SetName(name)
 	return alloca
 }
 

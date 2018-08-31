@@ -267,6 +267,8 @@ type FunctionCallNode struct {
 	Args []Node
 }
 
+// NewRuntimeFunctionCall returns a new function call value
+
 // NameString implements Node.NameString
 func (n FunctionCallNode) NameString() string { return "FunctionCallNode" }
 

@@ -6,6 +6,6 @@ include "std:mem"
 
 
 func main(int argc, byte** argv) int {
-	io:print("hello\n");
+	io:print("This is a test\n")
 	return 1;
 }
