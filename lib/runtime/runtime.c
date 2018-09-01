@@ -5,7 +5,13 @@
 char*
 raw_copy(char* source, int length) {
 	int len = strlen(source);
-	char* dest = GC_MALLOC(len + 1);
+	char* dest = xmalloc(len + 1);
 	memcpy(dest, source, length);
 	return dest;
+}
+
+
+void __initruntime() {
+	GC_init();
+	GC_enable_incremental();
 }

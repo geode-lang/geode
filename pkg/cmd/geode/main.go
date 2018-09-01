@@ -10,16 +10,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/geode-lang/geode/pkg/arg"
 	"github.com/geode-lang/geode/pkg/ast"
 	"github.com/geode-lang/geode/pkg/info"
 	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/log"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 // Some constants that represent the program in it's current compiled state
 const (
-	VERSION = "0.4.2"
+	VERSION = "0.4.4"
 	AUTHOR  = "Nick Wanninger"
 )
 
@@ -32,11 +32,11 @@ func main() {
 	}
 
 	startTime = time.Now()
-	command := kingpin.MustParse(app.Parse(os.Args[1:]))
+	command := arg.Parse()
 	home := util.HomeDir()
 	buildDir := path.Join(home, ".geode/build/")
 
-	log.PrintVerbose = *printVerbose
+	log.PrintVerbose = *arg.PrintVerbose
 
 	clangVersion, clangError := util.RunCommand("clang", "-v")
 	if clangError != nil {
@@ -56,36 +56,37 @@ func main() {
 	log.Verbose("Building to %s...\n", buildDir)
 
 	switch command {
-	case buildCMD.FullCommand():
+	case arg.BuildCMD.FullCommand():
 		log.Timed("Compilation", func() {
-			context := NewContext(*buildInput, *buildOutput)
+			context := NewContext(*arg.BuildInput, *arg.BuildOutput)
 			context.TargetTripple = targetTripple
 			context.Build(buildDir)
 		})
 
-	case runCMD.FullCommand():
+	case arg.RunCMD.FullCommand():
 		out := path.Join(buildDir, "a.out")
-		context := NewContext(*runInput, out)
+		context := NewContext(*arg.RunInput, out)
 		context.TargetTripple = targetTripple
 		context.Build(buildDir)
-		context.Run(*runArgs, buildDir)
+		context.Run(*arg.RunArgs, buildDir)
 
-	case testCMD.FullCommand():
+	case arg.TestCMD.FullCommand():
 		RunTests("./tests")
 
-	case newTestCMD.FullCommand():
+	case arg.NewTestCMD.FullCommand():
 		CreateTestCMD()
 
-	case cleanCMD.FullCommand():
+	case arg.CleanCMD.FullCommand():
 		os.RemoveAll(buildDir)
 
-	case versionCMD.FullCommand():
+	case arg.VersionCMD.FullCommand():
 		fmt.Println(VERSION)
 		os.Exit(0)
-	case infoCMD.FullCommand():
+
+	case arg.InfoCMD.FullCommand():
 		log.Timed("information gathering", func() {
-			context := NewContext(*infoInput, "/tmp/geodeinfooutput")
-			*disableEmission = true
+			context := NewContext(*arg.InfoInput, "/tmp/geodeinfooutput")
+			*arg.DisableEmission = true
 			context.TargetTripple = targetTripple
 			context.Build(buildDir)
 			info.DumpJSON()
@@ -127,53 +128,39 @@ func (c *Context) Build(buildDir string) {
 	program.Congeal()
 
 	options := ast.FunctionCompilationOptions{}
-	program.CompileFunction("main", options)
-
-	// for _, pkg := range program.Packages {
-	// 	fmt.Println("============================")
-	// 	for file := range pkg.Files {
-	// 		fmt.Println(color.Green(file))
-	// 	}
-	// 	fmt.Println("============================")
-
-	// 	buff := &bytes.Buffer{}
-	// 	for _, node := range pkg.Nodes {
-	// 		fmt.Fprintf(buff, "%s\n\n", node)
-	// 	}
-
-	// 	fmt.Println(buff)
-	// }
-
-	// os.Exit(0)
+	main := program.CompileFunction("main", options)
+	if main == nil {
+		log.Fatal("No function `main` found in compilation.\n")
+	}
 
 	// // Construct a linker object
 	target := ast.BinaryTarget
-	if *emitASM {
+	if *arg.EmitASM {
 		target = ast.ASMTarget
 	}
 
-	linker := ast.NewLinker(*buildOutput)
+	linker := ast.NewLinker(*arg.BuildOutput)
 	linker.SetTarget(target)
 	linker.SetBuildDir(buildDir)
 	linker.SetOutput(c.Output)
-	linker.SetOptimize(*optimize)
+	linker.SetOptimize(*arg.Optimize)
 
 	for _, clink := range program.CLinkages {
 		linker.AddObject(clink)
 	}
 
-	if *dumpScopeTree {
+	if *arg.DumpScopeTree {
 		fmt.Println(program.Scope)
 	}
 
-	if *disableEmission {
-		if *dumpResult {
+	if *arg.DisableEmission {
+		if *arg.DumpResult {
 			fmt.Println(program)
 		}
 		return
 	}
 
-	linker.SetDump(*dumpResult)
+	linker.SetDump(*arg.DumpResult)
 
 	linker.AddObject(program.Emit(buildDir))
 	log.Timed("Linking", func() {

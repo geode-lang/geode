@@ -5,6 +5,7 @@
 #include "io.h"
 #include "../include/mem.h"
 #include "../include/gc/gc.h"
+#include "../include/xmalloc.h"
 
 
 // the print function wrapper.
@@ -24,7 +25,7 @@ char* format(char *fmt, ...) {
 	va_end(checkArgs);
 	
 	// Allocate memory for the string
-	char* buffer = GC_malloc(size + 1);
+	char* buffer = xmalloc(size + 1);
 	
 	// Reparse the args... There is no way around this, sadly
 	va_list args;

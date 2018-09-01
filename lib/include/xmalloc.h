@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 
+#include "./gc/gc.h"
+
 typedef struct {
 	long size;
 	int alloc_count;

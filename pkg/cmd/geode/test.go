@@ -19,6 +19,7 @@ import (
 	"unicode"
 
 	"github.com/BurntSushi/toml"
+	"github.com/geode-lang/geode/pkg/arg"
 	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/color"
 	"github.com/geode-lang/geode/pkg/util/log"
@@ -48,7 +49,6 @@ func parseTestJob(filename string) (TestJob, error) {
 	configPath := path.Join(path.Dir(filename), "test.toml")
 
 	if _, err := toml.DecodeFile(configPath, &job); err != nil {
-		// util.EatError(err)
 		return TestJob{}, err
 	}
 	return job, nil
@@ -291,7 +291,7 @@ func cleanTestName(name string) string {
 
 // CreateTestCMD uese the os args to create a test
 func CreateTestCMD() {
-	name := cleanTestName(*newTestName)
+	name := cleanTestName(*arg.NewTestName)
 	dirPath := fmt.Sprintf("./tests/%s", name)
 	sourcePath := path.Join(dirPath, fmt.Sprintf("%s.g", name))
 
@@ -303,14 +303,14 @@ func CreateTestCMD() {
 	}
 	os.MkdirAll(dirPath, os.ModePerm)
 
-	fileContent := strings.Replace(testTemplate, "{{NAME}}", *newTestName, -1)
+	fileContent := strings.Replace(testTemplate, "{{NAME}}", *arg.NewTestName, -1)
 
 	ioutil.WriteFile(sourcePath, []byte(fileContent), os.ModePerm)
 
 	// Write the config
 
 	job := TestJob{}
-	job.Name = *newTestName
+	job.Name = *arg.NewTestName
 
 	buff := &bytes.Buffer{}
 	toml.NewEncoder(buff).Encode(job)

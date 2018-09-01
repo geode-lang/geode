@@ -57,7 +57,6 @@ func NewProgram() *Program {
 	p.TypePrecidences[types.Double] = 11
 	p.TypePrecidences[types.NewPointer(types.I8)] = 0
 	p.TypePrecidences[types.Void] = 0
-
 	return p
 }
 
@@ -67,10 +66,10 @@ func NewProgram() *Program {
 func (p *Program) ParsePath(dir string) {
 
 	// Determine if the path is a directory or not.
-	// if isDir, _ := PathIsDir(dir); !isDir {
-	// 	// The path isn't a directory, so we just pull the base of the file
-	// 	dir = filepath.Dir(dir)
-	// }
+	if isDir, _ := PathIsDir(dir); !isDir {
+		// The path isn't a directory, so we just pull the base of the file
+		dir = filepath.Dir(dir)
+	}
 
 	dir = ReduceToDir(dir)
 
@@ -253,11 +252,6 @@ func (p *Program) Congeal() *ir.Module {
 		node.Node.(GlobalVariableDeclNode).Declare(p)
 	}
 
-	// err := sem.Check(p.Module)
-	// if err != nil {
-	// 	log.Fatal("Semantic Check Error: %s\n", err)
-	// }
-
 	return p.Module
 }
 
@@ -406,12 +400,46 @@ func (p *Program) String() string {
 	return ir.String()
 }
 
+var packagedir = "geodepkgs"
+
+// SearchPaths returns all paths that dependencies could be located in
+func SearchPaths(base string) []string {
+	sp := make([]string, 0)
+
+	sp = append(sp, "/usr/local/lib/geodelib")
+	sp = append(sp, base)
+
+	for base != "/" && base != "." {
+		dir := filepath.Join(base, packagedir)
+		base = filepath.Dir(base)
+		sp = append(sp, dir)
+	}
+
+	return sp
+}
+
 // ResolveDepPath returns the absolute location to a dependency
 func ResolveDepPath(base, filename string) string {
+
 	if strings.HasPrefix(filename, "std:") {
 		filename = strings.Replace(filename, "std:", "", -1)
 		// Join up the new filename to the standard library source location
 		base = util.StdLibFile(filename)
+		return filepath.Join(base, filename)
+	}
+
+	// fmt.Printf("\n\n")
+	searchPaths := append([]string{filepath.Join(base, filename)}, SearchPaths(base)...)
+	// for i, s := range searchPaths {
+	// 	fmt.Printf("%d: %s\n", i, s)
+	// }
+
+	for _, sp := range searchPaths {
+		abs := filepath.Join(sp, filename)
+
+		if is, _ := PathIsDir(abs); is {
+			return abs
+		}
 	}
 	return filepath.Join(base, filename)
 }

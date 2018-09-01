@@ -28,7 +28,7 @@ type Linker struct {
 	target      CompileTarget
 	buildDir    string
 	objectPaths []string
-	optimize    bool
+	optimize    int
 	dump        bool // dump result of compilation to stdout
 }
 
@@ -75,7 +75,7 @@ func (l *Linker) SetOutput(path string) {
 }
 
 // SetOptimize -
-func (l *Linker) SetOptimize(o bool) {
+func (l *Linker) SetOptimize(o int) {
 	l.optimize = o
 }
 
@@ -104,15 +104,13 @@ func (l *Linker) Run() {
 
 	// linkArgs = append(linkArgs, "-g")
 	if l.target == BinaryTarget {
-		linkArgs = append(linkArgs, "-lm", "-lc")
+		linkArgs = append(linkArgs, "-lm", "-lc", "-pthread")
 	}
 
 	filename := l.output
 
-	if l.optimize {
-		linkArgs = append(linkArgs, "-O3")
-	} else {
-		linkArgs = append(linkArgs, "-O0")
+	if l.optimize > 0 && l.optimize <= 3 {
+		linkArgs = append(linkArgs, fmt.Sprintf("-O%d", l.optimize))
 	}
 
 	if l.dump {

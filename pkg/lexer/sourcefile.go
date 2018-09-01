@@ -82,6 +82,10 @@ func (s *Sourcefile) Bytes() []byte {
 	return []byte(string(s.contents))
 }
 
+func isDir(path string) {
+
+}
+
 // ResolveFileName - if the filename passed in is a folder, look in that folder for a main.g
 // if the filename is not, look for a file matching that filename, but with a .g extension
 func ResolveFileName(filename, suffix string) (string, error) {

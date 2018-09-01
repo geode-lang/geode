@@ -3,6 +3,7 @@ package ast
 import (
 	"fmt"
 
+	"github.com/geode-lang/geode/pkg/arg"
 	"github.com/geode-lang/llvm/ir"
 	"github.com/geode-lang/llvm/ir/constant"
 	"github.com/geode-lang/llvm/ir/types"
@@ -40,11 +41,16 @@ func (n StringNode) Codegen(prog *Program) value.Value {
 		prog.StringDefs[n.Value] = str
 	}
 
+	var val value.Value
 	zero := constant.NewInt(0, types.I32)
-	value := constant.NewGetElementPtr(str, zero, zero)
-	length := constant.NewInt(int64(len([]byte(n.Value))+1), types.I32)
-	copy := prog.NewRuntimeFunctionCall("raw_copy", value, length)
-	return copy
+	val = constant.NewGetElementPtr(str, zero, zero)
+
+	if !*arg.DisableStringDataCopy {
+		length := constant.NewInt(int64(len([]byte(n.Value))+1), types.I32)
+		val = prog.NewRuntimeFunctionCall("raw_copy", val, length)
+	}
+
+	return val
 }
 
 // GenAccess implements Accessable.GenAccess

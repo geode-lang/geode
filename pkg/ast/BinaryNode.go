@@ -11,26 +11,32 @@ import (
 )
 
 func createCmp(blk *ir.BasicBlock, i ir.IntPred, f ir.FloatPred, t types.Type, left, right value.Value) value.Value {
+
+	var val value.Value
+
 	if types.IsInt(t) {
-		return blk.NewICmp(i, left, right)
+		val = blk.NewICmp(i, left, right)
 	}
 	if types.IsFloat(t) {
-		return blk.NewFCmp(f, left, right)
+		val = blk.NewFCmp(f, left, right)
 	}
-	log.Fatal("Creation of rem instruction failed. `%s % %s`\n", left.Type(), right.Type())
-	return nil
+
+	return val
 }
 
 // CreateBinaryOp produces a geode binary op (just a wrapper around geode-lang/llvm's binary instructions)
 func CreateBinaryOp(intstr, fltstr string, blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
-	var inst *GeodeBinaryInstr
+
+	var val *GeodeBinaryInstr
 	if types.IsInt(t) {
-		inst = NewGeodeBinaryInstr(intstr, left, right)
+		val = NewGeodeBinaryInstr(intstr, left, right)
 	} else {
-		inst = NewGeodeBinaryInstr(fltstr, left, right)
+		val = NewGeodeBinaryInstr(fltstr, left, right)
 	}
-	blk.AppendInst(inst)
-	return inst
+
+	blk.AppendInst(val)
+
+	return val
 }
 
 type numericalBinaryOperator struct {
@@ -102,7 +108,7 @@ func (n BinaryNode) Codegen(prog *Program) value.Value {
 
 	// Attempt to cast them with casting precidence
 	// This means the operation `int + float` will cast the int to a float.
-	l, r, t := binaryCast(prog, l, r)
+	l, r, t, resultcast := binaryCast(prog, l, r)
 
 	if l == nil || r == nil {
 		n.SyntaxError()
@@ -111,14 +117,57 @@ func (n BinaryNode) Codegen(prog *Program) value.Value {
 
 	blk := prog.Compiler.CurrentBlock()
 
+	var value value.Value
+
 	if op, valid := binaryOperatorTypeMap[n.OP]; valid {
-		return CreateBinaryOp(op.I, op.F, blk, t, l, r)
+		value = CreateBinaryOp(op.I, op.F, blk, t, l, r)
 	}
 
 	if op, valid := booleanComparisonOperatorMap[n.OP]; valid {
-		return createCmp(blk, op.I, op.F, t, l, r)
+		value = createCmp(blk, op.I, op.F, t, l, r)
 	}
 
-	log.Fatal("Invalid Binary Operator")
-	return nil
+	if value == nil {
+		log.Fatal("Invalid Binary Operator")
+	}
+
+	if resultcast != nil {
+		value = createTypeCast(prog, value, resultcast)
+	}
+
+	return value
+
+}
+
+func binaryCast(prog *Program, left, right value.Value) (value.Value, value.Value, types.Type, types.Type) {
+
+	var resultcast types.Type
+	if types.IsPointer(left.Type()) {
+		left = prog.Compiler.CurrentBlock().NewPtrToInt(left, types.I64)
+		resultcast = left.Type()
+	}
+
+	if types.IsPointer(right.Type()) {
+		right = prog.Compiler.CurrentBlock().NewPtrToInt(right, types.I64)
+		resultcast = right.Type()
+	}
+
+	// Right and Left types
+	lt := left.Type()
+	rt := right.Type()
+
+	var casted types.Type
+
+	// Get the cast precidence of both sides
+	leftPrec := prog.CastPrecidence(lt)
+	rightPrec := prog.CastPrecidence(rt)
+
+	if leftPrec > rightPrec {
+		casted = lt
+		right = createTypeCast(prog, right, lt)
+	} else {
+		casted = rt
+		left = createTypeCast(prog, left, rt)
+	}
+	return left, right, casted, resultcast
 }

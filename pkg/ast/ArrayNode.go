@@ -59,7 +59,11 @@ func (n ArrayNode) Codegen(prog *Program) value.Value {
 
 	arrayType := types.NewArray(itemType, int64(n.Length))
 
-	alloca := block.NewAlloca(arrayType)
+	// arrayLength := int64(itemType.ByteCount() * n.Length)
+	var alloca value.Value
+	alloca = block.NewAlloca(arrayType)
+
+	// alloca = createTypeCast(prog, alloca, arrayType)
 
 	zero := constant.NewInt(int64(0), types.I64)
 	one := constant.NewInt(int64(1), types.I64)

@@ -73,6 +73,7 @@ const (
 	nodeCast                  = "nodeCast"
 	nodeBool                  = "nodeBool"
 	nodeGlobalDecl            = "nodeGlobalDecl"
+	nodeNil                   = "nodeNil"
 )
 
 //

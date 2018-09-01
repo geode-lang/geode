@@ -68,6 +68,7 @@ const (
 	TokNamespace
 	TokLet
 	TokAs
+	TokNil
 
 	TokDependency
 

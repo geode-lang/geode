@@ -6,8 +6,8 @@ import (
 
 func (p *Parser) parsePrimary() Node {
 
-	// fmt.Println(lexer.GetTokenName(p.token.Type))
 	switch p.token.Type {
+
 	case lexer.TokSizeof:
 		return p.parseSizeofExpr()
 	case lexer.TokIdent:
@@ -20,7 +20,10 @@ func (p *Parser) parsePrimary() Node {
 		return p.parseParenExpr()
 	case lexer.TokString:
 		return p.parseStringExpr()
-
+	case lexer.TokNil:
+		n := NilNode{NodeType: nodeNil}
+		p.Next()
+		return n
 	case lexer.TokChar:
 		return p.parseCharExpr()
 

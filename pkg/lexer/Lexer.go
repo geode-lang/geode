@@ -28,6 +28,7 @@ var tokenTypeOverrides = map[string]TokenType{
 	"as":      TokAs,
 	"true":    TokBool,
 	"false":   TokBool,
+	"nil":     TokNil,
 	"(":       TokLeftParen,
 	")":       TokRightParen,
 	"{":       TokLeftCurly,

@@ -245,27 +245,6 @@ func typeSize(t types.Type) int {
 	return -1
 }
 
-func binaryCast(prog *Program, left, right value.Value) (value.Value, value.Value, types.Type) {
-	// Right and Left types
-	lt := left.Type()
-	rt := right.Type()
-
-	var casted types.Type
-
-	// Get the cast precidence of both sides
-	leftPrec := prog.CastPrecidence(lt)
-	rightPrec := prog.CastPrecidence(rt)
-
-	if leftPrec > rightPrec {
-		casted = lt
-		right = createTypeCast(prog, right, lt)
-	} else {
-		casted = rt
-		left = createTypeCast(prog, left, rt)
-	}
-	return left, right, casted
-}
-
 func typesAreLooselyEqual(a, b types.Type) bool {
 	return types.IsNumber(a) && types.IsNumber(b)
 }
@@ -336,6 +315,10 @@ func createTypeCast(prog *Program, in value.Value, to types.Type) value.Value {
 
 	if types.IsPointer(inType) && types.IsInt(to) {
 		return prog.Compiler.CurrentBlock().NewPtrToInt(in, to)
+	}
+
+	if types.IsInt(inType) && types.IsPointer(to) {
+		return prog.Compiler.CurrentBlock().NewIntToPtr(in, to)
 	}
 
 	log.Fatal("Failed to typecast type %s to %s\n", inType.String(), to)

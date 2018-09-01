@@ -3,18 +3,17 @@ is mem
 link "mem.c"
 
 # garbage collected malloc
-func GC_malloc(int size) byte* ...
-func GC_get_heap_size() long ...
 func GC_gcollect() ...
 
-func malloc(long size) byte* ...
+func heap_size() long ...
 
-func raw(long size) byte* {
-	return malloc(size);
+
+func size(byte* ptr) long {
+	return xmalloc_size(ptr);
 }
 
 func get(long size) byte* {
-	return GC_malloc(size);
+	return xmalloc(size);
 }
 
 func set(byte* ptr, int size, byte val) {
@@ -29,6 +28,12 @@ func zero(int size) byte* {
 	return data;
 }
 
-func used() long {
-	return GC_get_heap_size();
+
+# mem:collect forces a garbage collector collection and returns
+# the number of bytes that were freed
+func collect() long {
+	let before := mem:heap_size()
+	GC_gcollect()
+	let after := mem:heap_size()
+	return before - after
 }
