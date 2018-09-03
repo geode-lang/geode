@@ -1,10 +1,12 @@
 version: 2
 jobs:
   build:
+    working_directory: /go/src/github.com/geode-lang/geode
     docker:
       - image: nickwanninger/geode-test:latest
     steps:
       - checkout
-      - run: go get -v -d ./...
-      - run: make all
-      - run: geode test
+      # - run: go get -v -d ./...
+      # - run: ls
+      # - run: make all
+      # - run: geode test

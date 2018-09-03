@@ -224,6 +224,7 @@ func RunTests(testDirectory string) int {
 
 	fmt.Printf("Total: %d / %d tests ran succesfully\n\n", numSucceses, numTests)
 	if numSucceses < numTests {
+		os.Exit(1)
 		return 1
 	}
 	return 0
