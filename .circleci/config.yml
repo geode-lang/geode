@@ -4,10 +4,15 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run: |
-        docker login -u $DOCKER_USER -p $DOCKER_PASS
-        docker build -t geodelang/geode-test:latest .
-        docker push geodelang/geode-test:latest
-  run:
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - run: docker build -t geodelang/geode-test:latest .
+      - run: docker push geodelang/geode-test:latest
+  test:
     machine: true
     docker: geodelang/geode-test:latest
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
+      - test
