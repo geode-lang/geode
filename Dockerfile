@@ -36,5 +36,5 @@ RUN go get -v -d ./...
 
 RUN make all
 
-CMD ["/bin/bash", "-c", "geode test"]
+CMD ["/bin/bash"]
 
