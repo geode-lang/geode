@@ -1,17 +1,15 @@
-.PHONY: install build build.bin clean
+.PHONY: install build build.bin clean docker.build docker.run
 
 
-default: build
+
 
 BUILDPATH = ./bin/geode
-BINPATH = /usr/local/bin/geode
-GCPATH=lib/gc/gc.a
-LIBDIR = /usr/local/lib/geodelib
+BINPATH   = /usr/local/bin/geode
+GCPATH    = lib/gc/gc.a
+LIBDIR    = /usr/local/lib/geodelib
 
 # tell go to install to the current directory
 export GOBIN=$(shell pwd)
-
-
 
 install.bin:
 	@mkdir -p bin
@@ -33,10 +31,6 @@ uninstall: clean
 
 gen:
 	@go generate -v ./...
-	
-	
-	
-
 
 default:
 
@@ -53,9 +47,8 @@ $(GCPATH):
 	tar -C ./ -xvf dl/gc.tar.gz
 	mv gc-* gc
 	tar -C ./ -xvf dl/libatomic_ops.tar.gz
-	mv libatomic_ops* gc/libatomic_ops	
+	mv libatomic_ops* gc/libatomic_ops
 	rm -rf dl
-	
 	cd gc && make -f Makefile.direct
 	mkdir -p lib/gc/
 	cp gc/gc.a lib/gc/gc.a
@@ -63,8 +56,8 @@ $(GCPATH):
 	mkdir -p lib/include/gc
 	cp -a gc/include/* lib/include/gc
 	rm -rf gc
-	
-	
+
+
 install.lib: $(GCPATH)
 	@rm -rf $(LIBDIR)
 	@mkdir -p $(LIBDIR)
@@ -72,6 +65,12 @@ install.lib: $(GCPATH)
 
 
 
+docker.build:
+	docker build -t geodelang/geode-test .
+docker.run: docker.build
+	docker run --rm -it geodelang/geode-test
+
+
+default: build
 install: install.lib install.bin
 all: build install
-

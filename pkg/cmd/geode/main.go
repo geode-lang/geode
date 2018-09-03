@@ -28,7 +28,7 @@ var startTime time.Time
 func main() {
 	// :^)
 	if runtime.GOOS == "windows" {
-		log.Fatal("The Geode Compiler does not support windows at this time.")
+		log.Fatal("The Geode Compiler does not support Windows at this time.")
 	}
 
 	startTime = time.Now()

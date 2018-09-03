@@ -181,8 +181,6 @@ func RunTests(testDirectory string) int {
 
 		// Check build errors
 
-		fmt.Println(res.TestJob.CompilerStatus)
-
 		if (res.TestJob.compilerError == -1 && res.compilerError != res.TestJob.CompilerStatus) || (res.compilerError == res.TestJob.compilerError) {
 		} else {
 			fmt.Printf("  CompilerStatus:\n    ")

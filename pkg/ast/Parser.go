@@ -7,6 +7,12 @@ import (
 	"github.com/geode-lang/geode/pkg/util/log"
 )
 
+// ParseContext is a wrapper around information that allows the parser to understand the world
+// around it. This will contain the program that is currently running, etc.
+type ParseContext struct {
+	Program *Program
+}
+
 // Parser -
 type Parser struct {
 	tokens             []lexer.Token // channel of tokens from the lexer
@@ -14,6 +20,7 @@ type Parser struct {
 	token              lexer.Token // current token, most recently recieved
 	topLevelNodes      chan Node
 	binaryOpPrecedence map[string]int // maps binary operators to the precidence determining the order of operations
+	context            *ParseContext
 }
 
 // NewQuickParser is used to lex and build a parser from tokens quickly
@@ -82,6 +89,14 @@ func Parse(tokens chan lexer.Token) <-chan Node {
 	go p.parse()
 
 	return p.topLevelNodes
+}
+
+func (p *Parser) Context() *ParseContext {
+	// If the parser doesn't have a context, make a new one
+	if p.context == nil {
+		p.context = &ParseContext{}
+	}
+	return p.context
 }
 
 func (p *Parser) parse() {

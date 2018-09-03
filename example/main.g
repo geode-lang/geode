@@ -6,17 +6,12 @@ include "encoding"
 byte* start;
 byte* end;
 
-
-
 func dump_stack() {
 	# Set end to the current end of the stack
-	byte a;
-	end <- &a + 1;
-	
+	byte a
+	end <- &a + 1
 	
 	io:print("Address        Binary   0x char\n")
-	
-	
 	for let i := start; i >= end; i -= 1 {
 		byte* addr := i as byte*
 		byte c := *addr
@@ -31,7 +26,7 @@ func dump_stack() {
 }
 
 func main(int argc, byte** argv) int {
-	start <- &argc;
+	start <- &argc
 	dump_stack()
 	return 0
 }
