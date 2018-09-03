@@ -1,4 +1,4 @@
-.PHONY: install build build.bin clean docker.build docker.run
+.PHONY: install build build.bin clean docker.build docker.run docker.push
 
 
 
@@ -66,9 +66,13 @@ install.lib: $(GCPATH)
 
 
 docker.build:
-	docker build -t geodelang/geode-test .
+	docker build -t nickwanninger/geode-test:latest .
+
 docker.run: docker.build
-	docker run --rm -it geodelang/geode-test
+	docker run --rm -it nickwanninger/geode-test:latest
+
+docker.push: docker.build
+	docker push nickwanninger/geode-test:latest
 
 
 default: build

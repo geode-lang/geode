@@ -1,25 +1,10 @@
 version: 2
 jobs:
-  build:
-    machine: true
+  run:
+    docker:
+      - image: nickwanninger/geode-test:latest
     steps:
       - checkout
-      - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-      - run: docker build -t geodelang/geode-test:latest .
-      - run: docker push geodelang/geode-test:latest
-  test:
-    docker:
-      - image: geodelang/geode-test:latest
-    steps:
+      - run: go get -v -d ./...
+      - run: make all
       - run: geode test
-workflows:
-  version: 2
-  build_and_test:
-    jobs:
-      - build
-      - test:
-          requires:
-            - build
-          filters:
-            branches:
-              only: master

@@ -31,10 +31,6 @@ ENV PATH $PATH:$GOROOT/bin:$GOPATH/bin
 
 WORKDIR /go/src/github.com/geode-lang/geode
 
-COPY . .
-RUN go get -v -d ./...
-
-RUN make all
 
 CMD ["/bin/bash"]
 
