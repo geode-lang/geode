@@ -286,7 +286,7 @@ func (l *Lexer) fatal(format string, args ...interface{}) stateFn {
 func lexIdentifer(l *Lexer) stateFn {
 	for {
 		switch r := l.next(); {
-		case isAlphaNumeric(r) || r == '\'':
+		case isAlphaNumeric(r) || r == '\'' || r == ':':
 			// absorb
 		default:
 			l.backup()
@@ -455,12 +455,10 @@ func DumpTokens(in chan Token) chan Token {
 				tokenMaps := make([]map[string]interface{}, 0)
 				for _, t := range tokens {
 					m := make(map[string]interface{})
-					// m["type"] = t.Type.String()
 					m["type_raw"] = t.Type
 					m["value"] = t.Value
 					m["start_pos"] = t.Pos
 					m["end_pos"] = t.EndPos
-					// _, m["type_inference"] = t.InferType()
 					tokenMaps = append(tokenMaps, m)
 				}
 				j, _ := json.MarshalIndent(tokenMaps, "", "   ")

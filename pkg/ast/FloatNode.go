@@ -19,16 +19,13 @@ type FloatNode struct {
 // NameString implements Node.NameString
 func (n FloatNode) NameString() string { return "FloatNode" }
 
-// InferType implements Node.InferType
-func (n FloatNode) InferType(scope *Scope) string { return "float" }
-
 // Codegen implements Node.Codegen for FloatNode
-func (n FloatNode) Codegen(prog *Program) value.Value {
-	return constant.NewFloat(n.Value, types.Double)
+func (n FloatNode) Codegen(prog *Program) (value.Value, error) {
+	return constant.NewFloat(n.Value, types.Double), nil
 }
 
 // GenAccess implements Accessable.GenAccess
-func (n FloatNode) GenAccess(prog *Program) value.Value {
+func (n FloatNode) GenAccess(prog *Program) (value.Value, error) {
 	return n.Codegen(prog)
 }
 

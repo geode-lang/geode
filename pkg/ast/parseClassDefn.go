@@ -15,6 +15,8 @@ func (p *Parser) parseClassDefn() Node {
 	p.requires(lexer.TokIdent)
 	n.Name = p.token.Value
 
+	p.Context().ClassNames[n.Name] = p.token
+
 	p.Next()
 	nodes := p.parseClassBody()
 	n.Variables = make([]VariableDefnNode, 0)
@@ -43,10 +45,6 @@ func (p *Parser) parseClassBody() []Node {
 	p.Next()
 
 	for {
-
-		// fmt.Println(p.token)
-		// p.Next()
-
 		if p.token.Is(lexer.TokFuncDefn) {
 
 			nodes = append(nodes, p.parseFunctionNode())

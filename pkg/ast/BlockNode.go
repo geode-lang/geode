@@ -19,19 +19,21 @@ type BlockNode struct {
 // NameString implements Node.NameString
 func (n BlockNode) NameString() string { return "BlockNode" }
 
-// InferType implements Node.InferType
-func (n BlockNode) InferType(scope *Scope) string { return "void" }
-
 // Codegen implements Node.Codegen for BlockNode
-func (n BlockNode) Codegen(prog *Program) value.Value {
+func (n BlockNode) Codegen(prog *Program) (value.Value, error) {
 	prog.Scope = prog.Scope.SpawnChild()
 
 	for _, node := range n.Nodes {
-		node.Codegen(prog)
+		_, err := node.Codegen(prog)
+		if err != nil {
+			return nil, err
+		}
 	}
-
+	if prog.Scope.Parent == nil {
+		return nil, fmt.Errorf("attempt to step up a scope failed because the parent was nil %q", n.Token.FileInfo())
+	}
 	prog.Scope = prog.Scope.Parent
-	return prog.Compiler.CurrentBlock()
+	return prog.Compiler.CurrentBlock(), nil
 }
 
 var blockindentdepth = 0

@@ -18,10 +18,9 @@ func (p *Parser) parseVariableDefn(allowDefn bool) VariableDefnNode {
 
 	} else if p.atType() {
 		n.Type = p.parseType()
-
 	} else {
 		p.token.SyntaxError()
-		log.Fatal("Invalid variable declaration")
+		log.Fatal("let: Invalid variable declaration\n")
 	}
 
 	if p.token.Is(lexer.TokIdent) {
@@ -31,7 +30,7 @@ func (p *Parser) parseVariableDefn(allowDefn bool) VariableDefnNode {
 
 	} else {
 		n.SyntaxError()
-		log.Fatal("Invalid variable declaration\n")
+		log.Fatal("type: Invalid variable declaration\n")
 	}
 
 	if p.token.Is(lexer.TokAssignment) {

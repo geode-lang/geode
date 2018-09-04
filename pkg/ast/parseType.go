@@ -9,7 +9,7 @@ func validTypeInfoTokens(t lexer.Token) bool {
 	allowed := map[string]bool{
 		"*": true,
 		"?": true,
-		// "[": true,
+		":": true,
 		// "]": true,
 	}
 	_, ok := allowed[t.Value]
@@ -18,10 +18,10 @@ func validTypeInfoTokens(t lexer.Token) bool {
 }
 
 func (p *Parser) atType() bool {
-
 	if !p.token.Is(lexer.TokIdent) {
 		return false
 	}
+
 	offset := 1
 	for validTypeInfoTokens(p.Peek(offset)) {
 		offset++
@@ -37,8 +37,8 @@ func (p *Parser) atType() bool {
 func (p *Parser) parseType() (t GeodeTypeRef) {
 	p.requires(lexer.TokIdent)
 
-	t.Name = p.token.Value
-	p.Next()
+	t.Name, _ = p.parseName()
+	// p.Next()
 
 	for {
 
@@ -66,5 +66,6 @@ func (p *Parser) parseType() (t GeodeTypeRef) {
 		break
 
 	}
+
 	return t
 }

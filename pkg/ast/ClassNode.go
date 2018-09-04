@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/geode-lang/geode/pkg/util/color"
-	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir"
 	"github.com/geode-lang/llvm/ir/constant"
 	"github.com/geode-lang/llvm/ir/types"
@@ -25,9 +24,6 @@ type ClassNode struct {
 // NameString implements Node.NameString
 func (n ClassNode) NameString() string { return "ClassNode" }
 
-// InferType implements Node.InferType
-func (n ClassNode) InferType(scope *Scope) string { return "void" }
-
 // VerifyCorrectness checks if a class will cause any problems when we pass it off to clang
 // some problems might include the following:
 // -  class Foo {
@@ -40,12 +36,23 @@ func (n ClassNode) InferType(scope *Scope) string { return "void" }
 //        Foo b;
 //    }
 func (n ClassNode) VerifyCorrectness(prog *Program) error {
-	base := prog.Scope.FindType(n.Name).Type.(*types.StructType)
+	found, err := prog.FindType(n.Name)
+	if err != nil {
+		return err
+	}
+
+	base, ok := found.(*types.StructType)
+	if !ok {
+		return fmt.Errorf("unable to cast found type %T to a struct for class %q", found, n.Name)
+	}
 
 	for _, f := range n.Variables {
 		fieldName := f.Name.String()
 		t := f.Type.Name
-		ty := prog.Scope.FindType(t).Type
+		ty, err := prog.FindType(t)
+		if err != nil {
+			return err
+		}
 		ty = f.Type.BuildPointerType(ty)
 
 		// Pointer types should be correct
@@ -95,27 +102,37 @@ func (n ClassNode) String() string {
 }
 
 // Declare a class type
-func (n ClassNode) Declare(prog *Program) value.Value {
+func (n ClassNode) Declare(prog *Program) (value.Value, error) {
 	structDefn := types.NewStruct()
 
 	prog.Scope = prog.Scope.SpawnChild()
 
-	name := fmt.Sprintf("class.%s.%s", prog.Scope.PackageName, n.Name)
+	name := fmt.Sprintf("class.%s:%s", prog.Scope.PackageName, n.Name)
 	structDefn.SetName(name)
 
 	prog.Module.NewType(n.Name, structDefn)
-	prog.Scope.GetRoot().RegisterType(n.Name, structDefn, -1)
+
+	scopeName := n.Name
+	if prog.Package.Name != "_runtime" {
+		scopeName = fmt.Sprintf("%s:%s", prog.Scope.PackageName, n.Name)
+	}
+	prog.Scope.GetRoot().RegisterType(scopeName, structDefn, -1)
 	// structDefn.Opaque = true
 
 	prog.Scope = prog.Scope.Parent
 
-	return nil
+	return nil, nil
 }
 
 // Codegen implements Node.Codegen for ClassNode
-func (n ClassNode) Codegen(prog *Program) value.Value {
+func (n ClassNode) Codegen(prog *Program) (value.Value, error) {
 
-	structDefn := prog.Scope.FindType(n.Name).Type.(*types.StructType)
+	found, err := prog.FindType(n.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	structDefn := found.(*types.StructType)
 
 	fieldnames := make([]string, 0, len(n.Variables))
 	fields := make([]types.Type, 0, len(n.Variables))
@@ -126,10 +143,13 @@ func (n ClassNode) Codegen(prog *Program) value.Value {
 		t := f.Type.Name
 		name := f.Name.String()
 		if _, found := names[name]; found {
-			log.Fatal("Class '%s' has two fields/methods named '%s'\n", n.Name, f.Name)
+			return nil, fmt.Errorf("class '%s' has two fields/methods named '%s'", n.Name, f.Name)
 		}
 		names[name] = true
-		ty := prog.Scope.FindType(t).Type
+		ty, err := prog.FindType(t)
+		if err != nil {
+			return nil, err
+		}
 		ty = f.Type.BuildPointerType(ty)
 		fields = append(fields, ty)
 		fieldnames = append(fieldnames, name)
@@ -149,18 +169,13 @@ func (n ClassNode) Codegen(prog *Program) value.Value {
 		fn.Name.Value = fmt.Sprintf("%s:%s.%s", prog.Package.Name, n.Name, fn.Name)
 
 		if _, found := names[fn.Name.String()]; found {
-			log.Fatal("Class '%s' has two fields/methods named '%s'\n", n.Name, fn.Name)
+			return nil, fmt.Errorf("class '%s' has two fields/methods named '%s'", n.Name, fn.Name)
 		}
 		names[fn.Name.String()] = true
 		prog.RegisterFunction(fn.Name.Value, fn)
-		// prog.CompileFunction(fn.Name.Value)
-
-		// m.Args = append(methodBaseArgs, m.Args...)
-		// m.Declare(prog)
-		// m.Codegen(prog)
 	}
 
-	return nil
+	return nil, nil
 }
 
 // GenerateClassConstruction creates a function call to a class's constructor if it exists.

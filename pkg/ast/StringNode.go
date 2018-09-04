@@ -21,13 +21,10 @@ type StringNode struct {
 // NameString implements Node.NameString
 func (n StringNode) NameString() string { return "StringNode" }
 
-// InferType implements Node.InferType
-func (n StringNode) InferType(scope *Scope) string { return "string" }
-
 var strIndex = 0
 
 // Codegen implements Node.Codegen for StringNode
-func (n StringNode) Codegen(prog *Program) value.Value {
+func (n StringNode) Codegen(prog *Program) (value.Value, error) {
 
 	var str *ir.Global
 
@@ -47,14 +44,18 @@ func (n StringNode) Codegen(prog *Program) value.Value {
 
 	if !*arg.DisableStringDataCopy {
 		length := constant.NewInt(int64(len([]byte(n.Value))+1), types.I32)
-		val = prog.NewRuntimeFunctionCall("raw_copy", val, length)
+		v, err := prog.NewRuntimeFunctionCall("raw_copy", val, length)
+		if err != nil {
+			return nil, err
+		}
+		val = v
 	}
 
-	return val
+	return val, nil
 }
 
 // GenAccess implements Accessable.GenAccess
-func (n StringNode) GenAccess(prog *Program) value.Value {
+func (n StringNode) GenAccess(prog *Program) (value.Value, error) {
 	return n.Codegen(prog)
 }
 

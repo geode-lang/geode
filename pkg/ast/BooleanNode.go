@@ -18,16 +18,13 @@ type BooleanNode struct {
 // NameString implements Node.NameString
 func (n BooleanNode) NameString() string { return "BooleanNode" }
 
-// InferType implements Node.InferType
-func (n BooleanNode) InferType(scope *Scope) string { return "bool" }
-
 // Codegen implements Node.Codegen for BooleanNode
-func (n BooleanNode) Codegen(prog *Program) value.Value {
+func (n BooleanNode) Codegen(prog *Program) (value.Value, error) {
 	options := map[string]int64{
 		"true":  1,
 		"false": 0,
 	}
-	return constant.NewInt(options[n.Value], types.I1)
+	return constant.NewInt(options[n.Value], types.I1), nil
 }
 
 func (n BooleanNode) String() string {
@@ -35,6 +32,6 @@ func (n BooleanNode) String() string {
 }
 
 // GenAccess implements Accessable.GenAccess
-func (n BooleanNode) GenAccess(prog *Program) value.Value {
+func (n BooleanNode) GenAccess(prog *Program) (value.Value, error) {
 	return n.Codegen(prog)
 }

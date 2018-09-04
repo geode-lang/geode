@@ -34,8 +34,7 @@ type Node interface {
 	Kind() NodeType
 	SyntaxError()
 	NameString() string
-	Codegen(*Program) value.Value
-	InferType(scope *Scope) string
+	Codegen(*Program) (value.Value, error)
 }
 
 // func MarshalNodeToBinary(n Node) ([]byte, error) {
@@ -98,9 +97,6 @@ func (n CharNode) String() string {
 // NameString implements Node.NameString
 func (n CharNode) NameString() string { return "CharNode" }
 
-// InferType implements Node.InferType
-func (n CharNode) InferType(scope *Scope) string { return "byte" }
-
 // IfNode is an if statement representation
 type IfNode struct {
 	NodeType
@@ -125,9 +121,6 @@ func (n IfNode) String() string {
 // NameString implements Node.NameString
 func (n IfNode) NameString() string { return "IfNode" }
 
-// InferType implements Node.InferType
-func (n IfNode) InferType(scope *Scope) string { return "void" }
-
 //
 // ForNode is a for loop structure representation
 type ForNode struct {
@@ -149,9 +142,6 @@ func (n ForNode) String() string {
 
 // NameString implements Node.NameString
 func (n ForNode) NameString() string { return "ForNode" }
-
-// InferType implements Node.InferType
-func (n ForNode) InferType(scope *Scope) string { return "void" }
 
 //
 // UnaryNode is a unary operation representation.
@@ -175,9 +165,6 @@ func (n UnaryNode) String() string {
 
 // NameString implements Node.NameString
 func (n UnaryNode) NameString() string { return "UnaryNode" }
-
-// InferType implements Node.InferType
-func (n UnaryNode) InferType(scope *Scope) string { return n.Operand.InferType(scope) }
 
 // DependencyNode is a way of representing the need to include
 // a dependency or multiple dependencies. It also works to link
@@ -219,9 +206,6 @@ func (n DependencyNode) String() string {
 // NameString implements Node.NameString
 func (n DependencyNode) NameString() string { return "DependencyNode" }
 
-// InferType implements Node.InferType
-func (n DependencyNode) InferType(scope *Scope) string { return "void" }
-
 // ReferenceType is how we go about accessing a variable. Do we just
 // want the value, or do we want to assign to it
 type ReferenceType int
@@ -254,50 +238,6 @@ func (n ReturnNode) String() string {
 // NameString implements Node.NameString
 func (n ReturnNode) NameString() string { return "ReturnNode" }
 
-// InferType implements Node.InferType
-func (n ReturnNode) InferType(scope *Scope) string { return n.Value.InferType(scope) }
-
-// FunctionCallNode is a function call, example: `foo(a, b, c)`. This would be:
-//    Name = "foo"
-//    Args = [a, b, c]    <- these are Node references
-type FunctionCallNode struct {
-	NodeType
-	TokenReference
-
-	Name Reference
-	Args []Node
-}
-
-// NewRuntimeFunctionCall returns a new function call value
-
-// NameString implements Node.NameString
-func (n FunctionCallNode) NameString() string { return "FunctionCallNode" }
-
-// InferType implements Node.InferType
-func (n FunctionCallNode) InferType(scope *Scope) string {
-	return "PLEASE IMPLEMENT ME :)"
-}
-
-func (n FunctionCallNode) String() string {
-	buff := &bytes.Buffer{}
-
-	fmt.Fprintf(buff, "%s(", n.Name)
-	for i, arg := range n.Args {
-		fmt.Fprintf(buff, "%s", arg)
-		if i < len(n.Args)-1 {
-			fmt.Fprintf(buff, ", ")
-		}
-	}
-
-	fmt.Fprintf(buff, ")")
-	return buff.String()
-}
-
-// GenAccess implements Accessable.GenAccess
-func (n FunctionCallNode) GenAccess(prog *Program) value.Value {
-	return n.Codegen(prog)
-}
-
 // WhileNode is a while loop representationvbnm,bvbnm
 type WhileNode struct {
 	NodeType
@@ -317,9 +257,6 @@ func (n WhileNode) String() string {
 // NameString implements Node.NameString
 func (n WhileNode) NameString() string { return "WhileNode" }
 
-// InferType implements Node.InferType
-func (n WhileNode) InferType(scope *Scope) string { return "void" }
-
 // NamespaceNode -
 type NamespaceNode struct {
 	NodeType
@@ -336,9 +273,6 @@ func (n NamespaceNode) String() string {
 
 // NameString implements Node.NameString
 func (n NamespaceNode) NameString() string { return "NamespaceNode" }
-
-// InferType implements Node.InferType
-func (n NamespaceNode) InferType(scope *Scope) string { return "void" }
 
 // GeodeTypeRef -
 type GeodeTypeRef struct {

@@ -9,6 +9,6 @@ import (
 // allows the definition of what happens when you attempt to
 // assign a value to it.
 type Assignable interface {
-	GenAssign(*Program, value.Value) value.Value
-	Type(*Program) types.Type
+	GenAssign(*Program, value.Value) (value.Value, error)
+	Type(*Program) (types.Type, error)
 }

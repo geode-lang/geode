@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir/types"
 )
 
@@ -109,8 +108,11 @@ func MangleVariableName(origName string) string {
 //    c) the same generic structure.
 func MangleMatches(a, b string) bool {
 
-	aParts := GetMangleParts(a)
-	bParts := GetMangleParts(b)
+	aParts, aerr := GetMangleParts(a)
+	bParts, berr := GetMangleParts(b)
+	if aerr != nil || berr != nil {
+		return false
+	}
 
 	if len(aParts) != len(bParts) {
 		return false
@@ -140,7 +142,7 @@ func MangleMatches(a, b string) bool {
 }
 
 // GetMangleParts parses and returns mangleparts for some mangled name
-func GetMangleParts(mangled string) []ManglePart {
+func GetMangleParts(mangled string) ([]ManglePart, error) {
 
 	typeCharRefs := map[byte]ManglePartType{
 		'M': NamespaceMangle,
@@ -162,7 +164,7 @@ func GetMangleParts(mangled string) []ManglePart {
 			parts = append(parts, part)
 		}
 
-		return parts
+		return parts, nil
 	}
 
 	for _, rawPart := range rawParts {
@@ -170,7 +172,7 @@ func GetMangleParts(mangled string) []ManglePart {
 
 		typ, ok := typeCharRefs[typeChar]
 		if !ok {
-			log.Fatal("Invalid typechar in mangled name %s: %c\n", mangled, typeChar)
+			return nil, fmt.Errorf("invalid typechar in mangled name %s: %c", mangled, typeChar)
 		}
 
 		part := ManglePart{}
@@ -179,19 +181,22 @@ func GetMangleParts(mangled string) []ManglePart {
 		parts = append(parts, part)
 	}
 
-	return parts
+	return parts, nil
 }
 
 // UnmangleFunctionName takes some mangled name and returns the unmangled one
-func UnmangleFunctionName(mangled string) string {
+func UnmangleFunctionName(mangled string) (string, error) {
 	if mangled == "main" || !strings.HasPrefix(mangled, functionNamePrefix) {
-		return mangled
+		return mangled, nil
 	}
 
-	parsedParts := GetMangleParts(mangled)
+	parsedParts, err := GetMangleParts(mangled)
+	if err != nil {
+		return "nil", err
+	}
 
 	if len(parsedParts) == 1 {
-		return parsedParts[0].value
+		return parsedParts[0].value, nil
 	}
 
 	buff := &bytes.Buffer{}
@@ -204,19 +209,18 @@ func UnmangleFunctionName(mangled string) string {
 			fmt.Fprintf(buff, "%s", part.value)
 		}
 	}
-	// for i := 0; i < len(mangled); i++ {
-	// 	c := mangled[i:]
-	// 	val := readNumber(c)
-	// 	if val != 0 {
-	// 		i += len(strconv.Itoa(val)) - 1
-	// 		start := i + 1
-	// 		end := start + val
-	// 		i += val
-	// 		parsedParts = append(parsedParts, mangled[start:end])
-	// 	}
-	// }
 
-	return buff.String()
+	return buff.String(), nil
 }
 
-// func
+// ParseName returns the namespace and the name of a string
+func ParseName(combined string) (string, string) {
+	var namespace, name string
+	parts := strings.Split(combined, ":")
+	name = parts[len(parts)-1]
+	if len(parts) > 1 {
+		namespace = parts[0]
+	}
+
+	return namespace, name
+}

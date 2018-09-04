@@ -4,6 +4,8 @@ link "runtime.c"
 link "xmalloc.c"
 link "../gc/*.o"
 
+
+
 # include "std:io"
 
 func xmalloc(int size) byte* ...

@@ -10,7 +10,8 @@ import (
 // ParseContext is a wrapper around information that allows the parser to understand the world
 // around it. This will contain the program that is currently running, etc.
 type ParseContext struct {
-	Program *Program
+	Program    *Program
+	ClassNames map[string]lexer.Token
 }
 
 // Parser -
@@ -91,10 +92,13 @@ func Parse(tokens chan lexer.Token) <-chan Node {
 	return p.topLevelNodes
 }
 
+// Context returns the context of a parser
 func (p *Parser) Context() *ParseContext {
 	// If the parser doesn't have a context, make a new one
 	if p.context == nil {
-		p.context = &ParseContext{}
+		p.context = &ParseContext{
+			ClassNames: make(map[string]lexer.Token),
+		}
 	}
 	return p.context
 }

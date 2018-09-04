@@ -9,7 +9,6 @@ import (
 // Primary globally valid commands and arguments
 var (
 	App                   = kingpin.New("geode", "Compiler for the Geode Programming Language").Author("Nick Wanninger")
-	DumpResult            = App.Flag("dump", "Print either llvm or ASM code after compiled (llvm by default, asm if --asm is passed)").Short('S').Bool()
 	BuildOutput           = App.Flag("output", "Output binary name.").Short('o').Default("a.out").String()
 	Optimize              = App.Flag("optimize", "Enable full optimization").Short('O').Int()
 	PrintVerbose          = App.Flag("verbose", "Enable verbose printing").Short('v').Bool()
@@ -26,6 +25,7 @@ var (
 	BuildCMD      = App.Command("build", "Build an executable.")
 	BuildInput    = BuildCMD.Arg("input", "Geode source file or package").Default(".").String()
 	EmitASM       = BuildCMD.Flag("asm", "Set the target to .s asm files with intel syntax instead of a single binary.").Bool()
+	EmitLLVM      = BuildCMD.Flag("llvm", "Set the target to a single .ll file in the current directory").Bool()
 	DumpScopeTree = BuildCMD.Flag("dump-scope-tree", "Dump a tree representation of the scope to stdout").Bool()
 
 	RunCMD   = App.Command("run", "Build and run an executable, clean up afterwards").Default()

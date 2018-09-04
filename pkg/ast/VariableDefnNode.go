@@ -27,13 +27,9 @@ type VariableDefnNode struct {
 // NameString implements Node.NameString
 func (n VariableDefnNode) NameString() string { return "VariableDefnNode" }
 
-// InferType implements Node.InferType
-func (n VariableDefnNode) InferType(scope *Scope) string {
-	return n.Type.Name
-}
-
 // Codegen implements Node.Codegen for VariableDefnNode
-func (n VariableDefnNode) Codegen(prog *Program) value.Value {
+func (n VariableDefnNode) Codegen(prog *Program) (value.Value, error) {
+	var err error
 
 	var alloc *ir.InstAlloca
 	var val value.Value
@@ -49,20 +45,27 @@ func (n VariableDefnNode) Codegen(prog *Program) value.Value {
 
 	name := n.Name
 
-	prog.Compiler.typeCache = nil
+	prog.Compiler.EmptyTypeStack()
 
 	if !n.NeedsInference {
-		found := scope.FindType(n.Type.Name)
+		found, err := prog.FindType(n.Type.Name)
+		if err != nil {
+			return nil, err
+		}
 		if found == nil {
 			n.SyntaxError()
 			log.Fatal("Unable to find type named %q for variable declaration\n", n.Type.Name)
 		}
-		valType = found.Type
+		valType = found
 		valType = n.Type.BuildPointerType(valType)
 	} else {
 
 		if n.HasValue && n.Body != nil {
-			val = n.Body.Codegen(prog)
+			v, err := n.Body.Codegen(prog)
+			if err != nil {
+				return nil, err
+			}
+			val = v
 		}
 		valType = val.Type()
 	}
@@ -70,18 +73,25 @@ func (n VariableDefnNode) Codegen(prog *Program) value.Value {
 	alloc = createBlockAlloca(f, valType, name.String())
 
 	if !n.NeedsInference {
-		prog.Compiler.typeCache = valType
+		prog.Compiler.PushType(valType)
 		if n.HasValue && n.Body != nil {
-			val = n.Body.Codegen(prog)
+			v, err := n.Body.Codegen(prog)
+			if err != nil {
+				return nil, err
+			}
+			val = v
 		}
 	}
 
-	prog.Compiler.typeCache = alloc.Elem
+	prog.Compiler.PushType(alloc.Elem)
 	scItem := NewVariableScopeItem(name.String(), alloc, PrivateVisibility)
 	scope.Add(scItem)
 
 	if !n.NeedsInference && val != nil {
-		val = createTypeCast(prog, val, alloc.Elem)
+		val, err = createTypeCast(prog, val, alloc.Elem)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// If the value is nil, we need to pull the default value for a given type.
@@ -91,7 +101,7 @@ func (n VariableDefnNode) Codegen(prog *Program) value.Value {
 
 	block.NewStore(val, alloc)
 
-	return nil
+	return nil, nil
 }
 
 func (n VariableDefnNode) String() string {
