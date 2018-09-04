@@ -126,7 +126,10 @@ func (c *Context) Build(buildDir string) {
 	program.ParsePath(c.Input)
 	program.TargetTripple = c.TargetTripple
 
-	program.Congeal()
+	_, err := program.Congeal()
+	if err != nil {
+		log.Fatal("%s\n", err)
+	}
 
 	options := ast.FunctionCompilationOptions{}
 	main, err := program.GetFunction("main", options)

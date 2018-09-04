@@ -6,11 +6,11 @@ include "color"
 include "math"
 
 
-Color last_color := color:new_rgb(0, 0, 0)
+color:RGB last_color := color:new_rgb(0, 0, 0)
 
 
 func printdensity(int d, int iter) {
-	Color c
+	color:RGB c
 	if d > iter {
 		c <- color:new_rgb(0,0,0)
 	} else {
@@ -88,67 +88,67 @@ func main int {
 		clear()
 		printMandel(x, y, z, iter, width, height)
 
-	# 	io:system("stty raw")
-	# 	byte input := io:getchar()
-	# 	io:system("stty cooked")
+		io:system("stty raw")
+		byte input := io:getchar()
+		io:system("stty cooked")
 
-	# 	io:print("\n")
+		io:print("\n")
 		
-	# 	float step := z * 2
-	# 	if input = 'l' {
-	# 		x += step
-	# 	}
+		float step := z * 2
+		if input = 'l' {
+			x += step
+		}
 		
-	# 	if input = 'h' {
-	# 		x -= step
-	# 	}
+		if input = 'h' {
+			x -= step
+		}
 		
-	# 	if input = 'j' {
-	# 		y += step
-	# 	}
+		if input = 'j' {
+			y += step
+		}
 		
-	# 	if input = 'k' {
-	# 		y -= step
-	# 	}
+		if input = 'k' {
+			y -= step
+		}
 		
-	# 	if input = 'x' {
-	# 		z <- z * 2.0
-	# 	}
+		if input = 'x' {
+			z <- z * 2.0
+		}
 		
-	# 	if input = 'z' {
-	# 		z <- z / 2.0
-	# 	}
+		if input = 'z' {
+			z <- z / 2.0
+		}
 		
-	# 	if input = 's' {
-	# 		iter <- iter * 2
-	# 	}
+		if input = 's' {
+			iter <- iter * 2
+		}
 		
-	# 	if input = 'a' {
-	# 		iter <- iter / 2
+		if input = 'a' {
+			iter <- iter / 2
 		
-	# 	}
+		}
 		
-	# 	if iter >= 500000 {
-	# 		iter <- 500000
-	# 	}
-	# 	if iter = 0 {
-	# 		iter <- 1
-	# 	}
+		if iter >= 500000 {
+			iter <- 500000
+		}
+		if iter = 0 {
+			iter <- 1
+		}
 
-	# 	if input = '\x03' || input = 'q' {
-	# 		clear()
-	# 		return 0
-	# 	}
+		if input = '\x03' || input = 'q' {
+			clear()
+			return 0
+		}
 
-	# 	# Furthest you are allowed to zoom in
-	# 	if z < minzoom {
-	# 		z <- minzoom
-	# 	}
+		# Furthest you are allowed to zoom in
+		if z < minzoom {
+			z <- minzoom
+		}
 
-	# 	# Furthest you are allowed to zoom out
-	# 	if z > maxzoom {
-	# 		z <- maxzoom
-	# 	}
+		# Furthest you are allowed to zoom out
+		if z > maxzoom {
+			z <- maxzoom
+		}
 
 	}
 
