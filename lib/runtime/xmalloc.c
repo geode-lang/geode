@@ -66,7 +66,7 @@ xfree(void* ptr) {
 	__blocksallocated--;
 	GC_FREE(new_ptr);
 	#ifdef DEBUG_XMALLOC
-	printf("[DEBUG] Freed %zu bytes\n", prelude->size);
+	printf("[DEBUG] xfree(%p) -> %u bytes\n", ptr, prelude->size);
 	#endif
 	
 	xmalloc_unlock();
@@ -78,7 +78,7 @@ static void
 xfinalizer(GC_PTR obj, GC_PTR x) {
 	xmalloc_prelude_t* prelude = (xmalloc_prelude_t*)obj;
 	#ifdef DEBUG_XMALLOC
-	printf("[DEBUG] Freed %u bytes at %p\n", prelude->size, obj);
+	printf("[DEBUG] gc_xfree(%p) -> %u bytes\n", obj, prelude->size);
 	#endif
 	allocated_before_collect-=prelude->size;
 }
@@ -101,7 +101,7 @@ xmalloc(size_t size) {
 	__memoryused += size;
 	__blocksallocated++;
 	#ifdef DEBUG_XMALLOC
-	printf("[DEBUG] Allocated %u bytes to %p\n", size, realptr);
+	printf("[DEBUG] xmalloc(%u) -> %p\n", size, realptr);
 	#endif
 
 	xmalloc_prelude_t* prelude = realptr;
@@ -143,6 +143,12 @@ xrealloc(void* ptr, size_t newsize) {
 	
 	__memoryused += newsize - oldsize;
 	xmalloc_unlock();
+	
+	#ifdef DEBUG_XMALLOC
+	printf("[DEBUG] xrealloc(%p, %lu) -> %p\n", ptr, newsize, newptr);
+	#endif
+	
+	
 	return (void*)(newptr + PRELUDE_SIZE);
 }
 

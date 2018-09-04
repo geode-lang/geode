@@ -31,6 +31,11 @@ func (n DotReference) BaseType(prog *Program) types.Type {
 	return baseType
 }
 
+// GetFunc implemnets Callable.GetFunc
+func (n DotReference) GetFunc(prog *Program, argTypes []types.Type) (*ir.Function, error) {
+	return nil, nil
+}
+
 // Alloca returns the nearest alloca instruction in this scope with the given name
 func (n DotReference) Alloca(prog *Program) value.Value {
 	base := n.Base.Alloca(prog)
@@ -64,25 +69,26 @@ func (n DotReference) Alloca(prog *Program) value.Value {
 // Load returns a load instruction on a named reference with the given name
 func (n DotReference) Load(block *ir.BasicBlock, prog *Program) *ir.InstLoad {
 	target := n.Alloca(prog).(*ir.InstGetElementPtr)
-	target.Typ = types.NewPointer(n.Type(prog))
+	t, _ := n.Type(prog)
+	target.Typ = types.NewPointer(t)
 	return block.NewLoad(target)
 }
 
 // GenAssign implements Assignable.GenAssign
-func (n DotReference) GenAssign(prog *Program, assignment value.Value) value.Value {
+func (n DotReference) GenAssign(prog *Program, assignment value.Value) (value.Value, error) {
 	target := n.Alloca(prog)
 	prog.Compiler.CurrentBlock().NewStore(assignment, target)
-	return assignment
+	return assignment, nil
 }
 
 // GenAccess implements Accessable.GenAccess
-func (n DotReference) GenAccess(prog *Program) value.Value {
-	return n.Load(prog.Compiler.CurrentBlock(), prog)
+func (n DotReference) GenAccess(prog *Program) (value.Value, error) {
+	return n.Load(prog.Compiler.CurrentBlock(), prog), nil
 }
 
 // Type implements Assignable.Type
-func (n DotReference) Type(prog *Program) types.Type {
+func (n DotReference) Type(prog *Program) (types.Type, error) {
 	baseType := n.BaseType(prog).(*types.StructType)
 	index := baseType.FieldIndex(n.Field.String())
-	return baseType.Fields[index]
+	return baseType.Fields[index], nil
 }

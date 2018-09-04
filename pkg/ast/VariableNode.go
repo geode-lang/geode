@@ -24,41 +24,25 @@ type VariableNode struct {
 // NameString implements Node.NameString
 func (n VariableNode) NameString() string { return "VariableNode" }
 
-// InferType implements Node.InferType
-func (n VariableNode) InferType(scope *Scope) string {
-
-	if n.RefType == ReferenceDefine {
-		found := scope.FindType(n.Type.Name)
-		if found == nil {
-			return "void"
-		}
-
-		return found.Name
-	}
-
-	return "void"
-
-}
-
 func (n VariableNode) String() string {
 	return n.Name.String()
 }
 
 // Codegen implements Node.Codegen for VariableNode
-func (n VariableNode) Codegen(prog *Program) value.Value {
+func (n VariableNode) Codegen(prog *Program) (value.Value, error) {
 
 	block := prog.Compiler.CurrentBlock()
 
 	switch n.RefType {
 	case ReferenceDereference, ReferenceAccessStackAddress:
 		alloc := n.Name.Alloca(prog)
-		return alloc
+		return alloc, nil
 	case ReferenceAccessValue:
 		val := n.Name.Load(block, prog)
-		return val
+		return val, nil
 	}
 
-	return nil
+	return nil, nil
 }
 
 // GenAddress returns the instruction allocation
@@ -67,6 +51,6 @@ func (n VariableNode) GenAddress(prog *Program) value.Value {
 }
 
 // GenAccess returns the value of a VariableNode
-func (n VariableNode) GenAccess(prog *Program) value.Value {
+func (n VariableNode) GenAccess(prog *Program) (value.Value, error) {
 	return n.Codegen(prog)
 }

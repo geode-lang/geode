@@ -43,6 +43,11 @@ func (t Token) String() string {
 	return fmt.Sprintf("%s(%q)", t.Type.String(), t.Value)
 }
 
+// FileInfo returns the file address of a token
+func (t Token) FileInfo() string {
+	return fmt.Sprintf("%s:%d", t.source.Path, t.Line)
+}
+
 // SyntaxError prints a formatted syntax error
 func (t *Token) SyntaxError() {
 	if t.Type == TokError {
@@ -59,7 +64,7 @@ func (t *Token) SyntaxError() {
 
 	location := fmt.Sprintf("%s:%d", t.source.Path, t.Line)
 	// Start printing
-	fmt.Fprintf(buf, "\nSyntax error: (%s)\n", location)
+	fmt.Fprintf(buf, "Syntax error: (%s)\n", location)
 	fmt.Fprintf(buf, color.Blue("   |\n"))
 
 	lineNumber := color.Red(fmt.Sprintf("%2d", t.Line))

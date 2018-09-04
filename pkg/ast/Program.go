@@ -202,7 +202,8 @@ func (p *Program) RegisterFunction(name string, fn FunctionNode) {
 }
 
 // Congeal sets the programs module to one with nodes filled out
-func (p *Program) Congeal() *ir.Module {
+func (p *Program) Congeal() (*ir.Module, error) {
+	var err error
 	p.Module = ir.NewModule()
 
 	nodes := make([]*PackagedNode, 0)
@@ -236,7 +237,10 @@ func (p *Program) Congeal() *ir.Module {
 
 	for node := range FilterPackagedNodes(nodes, nodeClass) {
 		node.SetupContext()
-		node.Node.(ClassNode).Declare(p)
+		_, err = node.Node.(ClassNode).Declare(p)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Codegen the types/classes
@@ -244,15 +248,21 @@ func (p *Program) Congeal() *ir.Module {
 		node.SetupContext()
 		err := node.Node.(ClassNode).VerifyCorrectness(p)
 		util.EatError(err)
-		node.Node.(ClassNode).Codegen(p)
+		_, err = node.Node.(ClassNode).Codegen(p)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	for node := range FilterPackagedNodes(nodes, nodeGlobalDecl) {
 		node.SetupContext()
-		node.Node.(GlobalVariableDeclNode).Declare(p)
+		_, err = node.Node.(GlobalVariableDeclNode).Declare(p)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return p.Module
+	return p.Module, nil
 }
 
 // CastPrecidence takes some type and returns the precidence
@@ -273,10 +283,62 @@ func (p *Program) RegisterGlobalVariableInitialization(node *GlobalVariableDeclN
 	p.Initializations = append(p.Initializations, node)
 }
 
-// CompileFunction takes a funciton node, detects if it is already compiled or not
-// if it isnt compiled, it will codegen, otherwise it will return the compiled one
-func (p *Program) CompileFunction(name string, options FunctionCompilationOptions) *ir.Function {
+// FindType returns an llvm type based on the current state of the program and a name
+func (p *Program) FindType(name string) (types.Type, error) {
+	paths := p.GetTypeSearchPaths(name)
+	found := p.Scope.FindType(paths...)
+	if found != nil {
+		return found.Type, nil
+	}
+	err := fmt.Errorf("unable to find type %q in the scope. search paths: [%s]", name, strings.Join(paths, ", "))
+	return nil, err
+}
 
+// GetTypeSearchPaths creates a list of type search paths based on the current program state
+func (p *Program) GetTypeSearchPaths(base string) []string {
+	names := make([]string, 0, 6)
+	ns, nm := ParseName(base)
+
+	names = append(names, base)
+	if ns != "" {
+		if nm != "" {
+			names = append(names, fmt.Sprintf("%s:%s", ns, nm))
+			names = append(names, fmt.Sprintf("%s:%s", p.Scope.PackageName, nm))
+		}
+		if p.Scope != nil {
+			names = append(names, fmt.Sprintf("%s:%s", p.Scope.PackageName, nm))
+		}
+
+	}
+	if p.Scope != nil {
+		names = append(names, fmt.Sprintf("%s:%s", p.Scope.PackageName, base))
+	}
+	return names
+}
+
+// FindFunction searches for a function with a searchName searchpath and the types it is being called with
+func (p *Program) FindFunction(searchNames []string, argTypes []types.Type) (*ir.Function, error) {
+	var callee *ir.Function
+	var err error
+	for _, name := range searchNames {
+		compOpts := FunctionCompilationOptions{}
+		compOpts.ArgTypes = argTypes
+		callee, err = p.GetFunction(name, compOpts)
+		if err != nil {
+			return nil, err
+		}
+		if callee != nil {
+			break
+		}
+	}
+
+	return callee, nil
+}
+
+// GetFunction takes a funciton node, detects if it is already compiled or not
+// if it isnt compiled, it will codegen, otherwise it will return the compiled one
+func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (*ir.Function, error) {
+	var err error
 	// Save the program state
 	previousPackage := p.Package
 	previousScope := p.Scope
@@ -284,17 +346,19 @@ func (p *Program) CompileFunction(name string, options FunctionCompilationOption
 
 	node, exists := p.Functions[name]
 	if !exists {
-		return nil
+		return nil, nil
 	}
 
 	// Prime the program's new state before compiling a function
 	p.Package = node.Package
-	p.Scope = p.Scope.GetRoot()
+	p.Scope = p.Scope.GetRoot().SpawnChild()
 	p.Scope.PackageName = p.Package.Name
-	p.Scope = p.Scope.SpawnChild()
 	p.Compiler = NewCompiler(p)
 
-	_, rawTypes := node.Arguments(p.Scope)
+	_, rawTypes, err := node.Arguments(p)
+	if err != nil {
+		return nil, err
+	}
 
 	if node.Variants == nil {
 		node.Variants = make(map[string]*ir.Function)
@@ -312,7 +376,7 @@ func (p *Program) CompileFunction(name string, options FunctionCompilationOption
 
 			if (expected != nil && given != nil) && !types.Equal(expected, given) && !typesAreLooselyEqual(given, expected) && !unknown {
 				node.Args[i].SyntaxError()
-				log.Fatal("Incorrect type passed into function %s. Given: %q, Expected: %q\n", node.Name, given, expected)
+				return nil, fmt.Errorf("incorrect type passed into function %s. given: %q, expected: %q", node.Name, given, expected)
 			}
 
 			if unknown {
@@ -340,10 +404,17 @@ func (p *Program) CompileFunction(name string, options FunctionCompilationOption
 		// 	node.Name.Value = node.MangledName(p, correctTypes) // MangleFunctionName(fmt.Sprintf("%s:%s", node.Package.Name, node.Name.String()), types)
 		// }
 
-		node.Variants[node.NameCache] = node.Declare(p) // Declare first to allow recursive calls
+		node.Variants[node.NameCache], err = node.Declare(p) // Declare first to allow recursive calls
+		if err != nil {
+			return nil, err
+		}
 		node.Compiled = true
 		if !node.External {
-			node.Variants[node.NameCache] = node.Codegen(p).(*ir.Function)
+			gen, err := node.Codegen(p)
+			if err != nil {
+				return nil, err
+			}
+			node.Variants[node.NameCache] = gen.(*ir.Function)
 		}
 
 		compiledVal = node.Variants[node.NameCache]
@@ -352,13 +423,16 @@ func (p *Program) CompileFunction(name string, options FunctionCompilationOption
 	p.Package = previousPackage
 	p.Scope = previousScope
 	p.Compiler = previousCompiler
-	return compiledVal
+	return compiledVal, nil
 }
 
 // NewRuntimeFunctionCall returns an instance of a function call to a runtime funciton
-func (p *Program) NewRuntimeFunctionCall(name string, args ...value.Value) *ir.InstCall {
-	fn := p.CompileFunction(name, FunctionCompilationOptions{})
-	return p.Compiler.CurrentBlock().NewCall(fn, args...)
+func (p *Program) NewRuntimeFunctionCall(name string, args ...value.Value) (*ir.InstCall, error) {
+	fn, err := p.GetFunction(name, FunctionCompilationOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return p.Compiler.CurrentBlock().NewCall(fn, args...), nil
 }
 
 // Emit will emit the package as IR to a file then build it into an object file for further usage.

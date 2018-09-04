@@ -47,20 +47,23 @@ func (s *Scope) Find(searchPaths []string) (ScopeItem, bool) {
 
 // FindFunctions returns a list of functions that might match the name provided
 // The needle can be any of the following: bare name, mangled name
-func (s *Scope) FindFunctions(needle string) ([]FunctionScopeItem, []GenericTemplateScopeItem) {
+func (s *Scope) FindFunctions(needle string) ([]FunctionScopeItem, []GenericTemplateScopeItem, error) {
 
 	funcs := make([]FunctionScopeItem, 0)
 	generics := make([]GenericTemplateScopeItem, 0)
 
-	unMangled := UnmangleFunctionName(needle)
+	unMangled, err := UnmangleFunctionName(needle)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	_, name := parseName(unMangled)
+	_, name := ParseName(unMangled)
 
 	for _, v := range s.Vals {
 		// if the function is not mangled, check specially
 		if name == unMangled {
 			if v.Name() == name {
-				return append(funcs, v.(FunctionScopeItem)), generics
+				return append(funcs, v.(FunctionScopeItem)), generics, nil
 			}
 			continue
 		}
@@ -71,38 +74,43 @@ func (s *Scope) FindFunctions(needle string) ([]FunctionScopeItem, []GenericTemp
 	}
 
 	if s.Parent != nil {
-		fn, gn := s.Parent.FindFunctions(needle)
+		fn, gn, err := s.Parent.FindFunctions(needle)
+		if err != nil {
+			return nil, nil, err
+		}
 		funcs = append(funcs, fn...)
 		generics = append(generics, gn...)
 	}
 
-	return funcs, generics
+	return funcs, generics, nil
 }
 
 // FindType returns the type stored with a name in this scope
-func (s *Scope) FindType(name string) *ScopeType {
+func (s *Scope) FindType(names ...string) *ScopeType {
+	var v *ScopeType
+	var ok bool
+	// fmt.Println(s.Types)
+	for _, name := range names {
 
-	v, ok := s.Types[name]
-	if !ok {
-		if s.Parent == nil {
-			// log.Fatal("Unable to find type with name '%s' in scope\n", name)
-			return nil
+		v, ok = s.Types[name]
+		if ok {
+			return v
 		}
-		return s.Parent.FindType(name)
 	}
-	return v
+	if s.Parent == nil {
+		return nil
+	}
+	return s.Parent.FindType(names...)
 }
 
 // FindTypeName returns the geode defined type name
 // for an llvm type representation
 func (s *Scope) FindTypeName(t types.Type) (string, error) {
-
 	for _, val := range s.Types {
 		if types.Equal(val.Type, t) {
 			return val.Name, nil
 		}
 	}
-
 	if s.Parent == nil {
 		return "", fmt.Errorf("unable to find type %s in any scope", t)
 	}
@@ -139,7 +147,7 @@ func (s *Scope) InjectPrimitives() {
 
 // RegisterType takes information about some type and binds it to this scope
 func (s *Scope) RegisterType(name string, t types.Type, prec int) {
-
+	// fmt.Printf("Registering type %q\n", name)
 	s.Types[name] = NewScopeType(name, t, prec)
 }
 

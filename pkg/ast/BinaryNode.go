@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir"
 	"github.com/geode-lang/llvm/ir/types"
 	"github.com/geode-lang/llvm/ir/value"
@@ -91,20 +90,23 @@ func (n BinaryNode) String() string {
 // NameString implements Node.NameString
 func (n BinaryNode) NameString() string { return "BinaryNode" }
 
-// InferType implements Node.InferType
-func (n BinaryNode) InferType(scope *Scope) string { return n.Left.InferType(scope) }
-
 // GenAccess implements Accessable.GenAccess
-func (n BinaryNode) GenAccess(prog *Program) value.Value {
+func (n BinaryNode) GenAccess(prog *Program) (value.Value, error) {
 	return n.Codegen(prog)
 }
 
 // Codegen implements Node.Codegen for BinaryNode
-func (n BinaryNode) Codegen(prog *Program) value.Value {
+func (n BinaryNode) Codegen(prog *Program) (value.Value, error) {
 
 	// Generate the left and right nodes
-	l := n.Left.Codegen(prog)
-	r := n.Right.Codegen(prog)
+	l, err := n.Left.Codegen(prog)
+	if err != nil {
+		return nil, err
+	}
+	r, err := n.Right.Codegen(prog)
+	if err != nil {
+		return nil, err
+	}
 
 	// Attempt to cast them with casting precidence
 	// This means the operation `int + float` will cast the int to a float.
@@ -112,7 +114,7 @@ func (n BinaryNode) Codegen(prog *Program) value.Value {
 
 	if l == nil || r == nil {
 		n.SyntaxError()
-		log.Fatal("An operand to a binary operation `%s` was nil and failed to generate\n", n.OP)
+		return nil, fmt.Errorf("an operand to a binary operation `%s` was nil and failed to generate", n.OP)
 	}
 
 	blk := prog.Compiler.CurrentBlock()
@@ -128,14 +130,14 @@ func (n BinaryNode) Codegen(prog *Program) value.Value {
 	}
 
 	if value == nil {
-		log.Fatal("Invalid Binary Operator")
+		return nil, fmt.Errorf("invalid binary operator")
 	}
 
 	if resultcast != nil {
-		value = createTypeCast(prog, value, resultcast)
+		value, _ = createTypeCast(prog, value, resultcast)
 	}
 
-	return value
+	return value, nil
 
 }
 
@@ -164,10 +166,10 @@ func binaryCast(prog *Program, left, right value.Value) (value.Value, value.Valu
 
 	if leftPrec > rightPrec {
 		casted = lt
-		right = createTypeCast(prog, right, lt)
+		right, _ = createTypeCast(prog, right, lt)
 	} else {
 		casted = rt
-		left = createTypeCast(prog, left, rt)
+		left, _ = createTypeCast(prog, left, rt)
 	}
 	return left, right, casted, resultcast
 }

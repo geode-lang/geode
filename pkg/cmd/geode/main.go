@@ -128,7 +128,10 @@ func (c *Context) Build(buildDir string) {
 	program.Congeal()
 
 	options := ast.FunctionCompilationOptions{}
-	main := program.CompileFunction("main", options)
+	main, err := program.GetFunction("main", options)
+	if err != nil {
+		log.Fatal("%s\n", err)
+	}
 	if main == nil {
 		log.Fatal("No function `main` found in compilation.\n")
 	}
@@ -152,15 +155,6 @@ func (c *Context) Build(buildDir string) {
 	if *arg.DumpScopeTree {
 		fmt.Println(program.Scope)
 	}
-
-	if *arg.DisableEmission {
-		if *arg.DumpResult {
-			fmt.Println(program)
-		}
-		return
-	}
-
-	linker.SetDump(*arg.DumpResult)
 
 	linker.AddObject(program.Emit(buildDir))
 	log.Timed("Linking", func() {

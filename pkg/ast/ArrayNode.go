@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir/constant"
 	"github.com/geode-lang/llvm/ir/types"
 	"github.com/geode-lang/llvm/ir/value"
@@ -22,34 +21,34 @@ type ArrayNode struct {
 // NameString implements Node.NameString
 func (n ArrayNode) NameString() string { return "ArrayNode" }
 
-// InferType implements Node.InferType
-func (n ArrayNode) InferType(scope *Scope) string { return "void" }
-
 // GenAccess -
-func (n ArrayNode) GenAccess(prog *Program) value.Value {
+func (n ArrayNode) GenAccess(prog *Program) (value.Value, error) {
 	return n.Codegen(prog)
 }
 
 // Codegen implements Node.Codegen for ArrayNode
-func (n ArrayNode) Codegen(prog *Program) value.Value {
+func (n ArrayNode) Codegen(prog *Program) (value.Value, error) {
 
 	block := prog.Compiler.CurrentBlock()
 
 	var elementType types.Type
 	values := make([]value.Value, 0)
 	for _, el := range n.Elements {
-		val := el.Codegen(prog)
+		val, err := el.Codegen(prog)
+		if err != nil {
+			return nil, err
+		}
 		if elementType == nil {
 			elementType = val.Type()
 		}
 
 		if !types.Equal(val.Type(), elementType) {
 			el.SyntaxError()
-			log.Fatal("Invalid type in array. Array should be of a single type '%s', got '%s'\n", elementType, val.Type())
+			return nil, fmt.Errorf("invalid type in array. Array should be of a single type '%s', got '%s'", elementType, val.Type())
 		}
 		values = append(values, val)
 	}
-	typ := prog.Compiler.typeCache
+	typ := prog.Compiler.PopType()
 
 	if typ == nil {
 		typ = types.NewPointer(values[0].Type())
@@ -76,10 +75,14 @@ func (n ArrayNode) Codegen(prog *Program) value.Value {
 			offset = block.NewGetElementPtr(offset, one)
 		}
 
-		block.NewStore(createTypeCast(prog, val, itemType), offset)
+		c, err := createTypeCast(prog, val, itemType)
+		if err != nil {
+			return nil, err
+		}
+		block.NewStore(c, offset)
 	}
 
-	return arrayStart
+	return arrayStart, nil
 }
 
 func (n ArrayNode) String() string {

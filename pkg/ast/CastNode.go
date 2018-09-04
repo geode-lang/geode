@@ -19,22 +19,22 @@ type CastNode struct {
 // NameString implements Node.NameString
 func (n CastNode) NameString() string { return "CastNode" }
 
-// InferType implements Node.InferType
-func (n CastNode) InferType(scope *Scope) string {
-	return n.Type.Name
-}
-
 // GenAccess implements Accessable.Access for CastNode
-func (n CastNode) GenAccess(prog *Program) value.Value {
+func (n CastNode) GenAccess(prog *Program) (value.Value, error) {
 	return n.Codegen(prog)
 }
 
 // Codegen implements Node.Codegen for CastNode
-func (n CastNode) Codegen(prog *Program) value.Value {
+func (n CastNode) Codegen(prog *Program) (value.Value, error) {
 
-	scope := prog.Scope
-	src := n.Source.Codegen(prog)
-	t := scope.FindType(n.Type.Name).Type
+	src, err := n.Source.Codegen(prog)
+	if err != nil {
+		return nil, err
+	}
+	t, err := prog.FindType(n.Type.Name)
+	if err != nil {
+		return nil, err
+	}
 	for i := 0; i < n.Type.PointerLevel; i++ {
 		t = types.NewPointer(t)
 	}

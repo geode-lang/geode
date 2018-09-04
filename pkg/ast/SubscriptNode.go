@@ -20,42 +20,58 @@ type SubscriptNode struct {
 // NameString implements Node.NameString
 func (n SubscriptNode) NameString() string { return "SubscriptNode" }
 
-// InferType implements Node.InferType
-func (n SubscriptNode) InferType(scope *Scope) string { return "void" }
-
 func (n SubscriptNode) String() string {
 	return fmt.Sprintf("%s[%s]", n.Source, n.Index)
 }
 
 // GenElementPtr returns a generated GetElementPtr for this subscript operation
-func (n SubscriptNode) GenElementPtr(prog *Program) *ir.InstGetElementPtr {
-	src := n.Source.GenAccess(prog)
-	idx := n.Index.GenAccess(prog)
-	return prog.Compiler.CurrentBlock().NewGetElementPtr(src, idx)
+func (n SubscriptNode) GenElementPtr(prog *Program) (*ir.InstGetElementPtr, error) {
+	src, err := n.Source.GenAccess(prog)
+	if err != nil {
+		return nil, err
+	}
+	idx, err := n.Index.GenAccess(prog)
+	if err != nil {
+		return nil, err
+	}
+	return prog.Compiler.CurrentBlock().NewGetElementPtr(src, idx), nil
 }
 
 // Codegen implements Node.Codegen for SubscriptNode
-func (n SubscriptNode) Codegen(prog *Program) value.Value {
+func (n SubscriptNode) Codegen(prog *Program) (value.Value, error) {
 	// c.CurrentBlock().AppendInst(NewLLVMComment("%s", n))
-	return prog.Compiler.CurrentBlock().NewLoad(n.GenElementPtr(prog))
+	ptr, err := n.GenElementPtr(prog)
+	if err != nil {
+		return nil, err
+	}
+	return prog.Compiler.CurrentBlock().NewLoad(ptr), nil
 }
 
 // GenAccess implements Accessable.GenAccess
-func (n SubscriptNode) GenAccess(prog *Program) value.Value {
+func (n SubscriptNode) GenAccess(prog *Program) (value.Value, error) {
 	return n.Codegen(prog)
 }
 
 // GenAssign generates an assignment at the address
-func (n SubscriptNode) GenAssign(prog *Program, val value.Value) value.Value {
-	prog.Compiler.CurrentBlock().NewStore(val, n.GenElementPtr(prog))
-	return val
+func (n SubscriptNode) GenAssign(prog *Program, val value.Value) (value.Value, error) {
+	ptr, err := n.GenElementPtr(prog)
+	if err != nil {
+		return nil, err
+	}
+	prog.Compiler.CurrentBlock().NewStore(val, ptr)
+	return val, nil
 }
 
 // Type returns the type of the node.
-func (n SubscriptNode) Type(prog *Program) types.Type {
+func (n SubscriptNode) Type(prog *Program) (types.Type, error) {
 
 	tmpBlock := ir.NewBlock("")
 
-	load := tmpBlock.NewLoad(n.GenElementPtr(prog))
-	return load.Type()
+	ptr, err := n.GenElementPtr(prog)
+	if err != nil {
+		return nil, err
+	}
+
+	load := tmpBlock.NewLoad(ptr)
+	return load.Type(), nil
 }

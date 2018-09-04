@@ -17,16 +17,13 @@ type NilNode struct {
 // NameString implements Node.NameString
 func (n NilNode) NameString() string { return "NilNode" }
 
-// InferType implements Node.InferType
-func (n NilNode) InferType(scope *Scope) string { return "string" }
-
 // Codegen implements Node.Codegen for NilNode
-func (n NilNode) Codegen(prog *Program) value.Value {
-	return constant.NewNull(types.NewPointer(types.I8))
+func (n NilNode) Codegen(prog *Program) (value.Value, error) {
+	return constant.NewNull(types.NewPointer(types.I8)), nil
 }
 
 // GenAccess implements Accessable.GenAccess
-func (n NilNode) GenAccess(prog *Program) value.Value {
+func (n NilNode) GenAccess(prog *Program) (value.Value, error) {
 	return n.Codegen(prog)
 }
 

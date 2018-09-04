@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir"
 	"github.com/geode-lang/llvm/ir/constant"
 	"github.com/geode-lang/llvm/ir/types"
@@ -42,7 +41,7 @@ type FunctionNode struct {
 	HasUnknownType bool
 	Package        *Package
 	// A cache so we can remember the name of the function to codegen
-	// This is because between the Program.CompileFunction, where we
+	// This is because between the Program.GetFunction, where we
 	// can compile variants, and the codegen section of the function,
 	// we lose state. So instead we can store it in the function node
 	// itself and just reach into the Variants map to get the correct
@@ -60,69 +59,66 @@ type FunctionNode struct {
 // NameString implements Node.NameString
 func (n FunctionNode) NameString() string { return "FunctionNode" }
 
-// InferType implements Node.InferType
-func (n FunctionNode) InferType(scope *Scope) string {
-	return "function" //scope.FindType(n.ReturnType.Name).Type
-}
-
 // Arguments returns some FunctionNode's arguments
-func (n FunctionNode) Arguments(scope *Scope) ([]*types.Param, []types.Type) {
+func (n FunctionNode) Arguments(prog *Program) ([]*types.Param, []types.Type, error) {
 	funcArgs := make([]*types.Param, 0)
 	argTypes := make([]types.Type, 0)
 	for _, arg := range n.Args {
-		found := scope.FindType(arg.Type.Name)
+		found, _ := prog.FindType(arg.Type.Name)
 		if found == nil {
 			if n.HasUnknownType {
 				funcArgs = append(funcArgs, nil)
 				argTypes = append(argTypes, nil)
 				continue
 			} else {
-				log.Fatal("Unable to find type with name %q for function %s\n", arg.Type.Name, n.Name)
+				return nil, nil, fmt.Errorf("unable to find type with name %q for function %s (%s)", arg.Type.Name, n.Name, n.Token.FileInfo())
 			}
 		}
-		ty := found.Type
+		ty := found
 		ty = arg.Type.BuildPointerType(ty)
 		p := ir.NewParam(arg.Name.String(), ty)
 		funcArgs = append(funcArgs, p)
 		argTypes = append(argTypes, p.Type())
 	}
-	return funcArgs, argTypes
+	return funcArgs, argTypes, nil
 }
 
 // Declare declares some FunctionNode's sig
-func (n FunctionNode) Declare(prog *Program) *ir.Function {
+func (n FunctionNode) Declare(prog *Program) (*ir.Function, error) {
 
 	prog.Scope = prog.Scope.SpawnChild()
-	checkerr := n.Check(prog.Scope, prog.Compiler)
+	checkerr := n.Check(prog)
 	if checkerr != nil {
-		log.Fatal("Check error: %s\n", checkerr.Error())
+		return nil, fmt.Errorf("check error: %s", checkerr.Error())
 	}
-	funcArgs, _ := n.Arguments(prog.Scope)
+	funcArgs, _, err := n.Arguments(prog)
+	if err != nil {
+		return nil, err
+	}
 
 	namestring := n.NameCache
 
-	ty := prog.Scope.FindType(n.ReturnType.Name).Type
+	ty, err := prog.FindType(n.ReturnType.Name)
+	if err != nil {
+		return nil, err
+	}
 	ty = n.ReturnType.BuildPointerType(ty)
 
 	function := prog.Compiler.Module.NewFunction(namestring, ty, funcArgs...)
 
 	previousFunction := prog.Compiler.FN
 	prog.Compiler.FN = function
-
 	function.Sig.Variadic = n.Variadic
-
 	keyName := fmt.Sprintf("%s:%s", prog.Scope.PackageName, n.Name)
 
 	scopeItem := NewFunctionScopeItem(keyName, n, function, PublicVisibility)
 	scopeItem.SetMangled(!n.Nomangle)
 	prog.Scope.Add(scopeItem)
 
-	// function.CallConv = ir.CallConvCold
-
 	prog.Scope = prog.Scope.Parent
 
 	prog.Compiler.FN = previousFunction
-	return function
+	return function, nil
 }
 
 // MangledName returns the correctly mangled name for some function
@@ -137,9 +133,12 @@ func (n FunctionNode) MangledName(prog *Program, types []types.Type) string {
 // Check makes sure a function follows the correct limitations set by the language
 // ex:
 //    when the function is pure, it cannot accept pointer or have a block as a body.
-func (n FunctionNode) Check(scope *Scope, c *Compiler) error {
+func (n FunctionNode) Check(prog *Program) error {
 	if n.DeclKeyword == DeclKeywordPure {
-		_, argtypes := n.Arguments(scope)
+		_, argtypes, err := n.Arguments(prog)
+		if err != nil {
+			return err
+		}
 		for _, arg := range argtypes {
 			if types.IsPointer(arg) {
 				return fmt.Errorf("pure function '%s' is not allowed to accept pointers as arguments", n.Name)
@@ -157,13 +156,13 @@ func (n FunctionNode) Check(scope *Scope, c *Compiler) error {
 }
 
 // Codegen implements Node.Codegen for FunctionNode
-func (n FunctionNode) Codegen(prog *Program) value.Value {
+func (n FunctionNode) Codegen(prog *Program) (value.Value, error) {
 	prog.Scope = prog.Scope.SpawnChild()
 
-	checkerr := n.Check(prog.Scope, prog.Compiler)
+	checkerr := n.Check(prog)
 	if checkerr != nil {
 		n.SyntaxError()
-		log.Fatal("Check error: %s\n", checkerr.Error())
+		return nil, fmt.Errorf("check error: %s", checkerr.Error())
 	}
 
 	namestring := n.Name.String()
@@ -197,28 +196,39 @@ func (n FunctionNode) Codegen(prog *Program) value.Value {
 			scItem := NewVariableScopeItem(arg.Name, alloc, PrivateVisibility)
 			prog.Scope.Add(scItem)
 		}
-		// prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment(fmt.Sprintf("%s code:", n.Name.String())))
 		// Gen the body of the function
-
 		if n.BodyParser != nil {
 			n.Body = n.BodyParser.parseBlockStmt()
 		}
+		var block *ir.BasicBlock
+		var ok bool
+		gen, err := n.Body.Codegen(prog)
+		if err != nil {
+			return nil, err
+		}
 
-		block := n.Body.Codegen(prog).(*ir.BasicBlock)
+		if block, ok = gen.(*ir.BasicBlock); !ok {
+			return nil, fmt.Errorf("type assertion to block in function node failed")
+		}
 
 		if block.Term == nil {
 
-			ty := prog.Scope.FindType(n.ReturnType.Name).Type
+			ty, err := prog.FindType(n.ReturnType.Name)
+			if err != nil {
+				return nil, err
+			}
 
-			// log.Error("Function %s is missing a return statement in the root block. Defaulting to 0\n", n.Name)
-			v := createTypeCast(prog, constant.NewInt(0, types.I64), ty)
+			v, err := createTypeCast(prog, constant.NewInt(0, types.I64), ty)
+			if err != nil {
+				return nil, err
+			}
 			block.NewRet(v)
 		}
 		prog.Compiler.PopBlock()
 	}
 
 	prog.Scope = prog.Scope.Parent
-	return function
+	return function, nil
 }
 
 func createPrelude(prog *Program, n FunctionNode) {

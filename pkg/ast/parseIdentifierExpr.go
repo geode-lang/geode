@@ -102,7 +102,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 					assignment.Assignee = a
 				} else {
 					s.SyntaxError()
-					log.Fatal("Array subscript is not Assignable\n")
+					log.Fatal("%T is not Assignable\n", s)
 				}
 
 				p.Next()
@@ -121,8 +121,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 			}
 			return s
 		}
-
-		return n
+		return p.parsePossibleFunctionCall(n)
 	}
 
 	if p.token.Is(lexer.TokLeftParen) {
@@ -130,7 +129,12 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 		n := FunctionCallNode{}
 		n.NodeType = nodeFnCall
 		n.TokenReference.Token = nameToken
-		n.Name = target
+
+		callable, ok := target.(Callable)
+		if !ok {
+			log.Fatal("%T is not Callable", target)
+		}
+		n.Name = callable
 		n.NodeType = nodeFunctionCall
 
 		for p.Next(); p.token.Type != lexer.TokRightParen; {

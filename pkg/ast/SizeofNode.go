@@ -19,14 +19,12 @@ type SizeofNode struct {
 // NameString implements Node.NameString
 func (n SizeofNode) NameString() string { return "SizeofNode" }
 
-// InferType implements Node.InferType
-func (n SizeofNode) InferType(scope *Scope) string {
-	return n.Type.Name
-}
-
 // Codegen implements Node.Codegen for SizeofNode
-func (n SizeofNode) Codegen(prog *Program) value.Value {
-	t := prog.Scope.FindType(n.Type.Name).Type
+func (n SizeofNode) Codegen(prog *Program) (value.Value, error) {
+	t, err := prog.FindType(n.Type.Name)
+	if err != nil {
+		return nil, err
+	}
 	for i := 0; i < n.Type.PointerLevel; i++ {
 		t = types.NewPointer(t)
 	}
@@ -34,11 +32,11 @@ func (n SizeofNode) Codegen(prog *Program) value.Value {
 	// prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("sizeof(%s)", t))
 	// https://stackoverflow.com/a/30830445
 	elemptr := constant.NewGetElementPtr(constant.NewNull(types.NewPointer(t)), constant.NewInt(1, types.I32))
-	return prog.Compiler.CurrentBlock().NewPtrToInt(elemptr, types.I64)
+	return prog.Compiler.CurrentBlock().NewPtrToInt(elemptr, types.I64), nil
 }
 
 // GenAccess implements Accessable.Access for SizeofNode
-func (n SizeofNode) GenAccess(prog *Program) value.Value {
+func (n SizeofNode) GenAccess(prog *Program) (value.Value, error) {
 	return n.Codegen(prog)
 }
 

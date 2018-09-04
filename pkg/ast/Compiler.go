@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"sync"
+
 	"github.com/geode-lang/llvm/ir"
 	"github.com/geode-lang/llvm/ir/types"
 )
@@ -10,11 +12,12 @@ import (
 type Compiler struct {
 	Name string
 	// A reference to the scope in the package for easier access
-	Package   *Package
-	Module    *ir.Module
-	blocks    []*ir.BasicBlock
-	FN        *ir.Function // current funciton being compiled
-	typeCache types.Type
+	Package       *Package
+	Module        *ir.Module
+	blocks        []*ir.BasicBlock
+	FN            *ir.Function // current funciton being compiled
+	typeStack     []types.Type
+	typestacklock sync.RWMutex
 }
 
 // CurrentBlock -
@@ -34,7 +37,7 @@ func (c *Compiler) Copy() *Compiler {
 	n.Module = c.Module
 	n.blocks = c.blocks
 	n.FN = c.FN
-	n.typeCache = c.typeCache
+	n.typeStack = c.typeStack
 	return n
 }
 
@@ -67,10 +70,32 @@ func (c *Compiler) FunctionDefined(fn *ir.Function) bool {
 	return false
 }
 
-func (c *Compiler) genInBlock(blk *ir.BasicBlock, fn func()) {
+func (c *Compiler) genInBlock(blk *ir.BasicBlock, fn func() error) error {
 	c.PushBlock(blk)
-	fn()
+	err := fn()
 	c.PopBlock()
+	return err
+}
+
+// PushType appends a type to the compiler's type stack
+func (c *Compiler) PushType(t types.Type) {
+	c.typestacklock.Lock()
+	c.typeStack = append(c.typeStack, t)
+	c.typestacklock.Unlock()
+}
+
+// PopType removes an Item from the top of the stack
+func (c *Compiler) PopType() (item types.Type) {
+	c.typestacklock.Lock()
+	item = c.typeStack[len(c.typeStack)-1]
+	c.typeStack = c.typeStack[0 : len(c.typeStack)-1]
+	c.typestacklock.Unlock()
+	return item
+}
+
+// EmptyTypeStack does exactly what it seems
+func (c *Compiler) EmptyTypeStack() {
+	c.typeStack = make([]types.Type, 0)
 }
 
 // NewCompiler returns a pointer to a new Compiler object.
@@ -81,5 +106,6 @@ func NewCompiler(prog *Program) *Compiler {
 	comp.Module = prog.Module
 
 	comp.blocks = make([]*ir.BasicBlock, 0)
+	comp.typeStack = make([]types.Type, 0)
 	return comp
 }

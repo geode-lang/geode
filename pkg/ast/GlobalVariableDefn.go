@@ -25,13 +25,8 @@ type GlobalVariableDeclNode struct {
 // NameString implements Node.NameString
 func (n GlobalVariableDeclNode) NameString() string { return "GlobalVariableDeclNode" }
 
-// InferType implements Node.InferType
-func (n GlobalVariableDeclNode) InferType(scope *Scope) string {
-	return n.Type.Name
-}
-
 // Declare a global variable declaration
-func (n GlobalVariableDeclNode) Declare(prog *Program) value.Value {
+func (n GlobalVariableDeclNode) Declare(prog *Program) (value.Value, error) {
 	var name string
 
 	if n.External {
@@ -40,7 +35,11 @@ func (n GlobalVariableDeclNode) Declare(prog *Program) value.Value {
 		name = fmt.Sprintf("%s:%s", prog.Package.Name, n.Name)
 	}
 
-	varType := n.Type.BuildPointerType(prog.Scope.FindType(n.Type.Name).Type)
+	found, err := prog.FindType(n.Type.Name)
+	if err != nil {
+		return nil, err
+	}
+	varType := n.Type.BuildPointerType(found)
 
 	init := DefaultValue(varType)
 
@@ -59,11 +58,11 @@ func (n GlobalVariableDeclNode) Declare(prog *Program) value.Value {
 
 	prog.RegisterGlobalVariableInitialization(&n)
 
-	return decl
+	return decl, nil
 }
 
 // Codegen a global variable declaration
-func (n GlobalVariableDeclNode) Codegen(prog *Program) value.Value {
+func (n GlobalVariableDeclNode) Codegen(prog *Program) (value.Value, error) {
 
 	if n.Body != nil {
 		assign := AssignmentNode{}
@@ -78,7 +77,7 @@ func (n GlobalVariableDeclNode) Codegen(prog *Program) value.Value {
 
 		return assign.Codegen(prog)
 	}
-	return nil
+	return nil, nil
 }
 
 func (n GlobalVariableDeclNode) String() string {

@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/geode-lang/geode/pkg/arg"
+
 	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/log"
 )
@@ -29,7 +31,6 @@ type Linker struct {
 	buildDir    string
 	objectPaths []string
 	optimize    int
-	dump        bool // dump result of compilation to stdout
 }
 
 // NewLinker constructs a linker with an outpu
@@ -79,11 +80,6 @@ func (l *Linker) SetOptimize(o int) {
 	l.optimize = o
 }
 
-// SetDump -
-func (l *Linker) SetDump(o bool) {
-	l.dump = o
-}
-
 // Cleanup removes all the
 func (l *Linker) Cleanup() {
 	for _, objFile := range l.objectPaths {
@@ -113,42 +109,35 @@ func (l *Linker) Run() {
 		linkArgs = append(linkArgs, fmt.Sprintf("-O%d", l.optimize))
 	}
 
-	if l.dump {
-
-		if l.target == ASMTarget {
-			log.Timed("Assembly Generation", func() {
-				// We want to only write intel syntax. AT&T Sucks
-				linkArgs = append(linkArgs, "-S", "-masm=intel", "-Wno-everything")
-				// Compile each of the objects to a .s file.
-				for _, obj := range l.objectPaths {
-					// We only want to leave user generated files in the filesystem
-					if strings.HasSuffix(obj, ".ll") {
-						// ext := path.Ext(obj)
-						out := strings.Replace(obj, ".ll", ".s", -1)
-						// Pull the extension of the object file
-						if l.dump {
-							out = "/dev/stdout"
-						}
-						// Replace it with .s
-						// set the output to that of the .s file
-						asmArgs := append(linkArgs, "-o", out, obj)
-						// run the compile to asm
-						c, _ := util.RunCommandStr(linker, asmArgs...)
-						fmt.Println(c)
-					}
+	if *arg.EmitASM {
+		log.Timed("Assembly Generation", func() {
+			// We want to only write intel syntax. AT&T Sucks
+			asmArgs := append(linkArgs, "-S", "-masm=intel", "-Wno-everything")
+			// Compile each of the objects to a .s file.
+			for _, obj := range l.objectPaths {
+				// We only want to leave user generated files in the filesystem
+				if strings.HasSuffix(obj, ".ll") {
+					// ext := path.Ext(obj)
+					out := strings.Replace(obj, ".ll", ".s", -1)
+					// Replace it with .s
+					// set the output to that of the .s file
+					asmArgs = append(linkArgs, "-o", path.Base(out), obj)
+					// run the compile to asm
+					util.RunCommandStr(linker, asmArgs...)
 
 				}
-			})
-			return
-		}
+			}
+		})
 
+	}
+
+	if *arg.EmitLLVM {
 		for _, obj := range l.objectPaths {
 			if strings.HasSuffix(obj, ".ll") {
 				bs, _ := ioutil.ReadFile(obj)
-				fmt.Println(string(bs))
+				ioutil.WriteFile(path.Base(obj), bs, os.ModePerm)
 			}
 		}
-
 	}
 
 	for i, obj := range l.objectPaths {
@@ -179,7 +168,6 @@ func (l *Linker) Run() {
 				if err != nil {
 					log.Fatal("(%s) %s\n", err, string(out))
 				}
-				// fmt.Println(string(out), err)
 				ioutil.WriteFile(cachefile, []byte(hash), os.ModePerm)
 			}
 			l.objectPaths[i] = objFile
