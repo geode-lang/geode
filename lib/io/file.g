@@ -1,7 +1,7 @@
 is io
 
 link "io.c"
-include "std:mem"
+include "mem"
 
 
 

@@ -2,6 +2,7 @@ package ast
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/llvm/ir"
@@ -61,8 +62,10 @@ func (n NamedReference) Alloca(prog *Program) value.Value {
 	searchPaths = append(searchPaths, fmt.Sprintf("%s:%s", prog.Package.Name, n.Value))
 
 	scopeitem, found := prog.Scope.Find(searchPaths)
+
+	// fmt.Println(prog.Scope.AllNames())
 	if !found {
-		log.Fatal("Unable to find named reference %s\n", n)
+		log.Fatal("Unable to find named reference %s, search paths: [%s]\n", n, strings.Join(searchPaths, ", "))
 	}
 
 	var alloc value.Value

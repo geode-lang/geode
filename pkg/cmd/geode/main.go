@@ -121,10 +121,11 @@ func NewContext(in string, out string) *Context {
 func (c *Context) Build(buildDir string) {
 
 	program := ast.NewProgram()
-	program.ParseDep("", "std:runtime")
+	program.ParseDep("", "std:builtin")
 	program.Entry = c.Input
 	program.ParsePath(c.Input)
 	program.TargetTripple = c.TargetTripple
+
 	program.Congeal()
 
 	options := ast.FunctionCompilationOptions{}

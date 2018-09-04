@@ -35,6 +35,8 @@ func (n GlobalVariableDeclNode) Declare(prog *Program) (value.Value, error) {
 		name = fmt.Sprintf("%s:%s", prog.Package.Name, n.Name)
 	}
 
+	// fmt.Println("Declare", name)
+
 	found, err := prog.FindType(n.Type.Name)
 	if err != nil {
 		return nil, err

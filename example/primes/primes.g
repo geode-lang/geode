@@ -1,6 +1,6 @@
 is primes
 
-include "std:io"
+include "io"
 func main int {
 	let i := 0;
 	while true {

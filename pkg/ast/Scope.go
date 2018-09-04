@@ -31,10 +31,8 @@ func (s *Scope) Add(val ScopeItem) {
 // Find will traverse the scope tree to find some definition of a symbol
 func (s *Scope) Find(searchPaths []string) (ScopeItem, bool) {
 	for _, v := range s.Vals {
-		u := v.Name()
-
 		for _, name := range searchPaths {
-			if u == name {
+			if v.Name() == name {
 				return v, true
 			}
 		}
@@ -43,6 +41,25 @@ func (s *Scope) Find(searchPaths []string) (ScopeItem, bool) {
 		return s.Parent.Find(searchPaths)
 	}
 	return nil, false
+}
+
+// AllNames returns a recursive lookup of all names in a scope tree
+func (s *Scope) AllNames() []string {
+	return s.GetRoot().GetNames()
+}
+
+// GetNames returns just the names for this scope
+func (s *Scope) GetNames() []string {
+	names := make([]string, 0)
+
+	for k := range s.Vals {
+		names = append(names, k)
+	}
+	for _, c := range s.Children {
+		names = append(names, c.GetNames()...)
+	}
+
+	return names
 }
 
 // FindFunctions returns a list of functions that might match the name provided
@@ -89,7 +106,6 @@ func (s *Scope) FindFunctions(needle string) ([]FunctionScopeItem, []GenericTemp
 func (s *Scope) FindType(names ...string) *ScopeType {
 	var v *ScopeType
 	var ok bool
-	// fmt.Println(s.Types)
 	for _, name := range names {
 
 		v, ok = s.Types[name]

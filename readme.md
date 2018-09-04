@@ -65,7 +65,7 @@ Files can be any of the following:
 
 ```go
 is main
-include "std:io"
+include "io"
 
 func main int {
 	io:print("Hello, world\n");
@@ -78,7 +78,7 @@ func main int {
 ```go
 is main
 
-include "std:io"
+include "io"
 
 func main(int argc, string* argv) int {
 	argv[0] <- "program";
@@ -112,7 +112,7 @@ func main int {
 ```go
 is main
 
-include "std:io"
+include "io"
 
 func fib(int n) int {
 	if n < 2 {
@@ -153,6 +153,6 @@ Notice the `...`? That is the way of telling geode, "this function is external, 
 no body". If you do this, the function must be defined via a linkage. Otherwise the compiler
 will crash
 
-
 ## License
+
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fgeode-lang%2Fgeode.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fgeode-lang%2Fgeode?ref=badge_large)

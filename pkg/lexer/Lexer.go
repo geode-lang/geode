@@ -1,7 +1,6 @@
 package lexer
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"unicode"
@@ -77,15 +76,15 @@ type Lexer struct {
 	start      int // beginning position of the current token
 	width      int // width of last rune read from input
 	input      string
-	tokens     chan Token
+	tokens     []Token
 }
 
 // Lex - takes a string and turns it into tokens
-func Lex(source *Sourcefile) chan Token {
+func Lex(source *Sourcefile) []Token {
 	l := NewLexer()
 	l.source = source
 	l.input = source.String()
-	go log.Timed(fmt.Sprintf("Lex %s", source.Path), l.run)
+	log.Timed(fmt.Sprintf("Lex %s", source.Path), l.run)
 	return l.tokens
 }
 
@@ -97,7 +96,6 @@ func (l *Lexer) run() {
 		}
 	}
 	log.Verbose("Lexer emitted %d tokens from %s\n", l.tokenCount, l.source.Path)
-	close(l.tokens) // No more tokens will be delivered.
 }
 
 // QuickLex takes a string and lexes it into a token array
@@ -105,11 +103,7 @@ func QuickLex(str string) []Token {
 	source, _ := NewSourcefile("temp")
 	source.LoadString(str)
 
-	tokArr := make([]Token, 0)
-
-	for t := range Lex(source) {
-		tokArr = append(tokArr, t)
-	}
+	tokArr := Lex(source)
 
 	return tokArr
 }
@@ -143,10 +137,9 @@ func (l *Lexer) emit(typ TokenType) {
 
 		tok.Type = typ
 
-		// fmt.Println(tok.Value)
 		info.AddToken(tok)
 
-		l.tokens <- tok
+		l.tokens = append(l.tokens, tok)
 	}
 	l.start = l.pos
 }
@@ -284,9 +277,16 @@ func (l *Lexer) fatal(format string, args ...interface{}) stateFn {
 }
 
 func lexIdentifer(l *Lexer) stateFn {
+	sColonCount := 0
 	for {
 		switch r := l.next(); {
 		case isAlphaNumeric(r) || r == '\'' || r == ':':
+			if r == ':' {
+				sColonCount++
+			}
+			if sColonCount > 1 {
+				l.emit(TokError)
+			}
 			// absorb
 		default:
 			l.backup()
@@ -437,38 +437,6 @@ func NewLexer() *Lexer {
 	s := &Lexer{}
 	s.line = 1
 	s.col = 1
-	s.tokens = make(chan Token)
+	s.tokens = make([]Token, 0)
 	return s
-}
-
-// DumpTokens takes a channel of tokens and prints all tokens it recieves,
-// then pushes them back out a new channel it makes and returns
-func DumpTokens(in chan Token) chan Token {
-	out := make(chan Token)
-	tokens := make([]Token, 0)
-	go func() {
-		for {
-			// Read from the input channel of nodes.
-			n, stillOpen := <-in
-			// If the channel is closed, exit out of the printing phase
-			if !stillOpen {
-				tokenMaps := make([]map[string]interface{}, 0)
-				for _, t := range tokens {
-					m := make(map[string]interface{})
-					m["type_raw"] = t.Type
-					m["value"] = t.Value
-					m["start_pos"] = t.Pos
-					m["end_pos"] = t.EndPos
-					tokenMaps = append(tokenMaps, m)
-				}
-				j, _ := json.MarshalIndent(tokenMaps, "", "   ")
-				fmt.Println(string(j))
-				close(out)
-				return
-			}
-			tokens = append(tokens, n)
-			out <- n
-		}
-	}()
-	return out
 }

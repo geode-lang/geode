@@ -105,7 +105,7 @@ func (n ClassNode) String() string {
 func (n ClassNode) Declare(prog *Program) (value.Value, error) {
 	structDefn := types.NewStruct()
 
-	prog.Scope = prog.Scope.SpawnChild()
+	// prog.Scope = prog.Scope.SpawnChild()
 
 	name := fmt.Sprintf("class.%s:%s", prog.Scope.PackageName, n.Name)
 	structDefn.SetName(name)
@@ -113,13 +113,13 @@ func (n ClassNode) Declare(prog *Program) (value.Value, error) {
 	prog.Module.NewType(n.Name, structDefn)
 
 	scopeName := n.Name
-	if prog.Package.Name != "_runtime" {
+	if prog.Package.Name != "builtin" {
 		scopeName = fmt.Sprintf("%s:%s", prog.Scope.PackageName, n.Name)
 	}
 	prog.Scope.GetRoot().RegisterType(scopeName, structDefn, -1)
 	// structDefn.Opaque = true
 
-	prog.Scope = prog.Scope.Parent
+	// prog.Scope = prog.Scope.Parent
 
 	return nil, nil
 }

@@ -1,6 +1,6 @@
 is str
 
-include "std:mem" # needed for allocating memory for strings
+include "mem" # needed for allocating memory for strings
 
 class String {
 	byte* data;

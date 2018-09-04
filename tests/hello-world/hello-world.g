@@ -1,5 +1,5 @@
 is main
-include "std:io"
+include "io"
 
 
 func main int {

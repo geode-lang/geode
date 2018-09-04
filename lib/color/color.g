@@ -1,6 +1,6 @@
 is color
 
-include "std:math"
+include "math"
 
 class Color {
 	float r;

@@ -1,7 +1,7 @@
 # global variables 3
 is main
 
-include "std:io"
+include "io"
 
 int a := test();
 

@@ -1,7 +1,7 @@
 is main
-include "std:io"
-include "std:mem"
-include "std:math"
+include "io"
+include "mem"
+include "math"
 
 
 func main(int argc) int {

@@ -1,7 +1,10 @@
 is main
 
 include "io"
+include "str"
+include "color"
 include "encoding"
+include "math"
 
 byte* start;
 byte* end;
@@ -26,8 +29,9 @@ func write_stack(io:File* target) {
 
 func main(int argc, byte** argv) int {
 	start <- &argc	
-	io:File* f := io:fopen("foo.txt", "w+")
+	let f := io:fopen("foo.txt", "w+")
 	write_stack(io:stdout)
+	io:fputs("hello\n" io:stdout)
 	io:fclose(f)
 	return 0
 }

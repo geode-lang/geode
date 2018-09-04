@@ -2,7 +2,7 @@ is main
 
 
 link "link.c"
-include "std:io"
+include "io"
 
 func foo int ...
 

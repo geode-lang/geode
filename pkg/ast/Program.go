@@ -141,11 +141,7 @@ func (p *Program) ParseFile(path string) {
 
 	tokens := lexer.Lex(src)
 
-	nodes := make([]Node, 0)
-
-	for node := range Parse(tokens) {
-		nodes = append(nodes, node)
-	}
+	nodes := Parse(tokens)
 
 	name, err := NamespaceFromNodes(nodes)
 	if err != nil {
@@ -162,7 +158,7 @@ func (p *Program) ParseFile(path string) {
 		p.Packages[path] = newPkg
 	}
 
-	for node := range FilterNodes(newPkg.Nodes, nodeDependency) {
+	for _, node := range FilterNodes(newPkg.Nodes, nodeDependency) {
 		base := filepath.Dir(path)
 		dep := node.(DependencyNode)
 		for _, depPath := range dep.Paths {
@@ -171,7 +167,6 @@ func (p *Program) ParseFile(path string) {
 			} else {
 				newPkg.DependencyPaths = append(newPkg.DependencyPaths, ReduceToDir(ResolveDepPath(base, depPath)))
 				p.ParseDep(base, depPath)
-
 			}
 		}
 
@@ -183,6 +178,7 @@ func (p *Program) ParseFile(path string) {
 func (p *Program) ParseDep(base, path string) {
 	depPath := ResolveDepPath(base, path)
 	if p.CanParse(depPath) {
+
 		p.ParsePath(depPath)
 	}
 }
@@ -217,16 +213,16 @@ func (p *Program) Congeal() (*ir.Module, error) {
 
 			if fn, is := node.(FunctionNode); is {
 				name := fmt.Sprintf("%s:%s", pkg.Name, fn.Name)
-				if fn.Name.String() == "main" || pkg.Name == "_runtime" {
+				if fn.Name.String() == "main" || pkg.Name == "builtin" {
 					name = fn.Name.String()
 				}
 				fn.Package = pkg
-				p.Functions[name] = &fn
+				p.RegisterFunction(name, fn)
 			}
 
 			if cls, is := node.(ClassNode); is {
 				name := fmt.Sprintf("%s:%s", pkg.Name, cls.Name)
-				if pkg.Name == "_runtime" {
+				if pkg.Name == "builtin" {
 					name = cls.Name
 				}
 				p.Classes[name] = &cls
@@ -235,7 +231,7 @@ func (p *Program) Congeal() (*ir.Module, error) {
 		}
 	}
 
-	for node := range FilterPackagedNodes(nodes, nodeClass) {
+	for _, node := range FilterPackagedNodes(nodes, nodeClass) {
 		node.SetupContext()
 		_, err = node.Node.(ClassNode).Declare(p)
 		if err != nil {
@@ -244,7 +240,7 @@ func (p *Program) Congeal() (*ir.Module, error) {
 	}
 
 	// Codegen the types/classes
-	for node := range FilterPackagedNodes(nodes, nodeClass) {
+	for _, node := range FilterPackagedNodes(nodes, nodeClass) {
 		node.SetupContext()
 		err := node.Node.(ClassNode).VerifyCorrectness(p)
 		util.EatError(err)
@@ -254,9 +250,10 @@ func (p *Program) Congeal() (*ir.Module, error) {
 		}
 	}
 
-	for node := range FilterPackagedNodes(nodes, nodeGlobalDecl) {
-		node.SetupContext()
-		_, err = node.Node.(GlobalVariableDeclNode).Declare(p)
+	for _, pnode := range FilterPackagedNodes(nodes, nodeGlobalDecl) {
+		pnode.SetupContext()
+		fmt.Println(pnode.Node)
+		_, err = pnode.Node.(GlobalVariableDeclNode).Declare(p)
 		if err != nil {
 			return nil, err
 		}
@@ -351,8 +348,9 @@ func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (
 
 	// Prime the program's new state before compiling a function
 	p.Package = node.Package
-	p.Scope = p.Scope.GetRoot().SpawnChild()
+	p.Scope = p.Scope.GetRoot()
 	p.Scope.PackageName = p.Package.Name
+	p.Scope = p.Scope.SpawnChild()
 	p.Compiler = NewCompiler(p)
 
 	_, rawTypes, err := node.Arguments(p)
@@ -488,7 +486,6 @@ func SearchPaths(base string) []string {
 		base = filepath.Dir(base)
 		sp = append(sp, dir)
 	}
-
 	return sp
 }
 
@@ -534,57 +531,48 @@ func PathIsDir(pth string) (bool, error) {
 
 // NamespaceFromNodes takes an array of nodes and returns the namespace name of them
 func NamespaceFromNodes(nodes []Node) (string, error) {
+
 	for _, n := range nodes {
 		if n.Kind() == nodeNamespace {
 			return n.(NamespaceNode).Name, nil
 		}
 	}
 
-	return "error", fmt.Errorf("nodes have no package name")
+	return "", fmt.Errorf("nodes have no package name")
 }
 
 // FilterNodes returns only the nodes that have the type passed in
-func FilterNodes(nodes []Node, t NodeType) chan Node {
-	filtered := make(chan Node)
+func FilterNodes(nodes []Node, t NodeType) []Node {
+	filtered := make([]Node, 0)
 
-	go func() {
-		for _, n := range nodes {
-			if n.Kind() == t {
-				filtered <- n
-			}
+	for _, n := range nodes {
+		if n.Kind() == t {
+			filtered = append(filtered, n)
 		}
-		close(filtered)
-	}()
+	}
 
 	return filtered
 }
 
 // FilterPackagedNodes returns only the nodes that have the type passed in
-func FilterPackagedNodes(nodes []*PackagedNode, t NodeType) chan *PackagedNode {
-	filtered := make(chan *PackagedNode)
-	go func() {
-		for _, n := range nodes {
-			if n.Node.Kind() == t {
-				filtered <- n
-			}
+func FilterPackagedNodes(nodes []*PackagedNode, t NodeType) []*PackagedNode {
+	filtered := make([]*PackagedNode, 0)
+	for _, n := range nodes {
+		if n.Node.Kind() == t {
+			filtered = append(filtered, n)
 		}
-		close(filtered)
-	}()
-
+	}
 	return filtered
 }
 
 // FilterPackagedNodesPredicate returns only the nodes that pass the test given
-func FilterPackagedNodesPredicate(nodes []*PackagedNode, predicate func(n Node) bool) chan *PackagedNode {
-	filtered := make(chan *PackagedNode)
-	go func() {
-		for _, n := range nodes {
-			if predicate(n.Node) {
-				filtered <- n
-			}
+func FilterPackagedNodesPredicate(nodes []*PackagedNode, predicate func(n Node) bool) []*PackagedNode {
+	filtered := make([]*PackagedNode, 0)
+	for _, n := range nodes {
+		if predicate(n.Node) {
+			filtered = append(filtered, n)
 		}
-		close(filtered)
-	}()
+	}
 
 	return filtered
 }
@@ -614,7 +602,11 @@ func (p *PackagedNode) SetupContext() {
 func PackageNode(node Node, pkg *Package, prog *Program) *PackagedNode {
 	n := &PackagedNode{}
 	n.Node = node
+	fmt.Println("Node:", node)
+	fmt.Println("Kind:", node.Kind())
+	fmt.Println("Pkg: ", pkg.Name)
 	n.Pkg = pkg
 	n.Program = prog
+	fmt.Println("")
 	return n
 }

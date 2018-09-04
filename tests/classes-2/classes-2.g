@@ -1,6 +1,6 @@
 is main
 
-include "std:io"
+include "io"
 
 class Person {
 	string name;

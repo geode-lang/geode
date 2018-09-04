@@ -19,7 +19,7 @@ type Parser struct {
 	tokens             []lexer.Token // channel of tokens from the lexer
 	tokenIndex         int
 	token              lexer.Token // current token, most recently recieved
-	topLevelNodes      chan Node
+	topLevelNodes      []Node
 	binaryOpPrecedence map[string]int // maps binary operators to the precidence determining the order of operations
 	context            *ParseContext
 }
@@ -52,10 +52,10 @@ func (p *Parser) reset() {
 
 // Parse creates and runs a new lexer, that returns the
 // chan that the nodes will be passed through with
-func Parse(tokens chan lexer.Token) <-chan Node {
+func Parse(tokens []lexer.Token) []Node {
 	p := &Parser{
 		tokens:        make([]lexer.Token, 0),
-		topLevelNodes: make(chan Node),
+		topLevelNodes: make([]Node, 0),
 		binaryOpPrecedence: map[string]int{
 			"||": 1,
 			"&&": 1,
@@ -76,19 +76,15 @@ func Parse(tokens chan lexer.Token) <-chan Node {
 		},
 	}
 
-	// os.Exit(1)
-
 	// prime the next token for use by reading from the token channel (easier than handling in .next())
-
-	for t := range tokens {
+	for _, t := range tokens {
 		if t.Type != lexer.TokWhitespace && t.Type != lexer.TokComment {
 			p.tokens = append(p.tokens, t)
 		}
 	}
 
 	p.move(0)
-	go p.parse()
-
+	p.parse()
 	return p.topLevelNodes
 }
 
@@ -107,12 +103,11 @@ func (p *Parser) parse() {
 	for p.token.Type > 0 {
 		topLevelNode := p.parseTopLevelStmt()
 		if topLevelNode != nil {
-			p.topLevelNodes <- topLevelNode
+			p.topLevelNodes = append(p.topLevelNodes, topLevelNode)
 		} else {
 			break
 		}
 	}
-	close(p.topLevelNodes)
 }
 
 func (p *Parser) requires(t lexer.TokenType) {

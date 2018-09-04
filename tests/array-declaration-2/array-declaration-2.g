@@ -1,7 +1,7 @@
 # array declaration 2
 is main
 
-include "std:io"
+include "io"
 
 func main int {
 	int* a := [1, 2, 3];

@@ -1,7 +1,7 @@
 is __ideas__
 
-include "std:io"
-include "std:encoding"
+include "io"
+include "encoding"
 
 protocol Addable {
 	func add(Addable a) int;

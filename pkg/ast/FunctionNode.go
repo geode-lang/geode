@@ -113,17 +113,16 @@ func (n FunctionNode) Declare(prog *Program) (*ir.Function, error) {
 
 	scopeItem := NewFunctionScopeItem(keyName, n, function, PublicVisibility)
 	scopeItem.SetMangled(!n.Nomangle)
-	prog.Scope.Add(scopeItem)
-
-	prog.Scope = prog.Scope.Parent
+	prog.Scope.GetRoot().Add(scopeItem)
 
 	prog.Compiler.FN = previousFunction
+	prog.Scope = prog.Scope.Parent
 	return function, nil
 }
 
 // MangledName returns the correctly mangled name for some function
 func (n FunctionNode) MangledName(prog *Program, types []types.Type) string {
-	if n.Name.Value == "main" || n.Package.Name == "_runtime" {
+	if n.Name.Value == "main" || n.Package.Name == "builtin" {
 		return n.Name.Value
 	}
 	// _, types := n.Arguments(prog.Scope)

@@ -4,8 +4,8 @@ link "b64_encode.c"
 
 func b64_encode(string src, int len) string ...
 
-include "std:str"
-include "std:mem"
+include "str"
+include "mem"
 
 
 # hex converts type T (unknown) to a string containing

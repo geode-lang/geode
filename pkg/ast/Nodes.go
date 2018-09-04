@@ -173,7 +173,7 @@ func (n UnaryNode) NameString() string { return "UnaryNode" }
 // and may not contain a geode source file.
 //
 // Example:
-//    Paths = ["std:io"]
+//    Paths = ["io"]
 //    CLinkage = false
 ///
 type DependencyNode struct {

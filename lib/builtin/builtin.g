@@ -1,12 +1,12 @@
-is _runtime
+is builtin
 
-link "runtime.c"
+link "builtin.c"
 link "xmalloc.c"
 link "../gc/*.o"
 
 
 
-# include "std:io"
+# include "io"
 
 func xmalloc(int size) byte* ...
 func xmalloc_size(byte* ptr) long ...
