@@ -122,7 +122,7 @@ func (n FunctionNode) Declare(prog *Program) (*ir.Function, error) {
 
 // MangledName returns the correctly mangled name for some function
 func (n FunctionNode) MangledName(prog *Program, types []types.Type) string {
-	if n.Name.Value == "main" || n.Package.Name == "builtin" {
+	if n.Name.Value == "main" || n.Package.Name == "runtime" {
 		return n.Name.Value
 	}
 	// _, types := n.Arguments(prog.Scope)

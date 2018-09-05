@@ -213,7 +213,7 @@ func (p *Program) Congeal() (*ir.Module, error) {
 
 			if fn, is := node.(FunctionNode); is {
 				name := fmt.Sprintf("%s:%s", pkg.Name, fn.Name)
-				if fn.Name.String() == "main" || pkg.Name == "builtin" {
+				if fn.Name.String() == "main" || pkg.Name == "runtime" {
 					name = fn.Name.String()
 				}
 				fn.Package = pkg
@@ -222,7 +222,7 @@ func (p *Program) Congeal() (*ir.Module, error) {
 
 			if cls, is := node.(ClassNode); is {
 				name := fmt.Sprintf("%s:%s", pkg.Name, cls.Name)
-				if pkg.Name == "builtin" {
+				if pkg.Name == "runtime" {
 					name = cls.Name
 				}
 				p.Classes[name] = &cls

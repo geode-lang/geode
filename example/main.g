@@ -28,10 +28,8 @@ func write_stack(io:File* target) {
 }
 
 func main(int argc, byte** argv) int {
-	start <- &argc	
-	let f := io:fopen("foo.txt", "w+")
+	start <- &argc
 	write_stack(io:stdout)
-	io:fputs("hello\n" io:stdout)
-	io:fclose(f)
+	
 	return 0
 }

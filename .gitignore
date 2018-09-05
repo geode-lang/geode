@@ -26,3 +26,7 @@ gc
 debug
 
 .geode_build*
+
+
+geodepkgs
+geode.toml

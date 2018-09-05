@@ -2,8 +2,6 @@ is math
 
 link "math.c"
 
-
-
 # Here are alot of external functions that
 # link to the c library
 func acos(float x) float ...
@@ -23,3 +21,7 @@ func fmod(float x, float y) float ...
 
 func rand() int ...
 func srand(int seed) ...
+
+func random() float {
+	return rand() / 2147483647.0
+}

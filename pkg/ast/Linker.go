@@ -98,18 +98,18 @@ func (l *Linker) Run() {
 	linker := "clang"
 	linkArgs := make([]string, 0)
 
-	// linkArgs = append(linkArgs, "-g")
-	if l.target == BinaryTarget {
-		linkArgs = append(linkArgs, "-lm", "-lc", "-pthread")
+	optString := fmt.Sprintf("-O%d", l.optimize)
+
+	if l.optimize > 0 && l.optimize <= 3 {
+		linkArgs = append(linkArgs, optString)
 	}
 
 	filename := l.output
 
-	if l.optimize > 0 && l.optimize <= 3 {
-		linkArgs = append(linkArgs, fmt.Sprintf("-O%d", l.optimize))
-	}
+	hadAlternateEmission := false
 
 	if *arg.EmitASM {
+		hadAlternateEmission = true
 		log.Timed("Assembly Generation", func() {
 			// We want to only write intel syntax. AT&T Sucks
 			asmArgs := append(linkArgs, "-S", "-masm=intel", "-Wno-everything")
@@ -118,13 +118,8 @@ func (l *Linker) Run() {
 				// We only want to leave user generated files in the filesystem
 				if strings.HasSuffix(obj, ".ll") {
 					// ext := path.Ext(obj)
-					out := strings.Replace(obj, ".ll", ".s", -1)
-					// Replace it with .s
-					// set the output to that of the .s file
-					asmArgs = append(linkArgs, "-o", path.Base(out), obj)
-					// run the compile to asm
-					util.RunCommandStr(linker, asmArgs...)
-
+					out := path.Base(strings.Replace(obj, path.Ext(obj), ".s", -1))
+					util.RunCommandStr(linker, append(asmArgs, "-o", out, obj)...)
 				}
 			}
 		})
@@ -132,58 +127,84 @@ func (l *Linker) Run() {
 	}
 
 	if *arg.EmitLLVM {
-		for _, obj := range l.objectPaths {
-			if strings.HasSuffix(obj, ".ll") {
-				bs, _ := ioutil.ReadFile(obj)
-				ioutil.WriteFile(path.Base(obj), bs, os.ModePerm)
-			}
-		}
-	}
+		hadAlternateEmission = true
 
-	for i, obj := range l.objectPaths {
-		outbase := path.Join(l.buildDir, obj)
-
-		extension := filepath.Ext(outbase)
-		if extension == ".ll" {
-			// outbase = obj
-		}
-
-		if extension == ".a" {
-
-		}
-
-		if extension == ".c" {
-			outbase = outbase[0 : len(outbase)-len(extension)]
-
-			hash := util.HashFile(obj)
-
-			cachefile := outbase + ".cache"
-			objFile := outbase + ".o"
-
-			cachedat, err := ioutil.ReadFile(cachefile)
-			if err != nil || strings.Compare(string(cachedat), hash) != 0 {
-				os.MkdirAll(path.Dir(outbase), os.ModePerm)
-				// the file doesnt exist, we need to compile it
-				out, err := util.RunCommand("clang", "-c", "-o", objFile, obj)
-				if err != nil {
-					log.Fatal("(%s) %s\n", err, string(out))
+		log.Timed("LLVM Generation", func() {
+			// Compile each of the objects to a .s file.
+			for _, obj := range l.objectPaths {
+				// We only want to leave user generated files in the filesystem
+				if strings.HasSuffix(obj, ".ll") {
+					out := path.Base(strings.Replace(obj, path.Ext(obj), ".ll", -1))
+					util.RunCommandStr(linker, append(linkArgs, "-S", "-emit-llvm", "-o", out, obj)...)
 				}
-				ioutil.WriteFile(cachefile, []byte(hash), os.ModePerm)
 			}
-			l.objectPaths[i] = objFile
+		})
+	}
+
+	if *arg.EmitObject {
+		hadAlternateEmission = true
+
+		log.Timed("Object File Generation", func() {
+			// Compile each of the objects to a .s file.
+			for _, obj := range l.objectPaths {
+				// We only want to leave user generated files in the filesystem
+				if strings.HasSuffix(obj, ".ll") {
+					out := path.Base(strings.Replace(obj, path.Ext(obj), ".o", -1))
+					util.RunCommandStr(linker, append(linkArgs, "-c", "-o", out, obj)...)
+				}
+			}
+		})
+	}
+
+	linkArgs = append(linkArgs, "--std=c99", "-lm", "-lc", "-pthread")
+
+	if !hadAlternateEmission {
+		for i, obj := range l.objectPaths {
+			outbase := path.Join(l.buildDir, obj)
+
+			extension := filepath.Ext(outbase)
+			if extension == ".ll" {
+			}
+
+			if extension == ".a" {
+
+			}
+
+			if extension == ".c" {
+				outbase = outbase[0 : len(outbase)-len(extension)]
+
+				cachefile := outbase + ".cache"
+				objFile := outbase + ".o"
+
+				hash := util.HashFile(obj)
+
+				cachedat, err := ioutil.ReadFile(cachefile)
+				if err != nil || strings.Compare(string(cachedat), hash) != 0 {
+
+					os.MkdirAll(path.Dir(outbase), os.ModePerm)
+					// the file doesnt exist, we need to compile it
+					out, err := util.RunCommand("clang", "-O3", "--std=c99", "-c", "-o", objFile, obj)
+					if err != nil {
+						log.Fatal("(%s) %s\n", err, string(out))
+					}
+					ioutil.WriteFile(cachefile, []byte(hash), os.ModePerm)
+				}
+				l.objectPaths[i] = objFile
+			}
+
 		}
+		// Append input files to the end of the command
+		linkArgs = append(linkArgs, l.objectPaths...)
 
+		// set the output filename
+		linkArgs = append(linkArgs, "-o", filename)
+
+		out, err := util.RunCommand(linker, linkArgs...)
+		if err != nil {
+			log.Fatal("failed to run command `%s %s`: `%s`\n\n%s",
+				linker, strings.Join(linkArgs, " "),
+				err.Error(), string(out))
+		}
 	}
-	// Append input files to the end of the command
-	linkArgs = append(linkArgs, l.objectPaths...)
 
-	// set the output filename
-	linkArgs = append(linkArgs, "-o", filename)
-
-	out, err := util.RunCommand(linker, linkArgs...)
-	if err != nil {
-		log.Fatal("failed to run command `%s %s`: `%s`\n\n%s",
-			linker, strings.Join(linkArgs, " "),
-			err.Error(), string(out))
-	}
 }

@@ -16,17 +16,18 @@ var (
 	DisableEmission       = App.Flag("no-emission", "Disable emission and only run through the syntax checking process").Bool()
 	DisableStringDataCopy = App.Flag("no-dynamic-strings", "Disable the dynamic string copy and replace with static/constant .data section pointers").Bool()
 	LinkerArgs            = App.Flag("linker-args", "Arguments to pass clang when linking object files").String()
+	EmitASM               = App.Flag("asm", "Emit the asm of the program to the current directory. (will not produce binary)").Bool()
+	EmitLLVM              = App.Flag("llvm", "Emit the llvm of the program to the current directory. (will not produce binary)").Bool()
+	EmitObject            = App.Flag("obj", "Emit the object file of the program to the current directory. (will not produce binary)").Bool()
+	DumpScopeTree         = App.Flag("dump-scope-tree", "Dump a tree representation of the scope to stdout").Bool()
 )
 
 // Global arguments accessable throughout the program
 var (
 	VersionCMD = App.Command("version", "Display the version")
 
-	BuildCMD      = App.Command("build", "Build an executable.")
-	BuildInput    = BuildCMD.Arg("input", "Geode source file or package").Default(".").String()
-	EmitASM       = BuildCMD.Flag("asm", "Set the target to .s asm files with intel syntax instead of a single binary.").Bool()
-	EmitLLVM      = BuildCMD.Flag("llvm", "Set the target to a single .ll file in the current directory").Bool()
-	DumpScopeTree = BuildCMD.Flag("dump-scope-tree", "Dump a tree representation of the scope to stdout").Bool()
+	BuildCMD   = App.Command("build", "Build an executable.")
+	BuildInput = BuildCMD.Arg("input", "Geode source file or package").Default(".").String()
 
 	RunCMD   = App.Command("run", "Build and run an executable, clean up afterwards").Default()
 	RunInput = RunCMD.Arg("input", "Geode source file or package").String()
@@ -47,3 +48,9 @@ var (
 func Parse() string {
 	return kingpin.MustParse(App.Parse(os.Args[1:]))
 }
+
+// Commands related to the pkg subcommand
+var (
+	PkgCMD  = App.Command("pkg", "Envoke the geode git package manager")
+	PkgInit = PkgCMD.Flag("init", "initialize the package manager config").Bool()
+)
