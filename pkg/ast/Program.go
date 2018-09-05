@@ -213,7 +213,7 @@ func (p *Program) Congeal() (*ir.Module, error) {
 
 			if fn, is := node.(FunctionNode); is {
 				name := fmt.Sprintf("%s:%s", pkg.Name, fn.Name)
-				if fn.Name.String() == "main" || pkg.Name == "builtin" {
+				if fn.Name.String() == "main" || pkg.Name == "runtime" {
 					name = fn.Name.String()
 				}
 				fn.Package = pkg
@@ -222,7 +222,7 @@ func (p *Program) Congeal() (*ir.Module, error) {
 
 			if cls, is := node.(ClassNode); is {
 				name := fmt.Sprintf("%s:%s", pkg.Name, cls.Name)
-				if pkg.Name == "builtin" {
+				if pkg.Name == "runtime" {
 					name = cls.Name
 				}
 				p.Classes[name] = &cls
@@ -252,7 +252,6 @@ func (p *Program) Congeal() (*ir.Module, error) {
 
 	for _, pnode := range FilterPackagedNodes(nodes, nodeGlobalDecl) {
 		pnode.SetupContext()
-		fmt.Println(pnode.Node)
 		_, err = pnode.Node.(GlobalVariableDeclNode).Declare(p)
 		if err != nil {
 			return nil, err
@@ -602,11 +601,7 @@ func (p *PackagedNode) SetupContext() {
 func PackageNode(node Node, pkg *Package, prog *Program) *PackagedNode {
 	n := &PackagedNode{}
 	n.Node = node
-	fmt.Println("Node:", node)
-	fmt.Println("Kind:", node.Kind())
-	fmt.Println("Pkg: ", pkg.Name)
 	n.Pkg = pkg
 	n.Program = prog
-	fmt.Println("")
 	return n
 }

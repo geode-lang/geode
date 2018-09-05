@@ -113,7 +113,7 @@ func (n ClassNode) Declare(prog *Program) (value.Value, error) {
 	prog.Module.NewType(n.Name, structDefn)
 
 	scopeName := n.Name
-	if prog.Package.Name != "builtin" {
+	if prog.Package.Name != "runtime" {
 		scopeName = fmt.Sprintf("%s:%s", prog.Scope.PackageName, n.Name)
 	}
 	prog.Scope.GetRoot().RegisterType(scopeName, structDefn, -1)

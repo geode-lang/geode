@@ -19,7 +19,7 @@ import (
 
 // Some constants that represent the program in it's current compiled state
 const (
-	VERSION = "0.4.4"
+	VERSION = "0.4.6"
 	AUTHOR  = "Nick Wanninger"
 )
 
@@ -83,6 +83,10 @@ func main() {
 		fmt.Println(VERSION)
 		os.Exit(0)
 
+	// case arg.PkgCMD.FullCommand():
+	// 	geodepkg.HandleCommand()
+	// 	os.Exit(0)
+
 	case arg.InfoCMD.FullCommand():
 		log.Timed("information gathering", func() {
 			context := NewContext(*arg.InfoInput, "/tmp/geodeinfooutput")
@@ -121,12 +125,21 @@ func NewContext(in string, out string) *Context {
 func (c *Context) Build(buildDir string) {
 
 	program := ast.NewProgram()
-	program.ParseDep("", "std:builtin")
+	program.ParseDep("", "std:runtime")
 	program.Entry = c.Input
+
+	if _, err := os.Stat(c.Input); os.IsNotExist(err) {
+		fmt.Printf("The file %q could not be found.\n", c.Input)
+		os.Exit(-1)
+	}
+
 	program.ParsePath(c.Input)
 	program.TargetTripple = c.TargetTripple
 
-	program.Congeal()
+	_, err := program.Congeal()
+	if err != nil {
+		log.Fatal("%s\n", err)
+	}
 
 	options := ast.FunctionCompilationOptions{}
 	main, err := program.GetFunction("main", options)

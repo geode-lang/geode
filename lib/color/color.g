@@ -2,14 +2,14 @@ is color
 
 include "math"
 
-class Color {
+class RGB {
 	float r;
 	float g;
 	float b;
 }
 
-func new_rgb(float r, float g, float b) Color {
-	Color col;
+func new_rgb(float r, float g, float b) RGB {
+	RGB col;
 	col.r <- r;
 	col.g <- g;
 	col.b <- b;	
@@ -17,7 +17,7 @@ func new_rgb(float r, float g, float b) Color {
 }
 
 
-func hsv_to_rgb(float h, float s, float v) Color {
+func hsv_to_rgb(float h, float s, float v) RGB {
 	h <- h % 360.0;
 	if s = 0 {
 		return new_rgb(v, v, v);
@@ -28,7 +28,7 @@ func hsv_to_rgb(float h, float s, float v) Color {
 	float X := C * (1 - math:fabs((h / 60.0) % 2));
 	float m := v - C;
 
-	Color col;
+	RGB col;
 	if   0 <= h && h < 60  {col <- new_rgb(C, X, 0);}
 	if  60 <= h && h < 120 {col <- new_rgb(X, C, 0);}
 	if 120 <= h && h < 180 {col <- new_rgb(0, C, X);}
@@ -43,6 +43,6 @@ func hsv_to_rgb(float h, float s, float v) Color {
 }
 
 
-func equal(Color a, Color b) bool {
+func equal(RGB a, RGB b) bool {
 	return a.r = b.r && a.g = b.g && a.b = c.b;
 }

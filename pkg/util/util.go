@@ -52,6 +52,11 @@ func RunCommandStr(command string, args ...string) (string, error) {
 	return string(b), e
 }
 
+// BashCmd runs a command in a bash context
+func BashCmd(command string) (string, error) {
+	return RunCommandStr("bash", "-c", fmt.Sprintf("\"%s\"", command))
+}
+
 // StdLibDir returns the stdlib directory path
 func StdLibDir() string {
 	libpath := os.Getenv("GEODELIB")
