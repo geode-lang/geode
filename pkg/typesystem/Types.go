@@ -2,7 +2,7 @@ package typesystem
 
 import (
 	"github.com/geode-lang/geode/pkg/util/log"
-	"github.com/geode-lang/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/types"
 )
 
 var (

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/geode-lang/geode/pkg/util/color"
-	"github.com/geode-lang/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/types"
 )
 
 // TokenIsOperator will return if a given token is an operator or not

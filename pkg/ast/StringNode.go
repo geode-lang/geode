@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/geode-lang/geode/pkg/arg"
-	"github.com/geode-lang/llvm/ir"
-	"github.com/geode-lang/llvm/ir/constant"
-	"github.com/geode-lang/llvm/ir/types"
-	"github.com/geode-lang/llvm/ir/value"
+	"github.com/geode-lang/geode/llvm/ir"
+	"github.com/geode-lang/geode/llvm/ir/constant"
+	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
 // StringNode -
@@ -35,6 +35,7 @@ func (n StringNode) Codegen(prog *Program) (value.Value, error) {
 		strIndex++
 		str = prog.Compiler.Module.NewGlobalDef(name, newCharArray(n.Value))
 		str.IsConst = true
+		str.Immutable()
 		prog.StringDefs[n.Value] = str
 	}
 

@@ -3,8 +3,8 @@ package ast
 import (
 	"fmt"
 
-	"github.com/geode-lang/llvm/ir/types"
-	"github.com/geode-lang/llvm/ir/value"
+	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
 // CastNode is a structure around a typecast expression

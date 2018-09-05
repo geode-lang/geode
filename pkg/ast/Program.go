@@ -13,9 +13,9 @@ import (
 	"github.com/geode-lang/geode/pkg/lexer"
 	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/log"
-	"github.com/geode-lang/llvm/ir"
-	"github.com/geode-lang/llvm/ir/types"
-	"github.com/geode-lang/llvm/ir/value"
+	"github.com/geode-lang/geode/llvm/ir"
+	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
 // Program is a wrapper for information used

@@ -9,6 +9,18 @@ include "math"
 byte* start;
 byte* end;
 
+long m1 := 16877499708836156737
+long m2 := 2820277070424839065
+long m3 := 9497967016996688599
+long m4 := 15839092249703872147
+
+
+
+func hashmem(byte* start, int length) long {
+	long seed := m1
+	
+}
+
 func write_stack(io:File* target) {
 	# Set end to the current end of the stack
 	byte a
@@ -28,8 +40,8 @@ func write_stack(io:File* target) {
 }
 
 func main(int argc, byte** argv) int {
-	start <- &argc
-	write_stack(io:stdout)
-	
+	# start <- &argc
+	io:print("%s\n", encoding:binary((&argc + 1)))
+	# write_stack(io:stdout)
 	return 0
 }

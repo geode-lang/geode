@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/geode-lang/geode/pkg/lexer"
-	"github.com/geode-lang/llvm/ir/types"
-	"github.com/geode-lang/llvm/ir/value"
+	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
 // NodeType -

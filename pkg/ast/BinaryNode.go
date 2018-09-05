@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/geode-lang/llvm/ir"
-	"github.com/geode-lang/llvm/ir/types"
-	"github.com/geode-lang/llvm/ir/value"
+	"github.com/geode-lang/geode/llvm/ir"
+	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
 func createCmp(blk *ir.BasicBlock, i ir.IntPred, f ir.FloatPred, t types.Type, left, right value.Value) value.Value {
@@ -23,7 +23,7 @@ func createCmp(blk *ir.BasicBlock, i ir.IntPred, f ir.FloatPred, t types.Type, l
 	return val
 }
 
-// CreateBinaryOp produces a geode binary op (just a wrapper around geode-lang/llvm's binary instructions)
+// CreateBinaryOp produces a geode binary op (just a wrapper around geode-lang/geode/llvm's binary instructions)
 func CreateBinaryOp(intstr, fltstr string, blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
 
 	var val *GeodeBinaryInstr

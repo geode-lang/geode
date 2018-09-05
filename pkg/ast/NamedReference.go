@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/geode-lang/geode/pkg/util/log"
-	"github.com/geode-lang/llvm/ir"
-	"github.com/geode-lang/llvm/ir/types"
-	"github.com/geode-lang/llvm/ir/value"
+	"github.com/geode-lang/geode/llvm/ir"
+	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
 // NameType is a type to notate what kind of name a NamedReference is

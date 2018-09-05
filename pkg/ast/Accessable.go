@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/geode-lang/llvm/ir/value"
+	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
 // Accessable is an interface implementable by
