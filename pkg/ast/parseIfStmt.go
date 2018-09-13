@@ -16,7 +16,7 @@ func (p *Parser) parseIfStmt() Node {
 
 	p.Next()
 
-	n.If = p.parseExpression()
+	n.If = p.parseExpression(false)
 
 	p.requires(lexer.TokLeftCurly)
 

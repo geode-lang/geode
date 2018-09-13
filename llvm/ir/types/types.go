@@ -148,3 +148,9 @@ func IsStruct(t Type) bool {
 	_, ok := t.(*StructType)
 	return ok
 }
+
+// IsSlice reports whether the given type is a slice type.
+func IsSlice(t Type) bool {
+	_, ok := t.(*SliceType)
+	return ok
+}

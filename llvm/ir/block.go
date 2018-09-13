@@ -510,3 +510,10 @@ func (block *BasicBlock) NewUnreachable() *TermUnreachable {
 	block.SetTerm(term)
 	return term
 }
+
+// BranchIfNoTerminator checks if the block has a terminator, and if it doesn't, set it to a branch instead
+func (block *BasicBlock) BranchIfNoTerminator(target *BasicBlock) {
+	if block.Term == nil {
+		block.NewBr(target)
+	}
+}

@@ -27,7 +27,8 @@ func (p *Parser) parseClassDefn() Node {
 		case nodeVariableDecl:
 			n.Variables = append(n.Variables, node.(VariableDefnNode))
 		case nodeFunction:
-			n.Methods = append(n.Methods, node.(FunctionNode))
+			fn := node.(FunctionNode)
+			n.Methods = append(n.Methods, fn)
 		}
 	}
 
@@ -46,9 +47,9 @@ func (p *Parser) parseClassBody() []Node {
 
 	for {
 		if p.token.Is(lexer.TokFuncDefn) {
-
-			nodes = append(nodes, p.parseFunctionNode())
-			p.Back()
+			fn := p.parseFunctionNode()
+			fn.IsMethod = true
+			nodes = append(nodes, fn)
 			continue
 		}
 

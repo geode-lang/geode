@@ -10,12 +10,12 @@ import (
 
 	"path/filepath"
 
-	"github.com/geode-lang/geode/pkg/lexer"
-	"github.com/geode-lang/geode/pkg/util"
-	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/geode/llvm/ir"
 	"github.com/geode-lang/geode/llvm/ir/types"
 	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/geode-lang/geode/pkg/lexer"
+	"github.com/geode-lang/geode/pkg/util"
+	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 // Program is a wrapper for information used
@@ -35,6 +35,7 @@ type Program struct {
 	Classes         map[string]*ClassNode
 	Initializations []*GlobalVariableDeclNode
 	StringDefs      map[string]*ir.Global
+	TypeInfoDefs    map[string]*TypeInfoDeclaration
 }
 
 // NewProgram creates a program and returns a pointer to it
@@ -47,6 +48,7 @@ func NewProgram() *Program {
 	p.Packages = make(map[string]*Package)
 	p.Initializations = make([]*GlobalVariableDeclNode, 0)
 	p.StringDefs = make(map[string]*ir.Global, 0)
+	p.TypeInfoDefs = make(map[string]*TypeInfoDeclaration, 0)
 
 	p.TypePrecidences = make(map[types.Type]int)
 	p.TypePrecidences[types.I1] = 1
@@ -221,10 +223,12 @@ func (p *Program) Congeal() (*ir.Module, error) {
 			}
 
 			if cls, is := node.(ClassNode); is {
+
 				name := fmt.Sprintf("%s:%s", pkg.Name, cls.Name)
 				if pkg.Name == "runtime" {
 					name = cls.Name
 				}
+				cls.Package = pkg
 				p.Classes[name] = &cls
 			}
 			nodes = append(nodes, PackageNode(node, pkg, p))
@@ -314,21 +318,21 @@ func (p *Program) GetTypeSearchPaths(base string) []string {
 
 // FindFunction searches for a function with a searchName searchpath and the types it is being called with
 func (p *Program) FindFunction(searchNames []string, argTypes []types.Type) (*ir.Function, error) {
-	var callee *ir.Function
-	var err error
+	// var err error
 	for _, name := range searchNames {
 		compOpts := FunctionCompilationOptions{}
 		compOpts.ArgTypes = argTypes
-		callee, err = p.GetFunction(name, compOpts)
+		callee, err := p.GetFunction(name, compOpts)
 		if err != nil {
 			return nil, err
 		}
+
 		if callee != nil {
-			break
+			return callee, nil
 		}
 	}
 
-	return callee, nil
+	return nil, fmt.Errorf("unable to find function with names %s", searchNames)
 }
 
 // GetFunction takes a funciton node, detects if it is already compiled or not
@@ -342,17 +346,25 @@ func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (
 
 	node, exists := p.Functions[name]
 	if !exists {
+		// if a function doesn't exist, it's not this method's job to throw an error
 		return nil, nil
 	}
 
 	// Prime the program's new state before compiling a function
-	p.Package = node.Package
+
 	p.Scope = p.Scope.GetRoot()
-	p.Scope.PackageName = p.Package.Name
+
+	if node.Package != nil {
+		p.Package = node.Package
+		p.Scope.PackageName = p.Package.Name
+	}
+
 	p.Scope = p.Scope.SpawnChild()
-	p.Compiler = NewCompiler(p)
+
+	// p.Compiler = NewCompiler(p)
 
 	_, rawTypes, err := node.Arguments(p)
+
 	if err != nil {
 		return nil, err
 	}
@@ -362,12 +374,11 @@ func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (
 	}
 
 	correctTypes := make([]types.Type, 0, len(rawTypes))
-
 	if options.ArgTypes != nil && !node.Variadic {
 
 		for i, expected := range rawTypes {
 
-			nodeParamType := node.Args[i].Type
+			nodeParamType := node.Args[i].Typ
 			given := options.ArgTypes[i]
 			unknown := nodeParamType.Unknown
 
@@ -378,7 +389,7 @@ func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (
 
 			if unknown {
 				// Handling unknown types's scope definition on call
-				p.Scope.RegisterType(node.Args[i].Type.Name, given, 0)
+				p.Scope.RegisterType(node.Args[i].Typ.Name, given, 0)
 				correctTypes = append(correctTypes, given)
 			} else {
 				correctTypes = append(correctTypes, expected)
@@ -411,6 +422,7 @@ func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (
 			if err != nil {
 				return nil, err
 			}
+
 			node.Variants[node.NameCache] = gen.(*ir.Function)
 		}
 
@@ -420,6 +432,7 @@ func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (
 	p.Package = previousPackage
 	p.Scope = previousScope
 	p.Compiler = previousCompiler
+
 	return compiledVal, nil
 }
 
@@ -457,7 +470,7 @@ func (p *Program) Emit(buildDir string) string {
 	return llvmFileName
 }
 
-// String will get the LLVM IR from the package's compiler
+// String will  the LLVM IR from the package's compiler
 func (p *Program) String() string {
 	ir := &bytes.Buffer{}
 	// We need to build up the IR that will be emitted
@@ -477,14 +490,15 @@ var packagedir = "geodepkgs"
 func SearchPaths(base string) []string {
 	sp := make([]string, 0)
 
-	sp = append(sp, "/usr/local/lib/geodelib")
 	sp = append(sp, base)
+	sp = append(sp, "/usr/local/lib/geodelib")
 
 	for base != "/" && base != "." {
 		dir := filepath.Join(base, packagedir)
 		base = filepath.Dir(base)
 		sp = append(sp, dir)
 	}
+
 	return sp
 }
 

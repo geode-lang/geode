@@ -15,7 +15,7 @@ func (p *Parser) parseWhileStmt() Node {
 	whileStmtIndex++
 	p.Next()
 
-	n.If = p.parseExpression()
+	n.If = p.parseExpression(false)
 	p.requires(lexer.TokLeftCurly)
 
 	n.Body = p.parseBlockStmt()

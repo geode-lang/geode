@@ -3,7 +3,7 @@ is main
 
 include "io"
 
-int a := test();
+int a = test();
 
 func test int {
 	io:print("called");

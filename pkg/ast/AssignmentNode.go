@@ -33,7 +33,6 @@ func (n AssignmentNode) GenAccess(prog *Program) (value.Value, error) {
 // Codegen implements Node.Codegen for AssignmentNode
 func (n AssignmentNode) Codegen(prog *Program) (value.Value, error) {
 	var err error
-	prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment(n.String()))
 	targetType, _ := n.Assignee.Type(prog)
 	prog.Compiler.PushType(targetType)
 
@@ -42,13 +41,14 @@ func (n AssignmentNode) Codegen(prog *Program) (value.Value, error) {
 		return nil, err
 	}
 
-	if !types.Equal(val.Type(), targetType) {
+	if targetType != nil && !types.Equal(val.Type(), targetType) {
 		val, err = createTypeCast(prog, val, targetType)
 		if err != nil {
 			return nil, err
 		}
 	}
 
+	// fmt.Println(val)
 	n.Assignee.GenAssign(prog, val)
 	return val, nil
 }

@@ -13,7 +13,7 @@ type CastNode struct {
 	TokenReference
 
 	Source Node
-	Type   GeodeTypeRef
+	Type   TypeNode
 }
 
 // NameString implements Node.NameString

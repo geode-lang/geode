@@ -11,7 +11,7 @@ type VariableNode struct {
 	NodeType
 	TokenReference
 
-	Type         GeodeTypeRef
+	Type         TypeNode
 	HasValue     bool
 	Name         Reference
 	IsPointer    bool

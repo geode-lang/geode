@@ -13,6 +13,7 @@ type Reference interface {
 	fmt.Stringer
 	Accessable
 	Assignable
+
 	Alloca(*Program) value.Value
 	Load(*ir.BasicBlock, *Program) *ir.InstLoad
 }

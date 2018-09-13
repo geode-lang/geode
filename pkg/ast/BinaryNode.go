@@ -62,7 +62,7 @@ var binaryOperatorTypeMap = map[string]numericalBinaryOperator{
 }
 
 var booleanComparisonOperatorMap = map[string]comparisonOperation{
-	"=":  {ir.IntEQ, ir.FloatOEQ},
+	"==": {ir.IntEQ, ir.FloatOEQ},
 	"!=": {ir.IntNE, ir.FloatONE},
 	">":  {ir.IntSGT, ir.FloatOGT},
 	">=": {ir.IntSGE, ir.FloatOGE},
@@ -95,9 +95,76 @@ func (n BinaryNode) GenAccess(prog *Program) (value.Value, error) {
 	return n.Codegen(prog)
 }
 
+// CodegenCompoundOperator generates a compound operator expression
+func CodegenCompoundOperator(prog *Program, left, right Node, compop string) (value.Value, error) {
+	var op string
+	var ok bool
+
+	switch compop {
+	case "+=":
+		op = "+"
+	case "-=":
+		op = "-"
+	case "*=":
+		op = "*"
+	case "/=":
+		op = "/"
+	default:
+		return nil, fmt.Errorf("unknown compound assignment %q", compop)
+
+	}
+
+	n := AssignmentNode{}
+	n.Assignee, ok = left.(Assignable)
+	if !ok {
+		return nil, fmt.Errorf("left hand side of compound assignment %q is not assignable", compop)
+	}
+
+	binary := BinaryNode{}
+
+	binary.Left = left
+	binary.Right = right
+	binary.OP = op
+
+	n.Value = binary
+
+	return n.Codegen(prog)
+
+}
+
 // Codegen implements Node.Codegen for BinaryNode
 func (n BinaryNode) Codegen(prog *Program) (value.Value, error) {
 
+	if n.OP == "=" {
+		lhs, ok := n.Left.(Assignable)
+		if !ok {
+			return nil, fmt.Errorf("attempt to assign to a non assignable value '%s' (%T)", n.Left, n.Left)
+		}
+
+		rhs, ok := n.Right.(Accessable)
+		if !ok {
+			return nil, fmt.Errorf("attempt to assign with a non accessable value '%s'", n.Right)
+		}
+
+		a := AssignmentNode{}
+		a.Assignee = lhs
+		a.Value = rhs
+		a.NodeType = nodeAssignment
+		return a.Codegen(prog)
+	}
+
+	switch n.OP {
+	case "+=", "-=", "*=", "/=":
+		return CodegenCompoundOperator(prog, n.Left, n.Right, n.OP)
+
+	}
+
+	// fmt.Println(n.Left, n.OP, n.Right)
+
+	if n.Left == nil || n.Right == nil {
+		n.SyntaxError()
+		return nil, fmt.Errorf("invalid binary expression")
+	}
 	// Generate the left and right nodes
 	l, err := n.Left.Codegen(prog)
 	if err != nil {
@@ -130,7 +197,7 @@ func (n BinaryNode) Codegen(prog *Program) (value.Value, error) {
 	}
 
 	if value == nil {
-		return nil, fmt.Errorf("invalid binary operator")
+		return nil, fmt.Errorf("invalid binary operator %s", n.OP)
 	}
 
 	if resultcast != nil {

@@ -19,7 +19,7 @@ import (
 
 // Some constants that represent the program in it's current compiled state
 const (
-	VERSION = "0.5.0"
+	VERSION = "0.6.5"
 	AUTHOR  = "Nick Wanninger"
 )
 
@@ -30,6 +30,8 @@ func main() {
 	if runtime.GOOS == "windows" {
 		log.Fatal("The Geode Compiler does not support Windows at this time.")
 	}
+
+	// ast.TestNewParser()
 
 	startTime = time.Now()
 	command := arg.Parse()
@@ -125,7 +127,11 @@ func NewContext(in string, out string) *Context {
 func (c *Context) Build(buildDir string) {
 
 	program := ast.NewProgram()
-	program.ParseDep("", "std:runtime")
+
+	if !*arg.DisableRuntime {
+		program.ParseDep("", "std:runtime")
+	}
+
 	program.Entry = c.Input
 
 	if _, err := os.Stat(c.Input); os.IsNotExist(err) {
@@ -148,6 +154,10 @@ func (c *Context) Build(buildDir string) {
 	}
 	if main == nil {
 		log.Fatal("No function `main` found in compilation.\n")
+	}
+
+	if *arg.ShowLLVM {
+		fmt.Println(program)
 	}
 
 	// // Construct a linker object

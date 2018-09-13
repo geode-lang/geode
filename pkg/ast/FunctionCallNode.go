@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/geode-lang/geode/llvm/ir"
 	"github.com/geode-lang/geode/llvm/ir/types"
 	"github.com/geode-lang/geode/llvm/ir/value"
 )
@@ -47,7 +48,7 @@ func (n FunctionCallNode) GenAccess(prog *Program) (value.Value, error) {
 // Codegen implements Node.Codegen for FunctionCallNode
 func (n FunctionCallNode) Codegen(prog *Program) (value.Value, error) {
 
-	var name string
+	// var name string
 	var err error
 
 	args := []value.Value{}
@@ -72,13 +73,23 @@ func (n FunctionCallNode) Codegen(prog *Program) (value.Value, error) {
 			return nil, fmt.Errorf("argument to function call to '%s' is not accessable (has no readable value). Node type %s", n.Name, arg.Kind())
 		}
 	}
-	callee, err := n.Name.GetFunc(prog, argTypes)
+
+	callee, prependingArgs, err := n.Name.GetFunc(prog, argTypes)
 	if err != nil {
 		return nil, err
 	}
+	if prependingArgs != nil {
+		args = append(prependingArgs, args...)
+
+		prependingTypes := []types.Type{}
+		for _, arg := range prependingArgs {
+			prependingTypes = append(prependingTypes, arg.Type())
+		}
+		argTypes = append(prependingTypes, argTypes...)
+	}
 
 	if callee == nil {
-		return nil, fmt.Errorf("unknown function %q referenced at %s", name, n.Token.FileInfo())
+		return nil, fmt.Errorf("unknown function %q referenced at %s", n.Name, n.Token.FileInfo())
 	}
 
 	// Attempt to typecast all the args into the correct type
@@ -124,6 +135,39 @@ func (n FunctionCallNode) Codegen(prog *Program) (value.Value, error) {
 		arguments = append(arguments, arg)
 	}
 
-	// prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("%s", n.String()))
 	return prog.Compiler.CurrentBlock().NewCall(callee, arguments...), nil
+}
+
+// Alloca implements Reference.Alloca
+func (n FunctionCallNode) Alloca(prog *Program) value.Value {
+	val, err := n.Codegen(prog)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+
+	alloc := prog.Compiler.CurrentBlock().NewAlloca(val.Type())
+	prog.Compiler.CurrentBlock().NewStore(val, alloc)
+	return alloc
+}
+
+// Load implements Reference.Load
+func (n FunctionCallNode) Load(blk *ir.BasicBlock, prog *Program) *ir.InstLoad {
+	ld, _ := n.Codegen(prog)
+	return ld.(*ir.InstLoad)
+}
+
+// GenAssign implement Assignable.GenAssign
+func (n FunctionCallNode) GenAssign(prog *Program, _ value.Value) (value.Value, error) {
+	return nil, fmt.Errorf("unable to assign to a function call")
+}
+
+// Type implement Assignable.Type
+func (n FunctionCallNode) Type(prog *Program) (types.Type, error) {
+	val, err := n.Codegen(prog)
+
+	if val == nil {
+		return nil, err
+	}
+	return val.Type(), err
 }

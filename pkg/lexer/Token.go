@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/geode-lang/geode/pkg/util/color"
 	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/pkg/util/color"
 )
 
 // TokenIsOperator will return if a given token is an operator or not
@@ -17,16 +17,15 @@ func TokenIsOperator(t TokenType) bool {
 
 // Token is a token in the program
 type Token struct {
-	source *Sourcefile
-	Type   TokenType `json:"type,omitempty"`
-	Value  string    `json:"value,omitempty"`
-	Pos    int       `json:"start_pos"`
-	EndPos int       `json:"end_pos"`
-	Line   int       `json:"line"`
-	Column int       `json:"column"`
-
-	SpaceBefore bool `json:"space_before"`
-	SpaceAfter  bool `json:"space_after"`
+	source      *Sourcefile
+	Type        TokenType `json:"type,omitempty"`
+	Value       string    `json:"value,omitempty"`
+	Pos         int       `json:"start_pos"`
+	EndPos      int       `json:"end_pos"`
+	Line        int       `json:"line"`
+	Column      int       `json:"column"`
+	SpaceBefore bool      `json:"space_before"`
+	SpaceAfter  bool      `json:"space_after"`
 }
 
 // Is - returns if the given token is in the set of types given
@@ -50,8 +49,14 @@ func (t Token) FileInfo() string {
 
 // SyntaxError prints a formatted syntax error
 func (t *Token) SyntaxError() {
+
+	fmt.Println(t.SyntaxErrorS())
+}
+
+// SyntaxErrorS returns the string syntax error of a token
+func (t *Token) SyntaxErrorS() string {
 	if t.Type == TokError {
-		return
+		return ""
 	}
 	buf := &bytes.Buffer{}
 	src := t.source.String()
@@ -70,8 +75,7 @@ func (t *Token) SyntaxError() {
 	lineNumber := color.Red(fmt.Sprintf("%2d", t.Line))
 	fmt.Fprintf(buf, "%s %s %s\n", lineNumber, color.Blue("|"), strings.TrimSpace(lines[t.Line-1]))
 	fmt.Fprintf(buf, color.Blue("   |\n"))
-
-	fmt.Println(buf)
+	return buf.String()
 }
 
 // InferType takes some token and guesses the type

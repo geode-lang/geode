@@ -9,7 +9,7 @@ class Person {
 func main int {
 	Person bob;
 	
-	bob.name <- "Bob Smith";
+	bob.name = "Bob Smith";
 	
 	io:print("%s", bob.name);
 	return 0;	

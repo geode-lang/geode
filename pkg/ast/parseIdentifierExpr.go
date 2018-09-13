@@ -16,7 +16,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 	name, _ := p.parseName()
 
 	var target Reference
-	target = NewNamedReference(name)
+	target = NewIdentNode(name)
 
 	for p.token.Is(lexer.TokDot) {
 		target = p.parseDotExpr(target)
@@ -45,7 +45,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 
 			p.Next()
 
-			store := p.parseExpression()
+			store := p.parseExpression(false)
 			if access, isAccess := store.(Accessable); isAccess {
 				assignment.Value = access
 			} else {
@@ -71,7 +71,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 			left.RefType = ReferenceAccessValue
 
 			// Parse the right side of the operator
-			right := p.parseExpression()
+			right := p.parseExpression(false)
 			// Build out the bopNode
 			bopNode := BinaryNode{}
 			bopNode.TokenReference.Token = p.token
@@ -107,7 +107,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 
 				p.Next()
 
-				val := p.parseExpression()
+				val := p.parseExpression(false)
 
 				if a, is := val.(Accessable); is {
 					assignment.Value = a
@@ -143,7 +143,7 @@ func (p *Parser) parseIdentifierExpr(allowVariableDefn bool) Node {
 				p.Next()
 			default:
 
-				arg := p.parseExpression()
+				arg := p.parseExpression(false)
 				if arg == nil {
 					return nil
 				}

@@ -15,9 +15,9 @@ func (p *Parser) parseGlobalVariableDecl() GlobalVariableDeclNode {
 		n.Type = p.parseType()
 
 		if p.token.Is(lexer.TokIdent) {
-			n.Name = NewNamedReference(p.token.Value)
+			n.Name = NewIdentNode(p.token.Value)
 			p.Next()
-		} else if p.token.Is(lexer.TokAssignment) {
+		} else if p.token.Is(lexer.TokOper) && p.token.Value == "=" {
 
 		} else {
 			n.SyntaxError()
@@ -29,9 +29,9 @@ func (p *Parser) parseGlobalVariableDecl() GlobalVariableDeclNode {
 		log.Fatal("Invalid Global variable declaration")
 	}
 
-	if p.token.Is(lexer.TokAssignment) {
+	if p.token.Is(lexer.TokOper) && p.token.Value == "=" {
 		p.Next()
-		n.Body = p.parseExpression()
+		n.Body = p.parseExpression(false)
 	} else if p.token.Is(lexer.TokElipsis) {
 		n.External = true
 		p.Next()

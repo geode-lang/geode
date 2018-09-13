@@ -11,6 +11,7 @@ import (
 
 	"github.com/geode-lang/geode/llvm/enc"
 	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
 // --- [ vector ] --------------------------------------------------------------
@@ -213,3 +214,43 @@ func (*ZeroInitializer) Immutable() {}
 // MetadataNode ensures that only metadata nodes can be assigned to the
 // ir.MetadataNode interface.
 func (*ZeroInitializer) MetadataNode() {}
+
+// --- [ struct ] --------------------------------------------------------------
+
+// Slice represents a Slice constant.
+type Slice struct {
+	// Slice type.
+	Typ *types.SliceType
+	// Slice fields.
+	Data value.Value
+	Len  *Int
+}
+
+// NewSlice returns a new Slice constant based on the given Slice fields.
+func NewSlice(sliceType *types.SliceType, data value.Value, length *Int) *Slice {
+	return &Slice{Typ: sliceType, Data: data, Len: length}
+}
+
+// Type returns the type of the constant.
+func (c *Slice) Type() types.Type {
+	return c.Typ
+}
+
+// Ident returns the string representation of the constant.
+func (c *Slice) Ident() string {
+	buf := &bytes.Buffer{}
+	buf.WriteString("{")
+
+	fmt.Fprintf(buf, " %s %s,", c.Data.Type(), c.Data.Ident())
+	fmt.Fprintf(buf, " %s %s }", c.Len.Type(), c.Len.Ident())
+	fmt.Println(buf.String())
+	return buf.String()
+}
+
+// Immutable ensures that only constants can be assigned to the
+// constant.Constant interface.
+func (*Slice) Immutable() {}
+
+// MetadataNode ensures that only metadata nodes can be assigned to the
+// ir.MetadataNode interface.
+func (*Slice) MetadataNode() {}

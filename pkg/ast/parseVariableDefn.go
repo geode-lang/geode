@@ -17,14 +17,14 @@ func (p *Parser) parseVariableDefn(allowDefn bool) VariableDefnNode {
 		p.Next()
 
 	} else if p.atType() {
-		n.Type = p.parseType()
+		n.Typ = p.parseType()
 	} else {
 		p.token.SyntaxError()
 		log.Fatal("let: Invalid variable declaration\n")
 	}
 
 	if p.token.Is(lexer.TokIdent) {
-		n.Name = NewNamedReference(p.token.Value)
+		n.Name = NewIdentNode(p.token.Value)
 		p.Next()
 	} else if p.token.Is(lexer.TokAssignment) {
 
@@ -37,7 +37,7 @@ func (p *Parser) parseVariableDefn(allowDefn bool) VariableDefnNode {
 		if allowDefn {
 			n.HasValue = true
 			p.Next()
-			n.Body = p.parseExpression()
+			n.Body = p.parseExpression(false)
 		} else {
 			log.Fatal("Variable Initialization of '%s' is not allowed in it's context\n", n.Name)
 		}

@@ -28,16 +28,12 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 	}
 
 	rawNameString, _ := p.parseName()
-	fn.Name = NewNamedReference(rawNameString)
+	fn.Name = NewIdentNode(rawNameString)
 
 	// The main function should never be mangled
 	if rawNameString == "main" {
 		fn.Nomangle = true
 	}
-
-	// if p.token.Type == lexer.TokOper && p.token.Value == "<" {
-	// 	fn.Generics, _ = p.parseGenericExpression(true)
-	// }
 
 	if p.token.Type == lexer.TokLeftParen {
 		p.Next()
@@ -74,7 +70,7 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 	if p.token.Is(lexer.TokIdent) {
 		fn.ReturnType = p.parseType()
 	} else {
-		fn.ReturnType = GeodeTypeRef{}
+		fn.ReturnType = TypeNode{}
 		fn.ReturnType.Name = "void"
 		fn.ReturnType.PointerLevel = 0
 		fn.ReturnType.Unknown = false
@@ -89,7 +85,7 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 		fn.ImplicitReturn = true
 		p.Next()
 
-		implReturnValue := p.parseExpression()
+		implReturnValue := p.parseExpression(false)
 		implReturn := ReturnNode{}
 		implReturn.Value = implReturnValue
 		fn.Body.Nodes = []Node{implReturn}
@@ -102,7 +98,7 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 	}
 
 	for _, arg := range fn.Args {
-		if arg.Type.Unknown {
+		if arg.Typ.Unknown {
 			fn.HasUnknownType = true
 		}
 	}

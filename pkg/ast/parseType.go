@@ -10,6 +10,8 @@ func validTypeInfoTokens(t lexer.Token) bool {
 		"*": true,
 		"?": true,
 		":": true,
+		// "[": true,
+		// "]": true,
 		// "]": true,
 	}
 	_, ok := allowed[t.Value]
@@ -34,10 +36,13 @@ func (p *Parser) atType() bool {
 	return false
 }
 
-func (p *Parser) parseType() (t GeodeTypeRef) {
+// parseType returns a
+
+func (p *Parser) parseType() (t TypeNode) {
 	p.requires(lexer.TokIdent)
 
 	t.Name, _ = p.parseName()
+	t.Modifiers = make([]TypeModifier, 0)
 	// p.Next()
 
 	for {
@@ -48,6 +53,7 @@ func (p *Parser) parseType() (t GeodeTypeRef) {
 			}
 
 			t.Unknown = true
+			t.Modifiers = append(t.Modifiers, ModifierUnknown)
 			p.Next()
 			continue
 		}
@@ -56,12 +62,20 @@ func (p *Parser) parseType() (t GeodeTypeRef) {
 			for _, c := range p.token.Value {
 				if c == '*' {
 					t.PointerLevel++
+					t.Modifiers = append(t.Modifiers, ModifierPointer)
 				}
 			}
-
 			p.Next()
 			continue
 		}
+		// handle slice type definition `T[]` for some T
+		// if p.token.Is(lexer.TokLeftBrace) {
+		// 	p.Next()
+		// 	p.requires(lexer.TokRightBrace)
+		// 	t.Modifiers = append(t.Modifiers, ModifierSlice)
+		// 	p.Next()
+		// 	continue
+		// }
 
 		break
 

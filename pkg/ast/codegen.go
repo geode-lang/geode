@@ -19,11 +19,11 @@ func mangleName(name string) string {
 	return fmt.Sprintf("%s_%d", name, nameNumber)
 }
 
-func branchIfNoTerminator(blk *ir.BasicBlock, to *ir.BasicBlock) {
-	if blk.Term == nil {
-		blk.NewBr(to)
-	}
-}
+// func branchIfNoTerminator(blk *ir.BasicBlock, to *ir.BasicBlock) {
+// 	if blk.Term == nil {
+// 		blk.NewBr(to)
+// 	}
+// }
 
 // Codegen returns some NamespaceNode's arguments
 func (n NamespaceNode) Codegen(prog *Program) (value.Value, error) { return nil, nil }
@@ -88,12 +88,13 @@ func (n IfNode) Codegen(prog *Program) (value.Value, error) {
 	prog.Compiler.PushBlock(endBlk)
 	// We need to make sure these blocks have terminators.
 	// in order to do that, we branch to the end block
-	branchIfNoTerminator(thenBlk, endBlk)
-	branchIfNoTerminator(thenGenBlk, endBlk)
-	branchIfNoTerminator(elseBlk, endBlk)
+
+	thenBlk.BranchIfNoTerminator(endBlk)
+	thenGenBlk.BranchIfNoTerminator(endBlk)
+	elseBlk.BranchIfNoTerminator(endBlk)
 
 	if elseGenBlk != nil {
-		branchIfNoTerminator(elseGenBlk, endBlk)
+		elseGenBlk.BranchIfNoTerminator(endBlk)
 	}
 
 	parentBlock.NewCondBr(predicate, thenBlk, elseBlk)
@@ -133,10 +134,13 @@ func (n ForNode) Codegen(prog *Program) (value.Value, error) {
 		predicate = condBlk.NewICmp(ir.IntEQ, one, c)
 		return nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
+
 	bodyBlk = parentFunc.NewBlock(namePrefix + "body")
+
 	err = prog.Compiler.genInBlock(bodyBlk, func() error {
 		gen, err := n.Body.Codegen(prog)
 		if err != nil {
@@ -150,8 +154,10 @@ func (n ForNode) Codegen(prog *Program) (value.Value, error) {
 		if err != nil {
 			return err
 		}
-		branchIfNoTerminator(bodyBlk, condBlk)
-		branchIfNoTerminator(bodyGenBlk, condBlk)
+
+		bodyGenBlk.BranchIfNoTerminator(condBlk)
+		bodyBlk.BranchIfNoTerminator(condBlk)
+
 		return nil
 	})
 	endBlk = parentFunc.NewBlock(namePrefix + "end")
@@ -191,7 +197,6 @@ func (n UnaryNode) Codegen(prog *Program) (value.Value, error) {
 		} else if types.IsInt(operandValue.Type()) {
 			return prog.Compiler.CurrentBlock().NewSub(constant.NewInt(0, types.I64), operandValue), nil
 		}
-		n.SyntaxError()
 		return nil, fmt.Errorf("Unable to make a non integer/float into a negative")
 
 	}
@@ -233,7 +238,7 @@ func (n WhileNode) Codegen(prog *Program) (value.Value, error) {
 	}
 	one := constant.NewInt(1, types.I1)
 	prog.Compiler.PopBlock()
-	branchIfNoTerminator(parentBlock, startblock)
+	parentBlock.BranchIfNoTerminator(startblock)
 	c, err := createTypeCast(prog, predicate, types.I1)
 	if err != nil {
 		return nil, err
@@ -257,8 +262,8 @@ func (n WhileNode) Codegen(prog *Program) (value.Value, error) {
 	endBlk = parentFunc.NewBlock(mangleName(namePrefix + "merge"))
 	prog.Compiler.PushBlock(endBlk)
 
-	branchIfNoTerminator(bodyBlk, startblock)
-	branchIfNoTerminator(bodyGenBlk, startblock)
+	bodyBlk.BranchIfNoTerminator(startblock)
+	bodyGenBlk.BranchIfNoTerminator(startblock)
 
 	startblock.NewCondBr(predicate, bodyBlk, endBlk)
 
@@ -294,6 +299,11 @@ func createTypeCast(prog *Program, in value.Value, to types.Type) (value.Value, 
 
 	inSize := typeSize(inType)
 	outSize := typeSize(to)
+
+	// If the cast would not change the type, just return the in value, nil
+	if types.Equal(inType, to) {
+		return in, nil
+	}
 
 	if c, ok := in.(*constant.Int); ok && types.IsInt(to) {
 		c.Typ = to.(*types.IntType)
@@ -363,38 +373,44 @@ func (n ReturnNode) Codegen(prog *Program) (value.Value, error) {
 	var retVal value.Value
 	var err error
 
-	if prog.Compiler.FN.Sig.Ret != types.Void {
+	if prog.Compiler.CurrentFunc().Sig.Ret != types.Void {
 		if n.Value != nil {
 			retVal, err = n.Value.Codegen(prog)
 			if err != nil {
+
 				return nil, err
 			}
 			given := retVal.Type()
-			expected := prog.Compiler.FN.Sig.Ret
+			expected := prog.Compiler.CurrentFunc().Sig.Ret
 			if !types.Equal(given, expected) {
 				if !(types.IsInt(given) && types.IsInt(expected)) {
 					n.SyntaxError()
-					fnName, err := UnmangleFunctionName(prog.Compiler.FN.Name)
+					fnName, err := UnmangleFunctionName(prog.Compiler.CurrentFunc().Name)
 					if err != nil {
+
 						return nil, err
 					}
 					expectedName, err := prog.Scope.FindTypeName(expected)
 					if err != nil {
+
 						return nil, err
 					}
 					givenName, err := prog.Scope.FindTypeName(given)
 					if err != nil {
+
 						return nil, err
 					}
-					n.SyntaxError()
-					return nil, fmt.Errorf("incorrect return value for function %s. =expected: %s (%s). given: %s (%s)", fnName, expectedName, expected, givenName, given)
+
+					return nil, fmt.Errorf("incorrect return value for function %s. expected: %s (%s). given: %s (%s)", fnName, expectedName, expected, givenName, given)
 				}
-				retVal, err = createTypeCast(prog, retVal, prog.Compiler.FN.Sig.Ret)
+				retVal, err = createTypeCast(prog, retVal, prog.Compiler.CurrentFunc().Sig.Ret)
 				if err != nil {
+
 					return nil, err
 				}
 			}
 		} else {
+
 			retVal = nil
 		}
 	}

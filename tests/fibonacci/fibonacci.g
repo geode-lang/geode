@@ -10,8 +10,7 @@ func fib(int n) int {
 }
 
 func main(int argc) int {
-	int a;
-	a <- 30;
-	io:print("%d", fib(a));
-	return 0;
+	int a = 30
+	io:print("%d", fib(a))
+	return 0
 }

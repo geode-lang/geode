@@ -65,10 +65,30 @@ func concat(string a, string b) string {
 	# copy over the old strings into the new buffer.
 	for int i := 0; i < finalLen; i += 1 {
 		if i < alen {
-			combined[i] <- a[i];
+			combined[i] = a[i];
 		} else {
-			combined[i] <- b[i - alen];
+			combined[i] = b[i - alen];
 		}
 	}
 	return combined;
+}
+
+
+# str:hash
+#
+#    djb2 hash function implementation for strings
+#
+# this algorithm (k=33) was first reported by dan bernstein many years ago
+# in comp.lang.c. another version of this algorithm (now favored by bernstein)
+# uses xor: hash(i) = hash(i - 1) * 33 ^ str[i]; the magic of number 33
+# (why it works better than many other constants, prime or not) has
+# never been adequately explained.
+func hash(string str) long {
+	long hash := 5381;
+	int c;
+	let size := len(str);
+	for c = 0; c < size; c += 1 {
+		hash = ((hash << 5) + hash) + c # hash * 33 + c
+	}
+	return hash
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/geode-lang/geode/llvm/ir"
+	"github.com/geode-lang/geode/llvm/ir/constant"
 	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
@@ -13,9 +14,9 @@ type GlobalVariableDeclNode struct {
 	NodeType
 	TokenReference
 
-	Type     GeodeTypeRef
+	Type     TypeNode
 	External bool
-	Name     NamedReference
+	Name     IdentNode
 	Body     Node
 
 	GlobalDecl *ir.Global
@@ -35,15 +36,12 @@ func (n GlobalVariableDeclNode) Declare(prog *Program) (value.Value, error) {
 		name = fmt.Sprintf("%s:%s", prog.Package.Name, n.Name)
 	}
 
-	// fmt.Println("Declare", name)
-
-	found, err := prog.FindType(n.Type.Name)
+	varType, err := n.Type.GetType(prog)
 	if err != nil {
 		return nil, err
 	}
-	varType := n.Type.BuildPointerType(found)
 
-	init := DefaultValue(varType)
+	init := constant.NewZeroInitializer(varType)
 
 	decl := prog.Module.NewGlobalDef(name, init)
 
@@ -66,7 +64,13 @@ func (n GlobalVariableDeclNode) Declare(prog *Program) (value.Value, error) {
 // Codegen a global variable declaration
 func (n GlobalVariableDeclNode) Codegen(prog *Program) (value.Value, error) {
 
+	var val value.Value
+	var err error
+
+	pkgCache := prog.Package
+	prog.Package = n.Package
 	if n.Body != nil {
+
 		assign := AssignmentNode{}
 
 		assign.NodeType = nodeAssignment
@@ -77,9 +81,15 @@ func (n GlobalVariableDeclNode) Codegen(prog *Program) (value.Value, error) {
 
 		assign.Value = n.Body.(Accessable)
 
-		return assign.Codegen(prog)
+		val, err = assign.Codegen(prog)
+		if err != nil {
+			prog.Package = pkgCache
+			return nil, err
+		}
 	}
-	return nil, nil
+
+	prog.Package = pkgCache
+	return val, nil
 }
 
 func (n GlobalVariableDeclNode) String() string {
@@ -87,7 +97,7 @@ func (n GlobalVariableDeclNode) String() string {
 	fmt.Fprintf(buff, "%s %s", n.Type, n.Name)
 
 	if !n.External {
-		fmt.Fprintf(buff, " := %s", n.Body)
+		fmt.Fprintf(buff, " = %s", n.Body)
 	}
 	return buff.String()
 }

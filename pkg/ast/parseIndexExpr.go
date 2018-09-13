@@ -11,7 +11,7 @@ func (p *Parser) parseSubscriptExpr(source Accessable) Node {
 	subN.Source = source
 	p.requires(lexer.TokLeftBrace)
 	p.Next()
-	index := p.parseExpression()
+	index := p.parseExpression(false)
 
 	if indexAc, isAccessable := index.(Accessable); isAccessable {
 		subN.Index = indexAc

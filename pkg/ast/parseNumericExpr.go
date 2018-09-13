@@ -1,84 +1,88 @@
 package ast
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/geode-lang/geode/llvm/ir/types"
 )
 
 func (p *Parser) parseNumericExpr() Node {
-	t, val := p.token.InferType()
 
+	n, _ := GetNumberNodeFromString(p.token.Value)
+	p.Next()
+
+	return n
+}
+
+func inferNumberType(str string) (types.Type, interface{}) {
+	intval, intErr := strconv.ParseInt(str, 10, 64)
+	if intErr == nil {
+		return types.I64, intval
+	}
+
+	floatval, floatErr := strconv.ParseFloat(str, 64)
+	if floatErr == nil {
+		return types.Double, floatval
+	}
+
+	return nil, nil
+}
+
+// GetNumberNodeFromString returns the number node for a string
+func GetNumberNodeFromString(str string) (Node, error) {
+	t, val := inferNumberType(str)
 	// Parse Hex Literals
-	if strings.Contains(p.token.Value, "x") {
-		if !strings.Contains(p.token.Value, "0x") {
-			p.token.SyntaxError()
-			log.Fatal("Hex Literal must be of the following format: 0x...\n")
-		} else {
-			n := IntNode{}
-			n.TokenReference.Token = p.token
-			n.NodeType = nodeInt
-			parsed, e := strconv.ParseInt(strings.TrimPrefix(p.token.Value, "0x"), 16, 64)
-			if e != nil {
-				p.token.SyntaxError()
-				log.Fatal("Error decoding hex token\n")
-			}
-			n.Value = parsed
-			p.Next()
-			return n
+	if strings.Contains(str, "x") {
+		if !strings.Contains(str, "0x") {
+			return nil, fmt.Errorf("hex Literal must be of the following format: 0x___")
 		}
+		n := IntNode{}
+		n.NodeType = nodeInt
+		parsed, e := strconv.ParseInt(strings.TrimPrefix(str, "0x"), 16, 64)
+		if e != nil {
+			return nil, fmt.Errorf("error decoding hex token")
+		}
+		n.Value = parsed
+		return n, nil
 	}
 
 	// Parse Binary Literals
-	if strings.Contains(p.token.Value, "b") {
-		if !strings.Contains(p.token.Value, "0b") {
-			p.token.SyntaxError()
-			log.Fatal("Binary Literal must be of the following format: 0b...\n")
+	if strings.Contains(str, "b") {
+		if !strings.Contains(str, "0b") {
+			fmt.Errorf("binary Literal must be of the following format: 0b___")
 		} else {
 			n := IntNode{}
-			n.TokenReference.Token = p.token
 			n.NodeType = nodeInt
-			parsed, e := strconv.ParseInt(strings.TrimPrefix(p.token.Value, "0b"), 2, 64)
+			parsed, e := strconv.ParseInt(strings.TrimPrefix(str, "0b"), 2, 64)
 			if e != nil {
-				p.token.SyntaxError()
-				log.Fatal("Error decoding binary token\n")
+				return nil, fmt.Errorf("error decoding binary token")
 			}
 			n.Value = parsed
-			p.Next()
-			return n
+			return n, nil
 		}
 	}
 
 	if types.Equal(t, types.I64) {
 		n := IntNode{}
-		n.TokenReference.Token = p.token
 		n.NodeType = nodeInt
 		n.Value = val.(int64)
-		p.Next()
-		return n
+		return n, nil
 	}
 
 	if types.Equal(t, types.Double) {
 		n := FloatNode{}
-		n.TokenReference.Token = p.token
 		n.NodeType = nodeFloat
 		n.Value = val.(float64)
-		p.Next()
-		return n
+		return n, nil
 	}
 
 	if types.Equal(t, types.I8) {
 		n := CharNode{}
-		n.TokenReference.Token = p.token
 		n.NodeType = nodeChar
 		n.Value = val.(rune)
-		p.Next()
-		return n
+		return n, nil
 	}
-
-	p.Errorf("invalid number syntax")
-
-	return nil
+	return nil, fmt.Errorf("unable to parse number to node")
 }
