@@ -6,7 +6,7 @@ import (
 
 // Parse unary will parse a single side of a binary statement
 
-func (p *Parser) parseUnary() Node {
+func (p *Parser) parseUnary(allowdecl bool) Node {
 	startTok := p.token
 	validUnaryOps := map[string]bool{
 		"&": true,
@@ -22,13 +22,21 @@ func (p *Parser) parseUnary() Node {
 	// _, isBinaryOp := p.binaryOpPrecedence[p.token.Value]
 	_, isPtrOp := validUnaryOps[p.token.Value]
 	if !isPtrOp {
-		return p.parsePrimary()
+		chain, _ := p.parseCompoundExpression(allowdecl)
+		if chain != nil {
+			n, _ := chain.ConstructNode(nil)
+			return n
+		}
+		return nil
+
+		// return p.parsePrimary()
 	}
 
 	unaryOp := p.token.Value
 
 	p.Next()
-	operand := p.parseUnary()
+
+	operand := p.parseUnary(allowdecl)
 	if unaryOp == "&" {
 		if operand.Kind() == nodeVariable {
 			// Update operand's RefType if it is a nodeVariable

@@ -3,10 +3,10 @@ package ast
 import (
 	"fmt"
 
-	"github.com/geode-lang/llvm/ir"
-	"github.com/geode-lang/llvm/ir/constant"
-	"github.com/geode-lang/llvm/ir/types"
-	"github.com/geode-lang/llvm/ir/value"
+	"github.com/geode-lang/geode/llvm/ir"
+	"github.com/geode-lang/geode/llvm/ir/constant"
+	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
 // DotReference -
@@ -24,16 +24,63 @@ func (n DotReference) String() string {
 // BaseType returns the type of the base struct to a class
 func (n DotReference) BaseType(prog *Program) types.Type {
 	base := n.Base.Alloca(prog)
-	baseType := base.(*ir.InstAlloca).Elem
+	baseType := base.Type()
 	for types.IsPointer(baseType) {
 		baseType = baseType.(*types.PointerType).Elem
 	}
 	return baseType
 }
 
+// BaseAddr returns the true address of the base, be it through loads, etc...
+func (n DotReference) BaseAddr(prog *Program) value.Value {
+	var val value.Value
+	val = n.Base.Alloca(prog)
+	for {
+		load := ir.NewLoad(val)
+		if types.IsPointer(load.Type()) {
+			prog.Compiler.CurrentBlock().AppendInst(load)
+			val = load
+		} else {
+			break
+		}
+	}
+	return val
+}
+
 // GetFunc implemnets Callable.GetFunc
-func (n DotReference) GetFunc(prog *Program, argTypes []types.Type) (*ir.Function, error) {
-	return nil, nil
+func (n DotReference) GetFunc(prog *Program, argTypes []types.Type) (*ir.Function, []value.Value, error) {
+
+	class := n.BaseType(prog)
+
+	name, err := prog.Scope.FindTypeName(class)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	args := make([]value.Value, 0)
+
+	args = append(args, n.BaseAddr(prog))
+
+	fieldName := n.Field.String()
+
+	// fmt.Println(funcName)
+
+	argTypes = append([]types.Type{types.NewPointer(class)}, argTypes...)
+
+	searchNames := []string{
+		fmt.Sprintf("%s.%s", name, fieldName),
+		fmt.Sprintf("runtime:%s.%s", name, fieldName),
+	}
+
+	// fmt.Println(searchNames)
+	fn, err := prog.FindFunction(searchNames, argTypes)
+	// fmt.Println(fn, err)
+
+	// for k := range prog.Functions {
+	// 	fmt.Println(k)
+	// }
+
+	return fn, args, err
 }
 
 // Alloca returns the nearest alloca instruction in this scope with the given name
@@ -53,9 +100,7 @@ func (n DotReference) Alloca(prog *Program) value.Value {
 	// If the type that the alloca points to is a pointer, we need to load from the pointer
 	if types.IsPointer(elemType) {
 		base = prog.Compiler.CurrentBlock().NewLoad(base)
-
 	}
-
 	structType := baseType.(*types.StructType)
 	index = structType.FieldIndex(n.Field.String())
 
@@ -64,6 +109,14 @@ func (n DotReference) Alloca(prog *Program) value.Value {
 	gen := prog.Compiler.CurrentBlock().NewGetElementPtr(base, zero, fieldOffset)
 
 	return gen
+}
+
+// NameString implements Node.NameString
+func (n DotReference) NameString() string { return "DotReference" }
+
+// Codegen implements Node.Codegen
+func (n DotReference) Codegen(prog *Program) (value.Value, error) {
+	return n.GenAccess(prog)
 }
 
 // Load returns a load instruction on a named reference with the given name

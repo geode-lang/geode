@@ -5,9 +5,8 @@ func (p *Parser) parseReturnStmt() ReturnNode {
 	n.TokenReference.Token = p.token
 	p.Next()
 
-	n.Value = p.parseExpression()
+	n.Value = p.parseExpression(false)
 
 	p.globTerminator()
-
 	return n
 }

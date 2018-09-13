@@ -23,7 +23,7 @@ func (p *Parser) parseBlockStmt() BlockNode {
 		}
 
 		if p.token.Is(lexer.TokIdent, lexer.TokLet) {
-			node := p.parseIdentifierExpr(true)
+			node := p.parseExpression(true)
 			blk.Nodes = append(blk.Nodes, node)
 			continue
 		}
@@ -63,7 +63,7 @@ func (p *Parser) parseBlockStmt() BlockNode {
 // This funciton correctly nests.
 func (p *Parser) forkBlockParser() *Parser {
 	p.requires(lexer.TokLeftCurly)
-	parser := p.fork()
+	parser := p.Fork()
 	parser.tokenIndex = 0
 	index := p.tokenIndex
 	offset := 0

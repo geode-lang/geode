@@ -2,7 +2,9 @@ package lexer
 
 import (
 	"fmt"
+	"math/rand"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -11,19 +13,18 @@ import (
 )
 
 var tokenTypeOverrides = map[string]TokenType{
-	"return": TokReturn,
-	"if":     TokIf,
-	"else":   TokElse,
-	"for":    TokFor,
-	"while":  TokWhile,
-	"func":   TokFuncDefn,
-	"let":    TokLet,
-	// "new":     TokNew,
+	"return":  TokReturn,
+	"if":      TokIf,
+	"else":    TokElse,
+	"for":     TokFor,
+	"while":   TokWhile,
+	"func":    TokFuncDefn,
+	"let":     TokLet,
 	"class":   TokClassDefn,
 	"include": TokDependency,
 	"link":    TokDependency,
 	"is":      TokNamespace,
-	"sizeof":  TokSizeof,
+	"info":    TokInfo,
 	"as":      TokAs,
 	"true":    TokBool,
 	"false":   TokBool,
@@ -35,23 +36,20 @@ var tokenTypeOverrides = map[string]TokenType{
 	"[":       TokLeftBrace,
 	"]":       TokRightBrace,
 	"->":      TokRightArrow,
-	"<-":      TokLeftArrow,
-	"←":       TokLeftArrow,
 	";":       TokSemiColon,
 	":":       TokNamespaceAccess,
-	":=":      TokAssignment,
 	"...":     TokElipsis,
 	".":       TokDot,
 	"?":       TokQuestionMark,
 
-	"+=": TokCompoundAssignment,
-	"-=": TokCompoundAssignment,
-	"*=": TokCompoundAssignment,
-	"/=": TokCompoundAssignment,
+	"<-": TokOper,
+	":=": TokOper,
+	"+=": TokOper,
+	"-=": TokOper,
+	"*=": TokOper,
+	"/=": TokOper,
 }
 
-// &\\*+-/%:!=<>≤≥≠.←|&^?
-// ⊕ ∨ ∧ :left_right_arrow: ≡
 var tokenAliasOverrides = map[string]string{
 	"≠": "!=",
 	"≤": "<=",
@@ -61,6 +59,16 @@ var tokenAliasOverrides = map[string]string{
 	"∨": "||",
 	"∧": "&&",
 	"λ": "func",
+	"←": "<-",
+}
+
+func getTokenValueAlias(value string) string {
+	rand.Seed(time.Now().Unix()) // initialize global pseudo random generator
+	if alias, exists := tokenAliasOverrides[value]; exists {
+		return alias
+	}
+
+	return value
 }
 
 // stateFn represents the state of the scanner as a function that returns the next state.
@@ -118,10 +126,12 @@ func (l *Lexer) emit(typ TokenType) {
 		tok.source = l.source
 		tok.Value = l.value()
 
-		alias, hasAlias := tokenAliasOverrides[tok.Value]
-		if hasAlias {
-			tok.Value = alias
-		}
+		tok.Value = getTokenValueAlias(tok.Value)
+
+		// aliasenAliasOverrides[tok.Value]
+		// if hasAlias {
+		// 	tok.Value = alias
+		// }
 
 		tok.Pos = int(l.start)
 		tok.EndPos = int(l.pos)

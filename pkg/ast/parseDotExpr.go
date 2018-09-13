@@ -13,7 +13,7 @@ func (p *Parser) parseDotExpr(base Reference) Reference {
 	p.requires(lexer.TokDot)
 	p.Next()
 	p.requires(lexer.TokIdent)
-	n.Field = NewNamedReference(p.token.Value)
+	n.Field = NewIdentNode(p.token.Value)
 	p.Next()
 
 	if p.token.Is(lexer.TokDot) {
@@ -25,5 +25,5 @@ func (p *Parser) parseDotExpr(base Reference) Reference {
 
 // QuickParseExpression takes a stream of tokens and lexes them into a single node
 func QuickParseExpression(src string) Node {
-	return NewQuickParser(src).parseExpression()
+	return NewQuickParser(src).parseExpression(true)
 }

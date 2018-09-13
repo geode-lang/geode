@@ -7,7 +7,7 @@ import (
 func (p *Parser) parseParenExpr() Node {
 	// skip over the parens
 	p.Next()
-	v := p.parseExpression()
+	v := p.parseExpression(false)
 	if v == nil {
 		return nil
 	}

@@ -2,7 +2,7 @@
 is main
 
 func bytecount(T? val) int {
-	return sizeof(T);
+	return info(T).size;
 }
 
 func main int {

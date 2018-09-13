@@ -3,8 +3,8 @@ package ast
 import (
 	"fmt"
 
-	"github.com/geode-lang/llvm/ir/types"
-	"github.com/geode-lang/llvm/ir/value"
+	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
 // CastNode is a structure around a typecast expression
@@ -13,7 +13,7 @@ type CastNode struct {
 	TokenReference
 
 	Source Node
-	Type   GeodeTypeRef
+	Type   TypeNode
 }
 
 // NameString implements Node.NameString

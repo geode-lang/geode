@@ -3,11 +3,10 @@ package ast
 import (
 	"bytes"
 	"fmt"
-	"strings"
 
+	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/value"
 	"github.com/geode-lang/geode/pkg/lexer"
-	"github.com/geode-lang/llvm/ir/types"
-	"github.com/geode-lang/llvm/ir/value"
 )
 
 // NodeType -
@@ -68,11 +67,12 @@ const (
 	nodeSubscript             = "nodeSubscript"
 	nodeArray                 = "nodeArray"
 	nodeDot                   = "nodeDot"
-	nodeSizeof                = "nodeSizeof"
+	nodeTypeInfo              = "nodeTypeInfo"
 	nodeCast                  = "nodeCast"
 	nodeBool                  = "nodeBool"
 	nodeGlobalDecl            = "nodeGlobalDecl"
 	nodeNil                   = "nodeNil"
+	nodeIdent                 = "nodeIdent"
 )
 
 //
@@ -274,21 +274,65 @@ func (n NamespaceNode) String() string {
 // NameString implements Node.NameString
 func (n NamespaceNode) NameString() string { return "NamespaceNode" }
 
-// GeodeTypeRef -
-type GeodeTypeRef struct {
+// TypeModifier is something like *, [], ?, etc...
+type TypeModifier byte
+
+// setup the constants to use globally
+const (
+	ModifierPointer TypeModifier = iota
+	ModifierSlice
+	ModifierUnknown
+)
+
+// TypeNode -
+type TypeNode struct {
 	PointerLevel int
 	Unknown      bool
 	Name         string
+
+	Modifiers []TypeModifier
 }
 
-// BuildPointerType will take some type and apply a level of nested pointers
-func (r GeodeTypeRef) BuildPointerType(t types.Type) types.Type {
-	for i := 0; i < r.PointerLevel; i++ {
-		t = types.NewPointer(t)
+func (n TypeNode) String() string {
+
+	buff := &bytes.Buffer{}
+
+	fmt.Fprintf(buff, "%s", n.Name)
+
+	for _, mod := range n.Modifiers {
+		switch mod {
+		case ModifierPointer:
+			fmt.Fprintf(buff, "*")
+		case ModifierSlice:
+			fmt.Fprintf(buff, "[]")
+		}
 	}
-	return t
+
+	return buff.String()
 }
 
-func (r GeodeTypeRef) String() string {
-	return fmt.Sprintf("%s%s", r.Name, strings.Repeat("*", r.PointerLevel))
+// GetType returns the llvm type representation of the TypeNode
+func (n TypeNode) GetType(prog *Program) (types.Type, error) {
+	var ty types.Type
+	var err error
+	ty, err = prog.FindType(n.Name)
+	if err != nil {
+		return nil, err
+	}
+	if len(n.Modifiers) > 0 {
+		for _, mod := range n.Modifiers {
+			switch mod {
+			case ModifierPointer:
+				ty = types.NewPointer(ty)
+			case ModifierSlice:
+				ty = types.NewSlice(ty)
+			case ModifierUnknown:
+				//
+			default:
+				return nil, fmt.Errorf("unknown type modifier %d on type %q", mod, n)
+			}
+		}
+	}
+
+	return ty, nil
 }

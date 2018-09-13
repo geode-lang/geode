@@ -52,7 +52,7 @@ const (
 	TokRightArrow
 	TokLeftArrow
 
-	TokSizeof
+	TokInfo
 
 	TokCompoundAssignment
 

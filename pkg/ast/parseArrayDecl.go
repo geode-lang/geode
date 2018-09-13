@@ -20,7 +20,7 @@ func (p *Parser) parseArrayDecl() Node {
 			p.Next()
 			continue
 		}
-		elements = append(elements, p.parseExpression())
+		elements = append(elements, p.parseExpression(false))
 	}
 
 	n.Elements = elements

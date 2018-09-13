@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/geode-lang/llvm/ir"
-	"github.com/geode-lang/llvm/ir/constant"
-	"github.com/geode-lang/llvm/ir/types"
-	"github.com/geode-lang/llvm/ir/value"
+	"github.com/geode-lang/geode/llvm/ir"
+	"github.com/geode-lang/geode/llvm/ir/constant"
+	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/geode-lang/geode/pkg/arg"
 )
 
 // FuncDeclKeywordType lets the compiler keep track of
@@ -28,18 +29,19 @@ type FunctionNode struct {
 	NodeType
 	TokenReference
 
-	Name           NamedReference
+	Name           IdentNode
 	Args           []VariableDefnNode
 	Body           BlockNode
 	BodyParser     *Parser // the parser that can build the body block on demand
 	External       bool
 	Variadic       bool
 	Nomangle       bool
-	ReturnType     GeodeTypeRef
+	ReturnType     TypeNode
 	DeclKeyword    FuncDeclKeywordType
 	ImplicitReturn bool
 	HasUnknownType bool
 	Package        *Package
+	IsMethod       bool
 	// A cache so we can remember the name of the function to codegen
 	// This is because between the Program.GetFunction, where we
 	// can compile variants, and the codegen section of the function,
@@ -64,18 +66,20 @@ func (n FunctionNode) Arguments(prog *Program) ([]*types.Param, []types.Type, er
 	funcArgs := make([]*types.Param, 0)
 	argTypes := make([]types.Type, 0)
 	for _, arg := range n.Args {
-		found, _ := prog.FindType(arg.Type.Name)
+		found, _ := prog.FindType(arg.Typ.Name)
 		if found == nil {
 			if n.HasUnknownType {
 				funcArgs = append(funcArgs, nil)
 				argTypes = append(argTypes, nil)
 				continue
 			} else {
-				return nil, nil, fmt.Errorf("unable to find type with name %q for function %s (%s)", arg.Type.Name, n.Name, n.Token.FileInfo())
+				return nil, nil, fmt.Errorf("unable to find type with name %q for function %s (%s)", arg.Typ.Name, n.Name, n.Token.FileInfo())
 			}
 		}
-		ty := found
-		ty = arg.Type.BuildPointerType(ty)
+		ty, err := arg.Typ.GetType(prog)
+		if err != nil {
+			return nil, nil, err
+		}
 		p := ir.NewParam(arg.Name.String(), ty)
 		funcArgs = append(funcArgs, p)
 		argTypes = append(argTypes, p.Type())
@@ -98,16 +102,19 @@ func (n FunctionNode) Declare(prog *Program) (*ir.Function, error) {
 
 	namestring := n.NameCache
 
-	ty, err := prog.FindType(n.ReturnType.Name)
+	ty, err := n.ReturnType.GetType(prog)
 	if err != nil {
 		return nil, err
 	}
-	ty = n.ReturnType.BuildPointerType(ty)
 
 	function := prog.Compiler.Module.NewFunction(namestring, ty, funcArgs...)
 
-	previousFunction := prog.Compiler.FN
-	prog.Compiler.FN = function
+	// previousFunction := prog.Compiler.FN
+	// prog.Compiler.FN = function
+
+	prog.Compiler.PushFunc(function)
+	defer prog.Compiler.PopFunc()
+
 	function.Sig.Variadic = n.Variadic
 	keyName := fmt.Sprintf("%s:%s", prog.Scope.PackageName, n.Name)
 
@@ -115,14 +122,19 @@ func (n FunctionNode) Declare(prog *Program) (*ir.Function, error) {
 	scopeItem.SetMangled(!n.Nomangle)
 	prog.Scope.GetRoot().Add(scopeItem)
 
-	prog.Compiler.FN = previousFunction
+	// prog.Compiler.FN = previousFunction
 	prog.Scope = prog.Scope.Parent
 	return function, nil
 }
 
 // MangledName returns the correctly mangled name for some function
 func (n FunctionNode) MangledName(prog *Program, types []types.Type) string {
-	if n.Name.Value == "main" || n.Package.Name == "runtime" {
+
+	if n.IsMethod {
+		return MangleFunctionName(n.Name.Value, types)
+	}
+
+	if n.Name.Value == "main" || (n.Package != nil && n.Package.Name == "runtime") {
 		return n.Name.Value
 	}
 	// _, types := n.Arguments(prog.Scope)
@@ -166,19 +178,22 @@ func (n FunctionNode) Codegen(prog *Program) (value.Value, error) {
 
 	namestring := n.Name.String()
 
-	if namestring != "main" || !n.Nomangle {
+	if (namestring != "main" || !n.Nomangle) && !n.IsMethod {
 		namestring = fmt.Sprintf("%s:%s", prog.Package.Name, n.Name)
 	}
 
 	function := n.Variants[n.NameCache] // at this point it should only be compiled
-	prog.Compiler.FN = function
+	// prog.Compiler.FN = function
+
+	prog.Compiler.PushFunc(function)
+	defer prog.Compiler.PopFunc()
 
 	// If the function is external (has ... at the end) we don't build a block
 	if !n.External {
 		// Create the entrypoint to the function
 		entryBlock := ir.NewBlock(n.Name.String() + "-entry")
 
-		prog.Compiler.FN.AppendBlock(entryBlock)
+		prog.Compiler.CurrentFunc().AppendBlock(entryBlock)
 		prog.Compiler.PushBlock(entryBlock)
 
 		// Construct the prelude of this function
@@ -231,9 +246,13 @@ func (n FunctionNode) Codegen(prog *Program) (value.Value, error) {
 }
 
 func createPrelude(prog *Program, n FunctionNode) {
-	if prog.Compiler.FN.Name == "main" {
-		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("Runtime prelude"))
-		prog.NewRuntimeFunctionCall("__initruntime")
+	if prog.Compiler.CurrentFunc().Name == "main" {
+
+		if !*arg.DisableRuntime {
+			prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("Runtime prelude"))
+			prog.NewRuntimeFunctionCall("__initruntime")
+		}
+
 		// QuickParseExpression("GC_enable_incremental();").Codegen(prog)
 
 		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("Global Initializations"))

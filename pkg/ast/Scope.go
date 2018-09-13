@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/geode-lang/llvm/ir"
-	"github.com/geode-lang/llvm/ir/types"
-	"github.com/geode-lang/llvm/ir/value"
+	"github.com/geode-lang/geode/llvm/ir"
+	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
 func init() {
@@ -163,7 +163,6 @@ func (s *Scope) InjectPrimitives() {
 
 // RegisterType takes information about some type and binds it to this scope
 func (s *Scope) RegisterType(name string, t types.Type, prec int) {
-	// fmt.Printf("Registering type %q\n", name)
 	s.Types[name] = NewScopeType(name, t, prec)
 }
 
@@ -241,7 +240,7 @@ type GenericTemplateScopeItem struct {
 	function *ir.Function
 	vis      Visibility
 	name     string
-	types    []GeodeTypeRef
+	types    []TypeNode
 	node     Node
 	mangled  bool
 }

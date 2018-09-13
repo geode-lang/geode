@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/geode-lang/llvm/ir/constant"
-	"github.com/geode-lang/llvm/ir/types"
-	"github.com/geode-lang/llvm/ir/value"
+	"github.com/geode-lang/geode/llvm/ir/constant"
+	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
 // ArrayNode -
@@ -43,8 +43,13 @@ func (n ArrayNode) Codegen(prog *Program) (value.Value, error) {
 		}
 
 		if !types.Equal(val.Type(), elementType) {
-			el.SyntaxError()
-			return nil, fmt.Errorf("invalid type in array. Array should be of a single type '%s', got '%s'", elementType, val.Type())
+
+			val, err = createTypeCast(prog, val, elementType)
+			if err != nil {
+				return nil, err
+			}
+
+			// return nil, fmt.Errorf("invalid type in array. Array should be of a single type '%s', got '%s'", elementType, val.Type())
 		}
 		values = append(values, val)
 	}
@@ -70,7 +75,6 @@ func (n ArrayNode) Codegen(prog *Program) (value.Value, error) {
 	offset := arrayStart
 
 	for i, val := range values {
-		block.AppendInst(NewLLVMComment("[%d] <- %s", i, val.Ident()))
 		if i > 0 {
 			offset = block.NewGetElementPtr(offset, one)
 		}

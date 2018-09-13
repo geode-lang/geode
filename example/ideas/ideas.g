@@ -19,7 +19,7 @@ func add(Addable a, Addable b) int {
 }
 
 func main int {
-	let a := Foo(12);
-	let b := Foo(3);
+	a := Foo(12);
+	b := Foo(3);
 	return add(a, b)
 }

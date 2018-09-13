@@ -3,15 +3,17 @@ package ast
 import (
 	"fmt"
 
-	"github.com/geode-lang/llvm/ir"
-	"github.com/geode-lang/llvm/ir/types"
-	"github.com/geode-lang/llvm/ir/value"
+	"github.com/geode-lang/geode/llvm/ir"
+	"github.com/geode-lang/geode/llvm/ir/constant"
+	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
 // SubscriptNode is a recursive subscript operation
 type SubscriptNode struct {
 	NodeType
 	TokenReference
+	Reference
 
 	Source Accessable // Source is the value being indexed
 	Index  Accessable // Index is the offset to index by (must be full integer)
@@ -34,12 +36,17 @@ func (n SubscriptNode) GenElementPtr(prog *Program) (*ir.InstGetElementPtr, erro
 	if err != nil {
 		return nil, err
 	}
+
+	if types.IsSlice(src.Type()) {
+		fmt.Println(src.Type())
+		zero := constant.NewInt(int64(0), types.I64)
+		src = prog.Compiler.CurrentBlock().NewGetElementPtr(src, zero)
+	}
 	return prog.Compiler.CurrentBlock().NewGetElementPtr(src, idx), nil
 }
 
 // Codegen implements Node.Codegen for SubscriptNode
 func (n SubscriptNode) Codegen(prog *Program) (value.Value, error) {
-	// c.CurrentBlock().AppendInst(NewLLVMComment("%s", n))
 	ptr, err := n.GenElementPtr(prog)
 	if err != nil {
 		return nil, err
@@ -74,4 +81,16 @@ func (n SubscriptNode) Type(prog *Program) (types.Type, error) {
 
 	load := tmpBlock.NewLoad(ptr)
 	return load.Type(), nil
+}
+
+// Alloca implements Reference.Alloca
+func (n SubscriptNode) Alloca(prog *Program) value.Value {
+	ptr, _ := n.GenElementPtr(prog)
+	return ptr
+}
+
+// Load implements Reference.Load
+func (n SubscriptNode) Load(blk *ir.BasicBlock, prog *Program) *ir.InstLoad {
+	ld, _ := n.Codegen(prog)
+	return ld.(*ir.InstLoad)
 }

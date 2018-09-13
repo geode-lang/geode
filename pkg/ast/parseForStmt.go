@@ -15,11 +15,9 @@ func (p *Parser) parseForStmt() Node {
 	forStmtIndex++
 	p.Next()
 
-	n.Init = p.parseIdentifierExpr(true)
-
-	n.Cond = p.parseExpression()
-	n.Step = p.parseExpression()
-
+	n.Init = p.parseExpression(true)
+	n.Cond = p.parseExpression(false)
+	n.Step = p.parseExpression(false)
 	n.Body = p.parseBlockStmt()
 
 	return n

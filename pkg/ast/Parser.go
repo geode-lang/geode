@@ -1,11 +1,12 @@
 package ast
 
 import (
-	"os"
+	"fmt"
 
 	"github.com/geode-lang/geode/pkg/lexer"
-	"github.com/geode-lang/geode/pkg/util/log"
 )
+
+var parserid = 0
 
 // ParseContext is a wrapper around information that allows the parser to understand the world
 // around it. This will contain the program that is currently running, etc.
@@ -22,27 +23,56 @@ type Parser struct {
 	topLevelNodes      []Node
 	binaryOpPrecedence map[string]int // maps binary operators to the precidence determining the order of operations
 	context            *ParseContext
+	isFork             bool
+	forkParent         *Parser
+	ID                 int
 }
 
 // NewQuickParser is used to lex and build a parser from tokens quickly
 // for small lexing tasks
 func NewQuickParser(source string) *Parser {
-	p := &Parser{}
+	p := NewParser()
 	p.tokens = lexer.QuickLex(source)
 	p.move(0)
 	return p
 }
 
-func (p *Parser) fork() *Parser {
-	n := &Parser{}
+// NewParser constructs a new parser and returns a pointer to it
+func NewParser() *Parser {
+	p := &Parser{
+		tokens:             make([]lexer.Token, 0),
+		topLevelNodes:      make([]Node, 0),
+		binaryOpPrecedence: parserOpPrec,
+		ID:                 parserid,
+	}
+	parserid++
 
+	return p
+}
+
+// Fork forks the parser into a child fork that has
+// a reference back to the parent
+func (p *Parser) Fork() *Parser {
+	n := NewParser()
+	n.forkParent = p
+	n.isFork = true
 	n.binaryOpPrecedence = p.binaryOpPrecedence
 	n.tokenIndex = p.tokenIndex
 	n.token = p.token
 	n.tokens = p.tokens
 	n.token = p.token
-
 	return n
+}
+
+// Join up to a forked parser
+func (p *Parser) Join(fork *Parser) error {
+	if fork.isFork {
+		p.token = fork.token
+		p.tokens = fork.tokens
+		p.tokenIndex = fork.tokenIndex
+		return nil
+	}
+	return fmt.Errorf("parser join failed because joinee (parser %d) is not a fork", fork.ID)
 }
 
 func (p *Parser) reset() {
@@ -50,31 +80,34 @@ func (p *Parser) reset() {
 	p.move(0)
 }
 
+var parserOpPrec = map[string]int{
+	"=":  0,
+	"+=": 0,
+	"-=": 0,
+	"*=": 0,
+	"/=": 0,
+	"||": 1,
+	"&&": 1,
+	"^":  1,
+	"==": 2,
+	"!=": 2,
+	"<":  10,
+	"<=": 10,
+	">":  10,
+	">=": 10,
+	">>": 15,
+	"<<": 15,
+	"+":  20,
+	"-":  20,
+	"*":  40,
+	"/":  40,
+	"%":  40,
+}
+
 // Parse creates and runs a new lexer, that returns the
 // chan that the nodes will be passed through with
 func Parse(tokens []lexer.Token) []Node {
-	p := &Parser{
-		tokens:        make([]lexer.Token, 0),
-		topLevelNodes: make([]Node, 0),
-		binaryOpPrecedence: map[string]int{
-			"||": 1,
-			"&&": 1,
-			"^":  1,
-			"=":  2,
-			"!=": 2,
-			"<":  10,
-			"<=": 10,
-			">":  10,
-			">=": 10,
-			">>": 15,
-			"<<": 15,
-			"+":  20,
-			"-":  20,
-			"*":  40,
-			"/":  40,
-			"%":  40,
-		},
-	}
+	p := NewParser()
 
 	// prime the next token for use by reading from the token channel (easier than handling in .next())
 	for _, t := range tokens {
@@ -194,8 +227,7 @@ func (p *Parser) getTokenPrecedence(token string) int {
 }
 
 // Errorf is a helper function to make logging easier
-func (p *Parser) Errorf(format string, args ...interface{}) {
-	p.token.SyntaxError()
-	log.Fatal(format, args...)
-	os.Exit(1)
+func (p *Parser) Errorf(format string, a ...interface{}) error {
+
+	return fmt.Errorf("%s\n%s", p.token.SyntaxErrorS(), fmt.Sprintf(format, a...))
 }

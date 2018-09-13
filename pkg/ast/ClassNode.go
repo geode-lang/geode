@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/geode-lang/geode/llvm/ir"
+	"github.com/geode-lang/geode/llvm/ir/constant"
+	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/value"
 	"github.com/geode-lang/geode/pkg/util/color"
-	"github.com/geode-lang/llvm/ir"
-	"github.com/geode-lang/llvm/ir/constant"
-	"github.com/geode-lang/llvm/ir/types"
-	"github.com/geode-lang/llvm/ir/value"
 )
 
 // ClassNode -
@@ -16,6 +16,7 @@ type ClassNode struct {
 	NodeType
 	TokenReference
 
+	Package   *Package
 	Name      string
 	Methods   []FunctionNode
 	Variables []VariableDefnNode
@@ -48,12 +49,11 @@ func (n ClassNode) VerifyCorrectness(prog *Program) error {
 
 	for _, f := range n.Variables {
 		fieldName := f.Name.String()
-		t := f.Type.Name
-		ty, err := prog.FindType(t)
+		t := f.Typ.Name
+		ty, err := f.Typ.GetType(prog)
 		if err != nil {
 			return err
 		}
-		ty = f.Type.BuildPointerType(ty)
 
 		// Pointer types should be correct
 		if types.IsPointer(ty) {
@@ -140,37 +140,45 @@ func (n ClassNode) Codegen(prog *Program) (value.Value, error) {
 	names := map[string]bool{}
 
 	for _, f := range n.Variables {
-		t := f.Type.Name
 		name := f.Name.String()
 		if _, found := names[name]; found {
 			return nil, fmt.Errorf("class '%s' has two fields/methods named '%s'", n.Name, f.Name)
 		}
 		names[name] = true
-		ty, err := prog.FindType(t)
+		ty, err := f.Typ.GetType(prog)
 		if err != nil {
 			return nil, err
 		}
-		ty = f.Type.BuildPointerType(ty)
 		fields = append(fields, ty)
 		fieldnames = append(fieldnames, name)
 	}
 
 	thisArg := VariableDefnNode{}
-	thisArg.Name = NewNamedReference("this")
-	thisArg.Type = GeodeTypeRef{}
-	thisArg.Type.Name = n.Name
-	thisArg.Type.PointerLevel = 1
+	thisArg.Name = NewIdentNode("this")
+	thisArg.Typ = TypeNode{}
+
+	if prog.Package.Name == "runtime" {
+		thisArg.Typ.Name = n.Name
+	} else {
+		thisArg.Typ.Name = fmt.Sprintf("%s:%s", prog.Package.Name, n.Name)
+	}
+
+	thisArg.Typ.Modifiers = []TypeModifier{ModifierPointer}
 
 	structDefn.Fields = fields
 	structDefn.Names = fieldnames
 
 	// methodBaseArgs := []VariableDefnNode{thisArg}
 	for _, fn := range n.Methods {
+
+		fn.Args = append([]VariableDefnNode{thisArg}, fn.Args...)
 		fn.Name.Value = fmt.Sprintf("%s:%s.%s", prog.Package.Name, n.Name, fn.Name)
+		fn.Package = n.Package
 
 		if _, found := names[fn.Name.String()]; found {
 			return nil, fmt.Errorf("class '%s' has two fields/methods named '%s'", n.Name, fn.Name)
 		}
+
 		names[fn.Name.String()] = true
 		prog.RegisterFunction(fn.Name.Value, fn)
 	}
@@ -229,7 +237,9 @@ func GetStructFieldAlloc(prog *Program, alloc *ir.InstAlloca, field string) valu
 // GenStructFieldAssignment takes some allocation and assigns the value to a field given some name
 func GenStructFieldAssignment(prog *Program, alloc *ir.InstAlloca, field string, val value.Value) {
 	gen := GetStructFieldAlloc(prog, alloc, field)
-	prog.Compiler.CurrentBlock().NewStore(gen, val)
+	elem := gen.Type().(*types.PointerType).Elem
+	val, _ = createTypeCast(prog, val, elem)
+	prog.Compiler.CurrentBlock().NewStore(val, gen)
 }
 
 // GetBaseType returns the base type of some alloca

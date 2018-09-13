@@ -135,7 +135,12 @@ func (l *Linker) Run() {
 				// We only want to leave user generated files in the filesystem
 				if strings.HasSuffix(obj, ".ll") {
 					out := path.Base(strings.Replace(obj, path.Ext(obj), ".ll", -1))
-					util.RunCommandStr(linker, append(linkArgs, "-S", "-emit-llvm", "-o", out, obj)...)
+
+					res, err := util.RunCommandStr(linker, append(linkArgs, "-S", "-emit-llvm", "-o", out, obj)...)
+					if err != nil {
+						log.Error("Failed with llvm generation:\n")
+						fmt.Println(res)
+					}
 				}
 			}
 		})
@@ -198,6 +203,11 @@ func (l *Linker) Run() {
 
 		// set the output filename
 		linkArgs = append(linkArgs, "-o", filename)
+
+		if *arg.ClangFlags != "" {
+			userArgs := strings.Split(*arg.ClangFlags, " ")
+			linkArgs = append(linkArgs, userArgs...)
+		}
 
 		out, err := util.RunCommand(linker, linkArgs...)
 		if err != nil {

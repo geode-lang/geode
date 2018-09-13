@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/geode-lang/llvm/ir/value"
+	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
 // VariableNode is a generic variable statement representation
@@ -11,7 +11,7 @@ type VariableNode struct {
 	NodeType
 	TokenReference
 
-	Type         GeodeTypeRef
+	Type         TypeNode
 	HasValue     bool
 	Name         Reference
 	IsPointer    bool

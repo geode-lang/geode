@@ -3,8 +3,8 @@ package ast
 import (
 	"fmt"
 
-	"github.com/geode-lang/llvm/ir"
-	"github.com/geode-lang/llvm/ir/value"
+	"github.com/geode-lang/geode/llvm/ir"
+	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
 // Reference is an interface that other things can implement that
@@ -13,6 +13,7 @@ type Reference interface {
 	fmt.Stringer
 	Accessable
 	Assignable
+
 	Alloca(*Program) value.Value
 	Load(*ir.BasicBlock, *Program) *ir.InstLoad
 }

@@ -3,9 +3,9 @@ package ast
 import (
 	"fmt"
 
-	"github.com/geode-lang/llvm/ir/constant"
-	"github.com/geode-lang/llvm/ir/types"
-	"github.com/geode-lang/llvm/ir/value"
+	"github.com/geode-lang/geode/llvm/ir/constant"
+	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/llvm/ir/value"
 )
 
 // FloatNode is a float literla
