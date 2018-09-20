@@ -11,8 +11,24 @@ func xrealloc(byte* ptr, int size) byte* ...
 func memcpy(byte* dest, byte* src, int length) ...
 func xmalloc_size(byte* ptr) long ...
 func __initruntime() ...
-# func raw_copy(byte* target, int length) byte* ...
-func exit(int code) ...
+
+func exit(int status) ...
+func kill(int pid, int status) ...
+func perror(byte* s) ...
+
+
+
+
+# binding to the write syscall
+func write(int fd, byte* buf, long nbytes) long ...
+
+func write'(int fd, byte* msg) long {
+	len = 0
+	while msg[len] != 0 {len += 1}
+	return write(1, msg, len)
+}
+func out(byte* msg) long -> write'(1, msg)
+func werr(byte* msg) int -> write'(2, msg)
 
 
 
@@ -23,11 +39,11 @@ func raw_copy(byte* source, int len) byte* {
 	return dest;
 }
 
-
 class TypeInfo {
 	int size
 	string name
 }
+
 
 
 

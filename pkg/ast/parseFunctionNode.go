@@ -2,6 +2,7 @@ package ast
 
 import (
 	"github.com/geode-lang/geode/pkg/lexer"
+	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 func (p *Parser) parseFunctionNode() FunctionNode {
@@ -40,9 +41,24 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 
 		for {
 
-			// If there is an arg
-			if p.token.Is(lexer.TokIdent) {
-				fn.Args = append(fn.Args, p.parseVariableDefn(false))
+			// Parse a function argument
+			if p.token.Is(lexer.TokIdent, lexer.TokType) {
+
+				typ := p.parseType()
+
+				if !p.token.Is(lexer.TokIdent) {
+					p.token.SyntaxError()
+					log.Fatal("invalid function argument\n")
+				}
+
+				for p.token.Is(lexer.TokIdent) {
+					arg := FunctionArg{}
+					arg.Type = typ
+					arg.Name = p.token.Value
+					p.Next()
+					fn.Args = append(fn.Args, arg)
+				}
+
 			}
 
 			if p.token.Is(lexer.TokElipsis) {
@@ -66,8 +82,7 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 		}
 
 	}
-
-	if p.token.Is(lexer.TokIdent) {
+	if p.token.Is(lexer.TokType) {
 		fn.ReturnType = p.parseType()
 	} else {
 		fn.ReturnType = TypeNode{}
@@ -98,7 +113,7 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 	}
 
 	for _, arg := range fn.Args {
-		if arg.Typ.Unknown {
+		if arg.Type.Unknown {
 			fn.HasUnknownType = true
 		}
 	}

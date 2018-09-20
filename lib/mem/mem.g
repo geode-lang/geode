@@ -2,6 +2,11 @@ is mem
 
 link "mem.c"
 
+
+
+func bytes_used long ...
+func blocks_used long ...
+
 # garbage collected malloc
 func GC_gcollect() ...
 

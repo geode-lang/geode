@@ -26,7 +26,7 @@ func (p *Parser) parseGlobalVariableDecl() GlobalVariableDeclNode {
 
 	} else {
 		p.token.SyntaxError()
-		log.Fatal("Invalid Global variable declaration")
+		log.Fatal("Invalid Global variable declaration\n")
 	}
 
 	if p.token.Is(lexer.TokOper) && p.token.Value == "=" {

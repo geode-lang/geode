@@ -1,12 +1,7 @@
 is main
 
-include "io"
-include "mem"
+include "os"
 
-func main int {
-	h = io:open("LICENSE", "rb")
-	content = h.readall()
-	h.close()
-	io:print("%s\n", content)
+func main(int argc) int {
 	return 0
 }

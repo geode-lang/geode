@@ -204,6 +204,7 @@ func (p *Parser) globTerminator() {
 }
 
 func (p *Parser) parseTopLevelStmt() Node {
+
 	switch p.token.Type {
 	case lexer.TokNamespace:
 		return p.parseNamespace()
@@ -213,7 +214,7 @@ func (p *Parser) parseTopLevelStmt() Node {
 		return p.parseClassDefn()
 	case lexer.TokFuncDefn:
 		return p.parseFunctionNode()
-	case lexer.TokIdent:
+	case lexer.TokType:
 		node := p.parseGlobalVariableDecl()
 		return node
 	}

@@ -30,12 +30,12 @@ func (n *namestack) String() string {
 func (p *Parser) parseName() (string, error) {
 	stack := &namestack{}
 
-	if !p.token.Is(lexer.TokIdent) {
+	if !p.token.Is(lexer.TokIdent, lexer.TokType) {
 		return "", fmt.Errorf("Invalid Name Reference")
 	}
 
 	for {
-		if p.token.Is(lexer.TokIdent) {
+		if p.token.Is(lexer.TokIdent, lexer.TokType) {
 			stack.push(p.token.Value)
 		} else {
 			return "", fmt.Errorf("Invalid Name Reference")

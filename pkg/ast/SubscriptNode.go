@@ -60,7 +60,7 @@ func (n SubscriptNode) GenAccess(prog *Program) (value.Value, error) {
 }
 
 // GenAssign generates an assignment at the address
-func (n SubscriptNode) GenAssign(prog *Program, val value.Value) (value.Value, error) {
+func (n SubscriptNode) GenAssign(prog *Program, val value.Value, options ...AssignableOption) (value.Value, error) {
 	ptr, err := n.GenElementPtr(prog)
 	if err != nil {
 		return nil, err

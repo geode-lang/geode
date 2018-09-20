@@ -105,7 +105,7 @@ func (n IdentNode) Load(block *ir.BasicBlock, prog *Program) *ir.InstLoad {
 }
 
 // GenAssign implements Assignable.GenAssign
-func (n IdentNode) GenAssign(prog *Program, assignment value.Value) (value.Value, error) {
+func (n IdentNode) GenAssign(prog *Program, assignment value.Value, options ...AssignableOption) (value.Value, error) {
 	alloca := n.Alloca(prog)
 
 	if alloca == nil {

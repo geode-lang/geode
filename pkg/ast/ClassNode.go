@@ -153,17 +153,17 @@ func (n ClassNode) Codegen(prog *Program) (value.Value, error) {
 		fieldnames = append(fieldnames, name)
 	}
 
-	thisArg := VariableDefnNode{}
-	thisArg.Name = NewIdentNode("this")
-	thisArg.Typ = TypeNode{}
+	thisArg := FunctionArg{}
+	thisArg.Name = "this"
+	thisArg.Type = TypeNode{}
 
 	if prog.Package.Name == "runtime" {
-		thisArg.Typ.Name = n.Name
+		thisArg.Type.Name = n.Name
 	} else {
-		thisArg.Typ.Name = fmt.Sprintf("%s:%s", prog.Package.Name, n.Name)
+		thisArg.Type.Name = fmt.Sprintf("%s:%s", prog.Package.Name, n.Name)
 	}
 
-	thisArg.Typ.Modifiers = []TypeModifier{ModifierPointer}
+	thisArg.Type.Modifiers = []TypeModifier{ModifierPointer}
 
 	structDefn.Fields = fields
 	structDefn.Names = fieldnames
@@ -171,7 +171,8 @@ func (n ClassNode) Codegen(prog *Program) (value.Value, error) {
 	// methodBaseArgs := []VariableDefnNode{thisArg}
 	for _, fn := range n.Methods {
 
-		fn.Args = append([]VariableDefnNode{thisArg}, fn.Args...)
+		// Prepend the "this" argument to the function
+		fn.Args = append([]FunctionArg{thisArg}, fn.Args...)
 		fn.Name.Value = fmt.Sprintf("%s:%s.%s", prog.Package.Name, n.Name, fn.Name)
 		fn.Package = n.Package
 

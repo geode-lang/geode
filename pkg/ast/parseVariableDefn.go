@@ -11,12 +11,7 @@ func (p *Parser) parseVariableDefn(allowDefn bool) VariableDefnNode {
 	n.Token = p.token
 	n.NodeType = nodeVariableDecl
 	n.TokenReference.Token = p.token
-
-	if p.token.Is(lexer.TokLet) {
-		n.NeedsInference = true
-		p.Next()
-
-	} else if p.atType() {
+	if p.atType() {
 		n.Typ = p.parseType()
 	} else {
 		p.token.SyntaxError()
@@ -26,8 +21,6 @@ func (p *Parser) parseVariableDefn(allowDefn bool) VariableDefnNode {
 	if p.token.Is(lexer.TokIdent) {
 		n.Name = NewIdentNode(p.token.Value)
 		p.Next()
-	} else if p.token.Is(lexer.TokAssignment) {
-
 	} else {
 		n.SyntaxError()
 		log.Fatal("type: Invalid variable declaration\n")

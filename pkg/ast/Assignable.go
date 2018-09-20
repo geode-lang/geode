@@ -9,6 +9,14 @@ import (
 // allows the definition of what happens when you attempt to
 // assign a value to it.
 type Assignable interface {
-	GenAssign(*Program, value.Value) (value.Value, error)
+	GenAssign(*Program, value.Value, ...AssignableOption) (value.Value, error)
 	Type(*Program) (types.Type, error)
 }
+
+// AssignableOption is a type that will be passed into the GenAssign function for options
+type AssignableOption int
+
+// Declare the various options for a GenAssign call
+const (
+	AssignableDeclare AssignableOption = iota
+)

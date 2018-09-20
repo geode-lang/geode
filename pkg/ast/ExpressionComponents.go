@@ -203,7 +203,7 @@ func (c *NumberComponent) Ident() string {
 type SubscriptComponent struct {
 	componentChainNode
 
-	Value ExpComponent
+	Value Node
 }
 
 // ConstructNode returns the ast node for the expression component
@@ -218,10 +218,7 @@ func (c *SubscriptComponent) ConstructNode(prev Node) (Node, error) {
 		return nil, fmt.Errorf("previous node in SubscriptComponent is not accessable: %T", prev)
 	}
 
-	val, err := c.Value.ConstructNode(nil)
-	if err != nil {
-		return nil, err
-	}
+	val := c.Value
 
 	n.Index, ok = val.(Accessable)
 	if !ok {

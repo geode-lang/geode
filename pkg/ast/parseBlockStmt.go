@@ -22,7 +22,7 @@ func (p *Parser) parseBlockStmt() BlockNode {
 			continue
 		}
 
-		if p.token.Is(lexer.TokIdent, lexer.TokLet) {
+		if p.token.Is(lexer.TokIdent, lexer.TokType) {
 			node := p.parseExpression(true)
 			blk.Nodes = append(blk.Nodes, node)
 			continue

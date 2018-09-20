@@ -128,7 +128,7 @@ func (n DotReference) Load(block *ir.BasicBlock, prog *Program) *ir.InstLoad {
 }
 
 // GenAssign implements Assignable.GenAssign
-func (n DotReference) GenAssign(prog *Program, assignment value.Value) (value.Value, error) {
+func (n DotReference) GenAssign(prog *Program, assignment value.Value, options ...AssignableOption) (value.Value, error) {
 	target := n.Alloca(prog)
 	prog.Compiler.CurrentBlock().NewStore(assignment, target)
 	return assignment, nil

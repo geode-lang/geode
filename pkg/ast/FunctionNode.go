@@ -8,7 +8,6 @@ import (
 	"github.com/geode-lang/geode/llvm/ir/constant"
 	"github.com/geode-lang/geode/llvm/ir/types"
 	"github.com/geode-lang/geode/llvm/ir/value"
-	"github.com/geode-lang/geode/pkg/arg"
 )
 
 // FuncDeclKeywordType lets the compiler keep track of
@@ -21,6 +20,12 @@ const (
 	DeclKeywordPure
 )
 
+// FunctionArg represents a single argument to a function
+type FunctionArg struct {
+	Type TypeNode
+	Name string
+}
+
 // FunctionNode is the representation of some function. It has methods
 // on it to declare the function as well as codegen. A function has
 // a list of VariableNodes for arguments and a single block for a body,
@@ -30,7 +35,7 @@ type FunctionNode struct {
 	TokenReference
 
 	Name           IdentNode
-	Args           []VariableDefnNode
+	Args           []FunctionArg
 	Body           BlockNode
 	BodyParser     *Parser // the parser that can build the body block on demand
 	External       bool
@@ -66,31 +71,38 @@ func (n FunctionNode) Arguments(prog *Program) ([]*types.Param, []types.Type, er
 	funcArgs := make([]*types.Param, 0)
 	argTypes := make([]types.Type, 0)
 	for _, arg := range n.Args {
-		found, _ := prog.FindType(arg.Typ.Name)
+		found, _ := prog.FindType(arg.Type.Name)
 		if found == nil {
 			if n.HasUnknownType {
 				funcArgs = append(funcArgs, nil)
 				argTypes = append(argTypes, nil)
 				continue
 			} else {
-				return nil, nil, fmt.Errorf("unable to find type with name %q for function %s (%s)", arg.Typ.Name, n.Name, n.Token.FileInfo())
+				return nil, nil, fmt.Errorf("unable to find type with name %q for function %s (%s)", arg.Type.Name, n.Name, n.Token.FileInfo())
 			}
 		}
-		ty, err := arg.Typ.GetType(prog)
+		ty, err := arg.Type.GetType(prog)
 		if err != nil {
 			return nil, nil, err
 		}
-		p := ir.NewParam(arg.Name.String(), ty)
+		p := ir.NewParam(arg.Name, ty)
 		funcArgs = append(funcArgs, p)
 		argTypes = append(argTypes, p.Type())
 	}
 	return funcArgs, argTypes, nil
 }
 
-// Declare declares some FunctionNode's sig
+// Declare a function in the module of the program for future use. This allows recursive calls
+// to the function in the codegen step. This is also the last step for a function that is external
+// as external functions only need a declaration for their signature.
+// This function will generate the function object and push it to the map of other functions
+// in the program for use in calls
 func (n FunctionNode) Declare(prog *Program) (*ir.Function, error) {
-
+	// Spawn a new scope
 	prog.Scope = prog.Scope.SpawnChild()
+
+	// Check that the funciton is allowed or follows rules set in place
+	// by geode
 	checkerr := n.Check(prog)
 	if checkerr != nil {
 		return nil, fmt.Errorf("check error: %s", checkerr.Error())
@@ -108,9 +120,6 @@ func (n FunctionNode) Declare(prog *Program) (*ir.Function, error) {
 	}
 
 	function := prog.Compiler.Module.NewFunction(namestring, ty, funcArgs...)
-
-	// previousFunction := prog.Compiler.FN
-	// prog.Compiler.FN = function
 
 	prog.Compiler.PushFunc(function)
 	defer prog.Compiler.PopFunc()
@@ -183,7 +192,6 @@ func (n FunctionNode) Codegen(prog *Program) (value.Value, error) {
 	}
 
 	function := n.Variants[n.NameCache] // at this point it should only be compiled
-	// prog.Compiler.FN = function
 
 	prog.Compiler.PushFunc(function)
 	defer prog.Compiler.PopFunc()
@@ -199,7 +207,7 @@ func (n FunctionNode) Codegen(prog *Program) (value.Value, error) {
 		// Construct the prelude of this function
 		// The prelude contains information about
 		// initializing the runtime.
-		createPrelude(prog, n)
+		createInitializationPrelude(prog, n)
 		if len(function.Params()) > 0 {
 			// prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment(n.Name.String() + " arguments:"))
 		}
@@ -245,48 +253,35 @@ func (n FunctionNode) Codegen(prog *Program) (value.Value, error) {
 	return function, nil
 }
 
-func createPrelude(prog *Program, n FunctionNode) {
+func createInitializationPrelude(prog *Program, n FunctionNode) {
 	if prog.Compiler.CurrentFunc().Name == "main" {
-
-		if !*arg.DisableRuntime {
-			prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("Runtime prelude"))
-			prog.NewRuntimeFunctionCall("__initruntime")
-		}
-
-		// QuickParseExpression("GC_enable_incremental();").Codegen(prog)
-
+		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("Runtime prelude"))
+		prog.NewRuntimeFunctionCall("__initruntime")
 		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("Global Initializations"))
 		for _, init := range prog.Initializations {
 			init.Codegen(prog)
 		}
-
-		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("User Code"))
+		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("Userr Code"))
 	}
 }
 
 func (n FunctionNode) String() string {
 	buff := &bytes.Buffer{}
-
 	fmt.Fprintf(buff, "func %s(", n.Name)
-
 	for i, arg := range n.Args {
 		fmt.Fprintf(buff, "%s", arg)
 		if i < len(n.Args)-1 || n.Variadic {
 			fmt.Fprintf(buff, ", ")
 		}
 	}
-
 	if n.Variadic {
 		fmt.Fprintf(buff, "...")
 	}
-
 	fmt.Fprintf(buff, ") %s ", n.ReturnType)
-
 	if n.External {
 		fmt.Fprintf(buff, "...")
 	} else {
 		fmt.Fprintf(buff, "%s", n.Body)
 	}
-
 	return buff.String()
 }

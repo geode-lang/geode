@@ -12,7 +12,7 @@ class String {
 # A basic string length function that loops over the bytes
 # incrementing a counter till it encounters a null byte
 func len(string str) int {
-	int len := 0;
+	int len = 0;
 	while str[len] != 0 {
 		len += 1;
 	}
@@ -22,7 +22,7 @@ func len(string str) int {
 # str:eq
 # The equal function goes through several tests
 # before finally returning true. If any of these
-# tests fail along the way, the function will 
+# tests fail along the way, the function will
 # return false.
 # These tests include:
 #   - same length?
@@ -30,21 +30,21 @@ func len(string str) int {
 #     across both strings
 func eq(string a, string b) bool {
 	# cache the size of both strings for later use
-	int alen := len(a);
-	int blen := len(b);
-	
+	alen = len(a);
+	blen = len(b);
+
 	# if they arent the same length, they must not be equal
 	if alen != blen {
 		return false;
 	}
-	
+
 	# loop over each char and test if they are equal
-	for int i := 0; i < alen; i += 1 {
+	for i = 0; i < alen; i += 1 {
 		# Check if this character isn't equal
 		if a[i] != b[i] {
 			return false;
 		}
-	}	
+	}
 	return true;
 }
 
@@ -54,16 +54,16 @@ func eq(string a, string b) bool {
 # concatinate two strings into a single string.
 func concat(string a, string b) string {
 	# cache the size of both strings for later use
-	int alen := len(a);
-	int blen := len(b);
+	alen = len(a);
+	blen = len(b);
 	# The final number of usable chars in the new string
-	int finalLen := alen + blen;
+	finalLen = alen + blen;
 	# allocate finalLen+1 bytes as zero so it is zero
 	# delimited
-	string combined := mem:zero(finalLen + 1);
+	string combined = mem:zero(finalLen + 1);
 	# loop over all usable bytes of the new data and
 	# copy over the old strings into the new buffer.
-	for int i := 0; i < finalLen; i += 1 {
+	for i = 0; i < finalLen; i += 1 {
 		if i < alen {
 			combined[i] = a[i];
 		} else {
@@ -84,11 +84,19 @@ func concat(string a, string b) string {
 # (why it works better than many other constants, prime or not) has
 # never been adequately explained.
 func hash(string str) long {
-	long hash := 5381;
-	int c;
-	let size := len(str);
+	long hash = 5381;
+	size = len(str);
 	for c = 0; c < size; c += 1 {
 		hash = ((hash << 5) + hash) + c # hash * 33 + c
 	}
 	return hash
 }
+
+
+
+
+
+
+
+
+

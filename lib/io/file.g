@@ -19,21 +19,49 @@ FILE_DESCRIPTOR* stderr = fopen("/dev/stderr", "w+");
 FILE_DESCRIPTOR* stdin = fopen("/dev/stdin", "r+");
 
 
+
 # File is a class wrapper around the FILE_DESCRIPTOR that has more methods
 # that allow you to act on `this` instead of passing around a FILE_DESCRIPTOR
 class File {
+	
+	# handle is a pointer to an OS Specific file descriptor
+	# returned by the c bindings for fopen
 	FILE_DESCRIPTOR* handle
 	
+	
+	# write some string to the file handle
 	func puts(string msg) {
 		io:fputs(msg, this.handle)
 		this.flush()
 	}
-	func flush -> io:fflush(this.handle)
-	func pos long -> io:ftell(this.handle)
-	func seek(int off, int loc) long -> io:fseek(this.handle, off, loc)
-	func close -> io:fclose(this.handle)
-	func read(string where, int size, int nmemb) ->  io:fread(where, size, nmemb, this.handle)
 	
+	# wrap around the stdlib io:fflush
+	func flush {
+		io:fflush(this.handle)
+	}
+	
+	# wrap around the stdlib io:ftell
+	func pos long {
+		return io:ftell(this.handle)
+	}
+	
+	# wrap around the stdlib io:fseek
+	func seek(int off, int loc) long {
+		return io:fseek(this.handle, off, loc)
+	}
+	
+	# wrap around the stdlib io:fclose
+	func close {
+		io:fclose(this.handle)
+	}
+	
+	# wrap around the stdlib io:fread
+	func read(string where, int size, int nmemb) {
+		io:fread(where, size, nmemb, this.handle)
+	}
+	
+	
+	# Return the filesize in bytes
 	func size long {
 		this.seek(0, 2);
 		fsize = this.pos();
@@ -42,18 +70,15 @@ class File {
 	}
 		
 	func readall byte* {
+		# get the size of the file
 		fsize = this.size()
-		
+		# allocate enough space for the buffer
 		buffer = mem:get(fsize + 1);
+		# read the file into the buffer entirely
 		res = io:fread(buffer, fsize, 1, this.handle);
-		
-		
 		# ensure the string is null terminated
 		buffer[fsize] = 0;
-		# for i = 0; i < fsize; i += 1 {
-		# 	io:print("%02x ", buffer[i])
-		# }
-		# io:print("\n")
+		# return the buffer we read
 		return buffer
 	}
 }
