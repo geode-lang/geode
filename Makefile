@@ -5,7 +5,7 @@
 
 BUILDPATH = ./bin/geode
 BINPATH   = /usr/local/bin/geode
-GCPATH    = lib/gc/gc.a
+# GCPATH    = lib/gc/gc.a
 LIBDIR    = /usr/local/lib/geodelib
 
 # tell go to install to the current directory
@@ -35,30 +35,30 @@ gen:
 default:
 
 lib.clean:
-	@rm -rf gc
+	# @rm -rf gc
 	@rm -rf lib/gc/*
 	@rm -rf lib/include/gc
 
-$(GCPATH):
-	mkdir -p dl
-	wget -O dl/libatomic_ops.tar.gz https://github.com/ivmai/libatomic_ops/releases/download/v7.6.6/libatomic_ops-7.6.6.tar.gz
-	wget -O dl/gc.tar.gz https://github.com/ivmai/bdwgc/releases/download/v7.6.8/gc-7.6.8.tar.gz
-	rm -rf gc
-	tar -C ./ -xvf dl/gc.tar.gz
-	mv gc-* gc
-	tar -C ./ -xvf dl/libatomic_ops.tar.gz
-	mv libatomic_ops* gc/libatomic_ops
-	rm -rf dl
-	cd gc && make -f Makefile.direct
-	mkdir -p lib/gc/
-	cp gc/gc.a lib/gc/gc.a
-	cd lib/gc && ar x gc.a
-	mkdir -p lib/include/gc
-	cp -a gc/include/* lib/include/gc
-	rm -rf gc
+# $(GCPATH):
+# 	mkdir -p dl
+# 	wget -O dl/libatomic_ops.tar.gz https://github.com/ivmai/libatomic_ops/releases/download/v7.6.6/libatomic_ops-7.6.6.tar.gz
+# 	wget -O dl/gc.tar.gz https://github.com/ivmai/bdwgc/releases/download/v7.6.8/gc-7.6.8.tar.gz
+# 	rm -rf gc
+# 	tar -C ./ -xvf dl/gc.tar.gz
+# 	mv gc-* gc
+# 	tar -C ./ -xvf dl/libatomic_ops.tar.gz
+# 	mv libatomic_ops* gc/libatomic_ops
+# 	rm -rf dl
+# 	cd gc && make -f Makefile.direct
+# 	mkdir -p lib/gc/
+# 	cp gc/gc.a lib/gc/gc.a
+# 	cd lib/gc && ar x gc.a
+# 	mkdir -p lib/include/gc
+# 	cp -a gc/include/* lib/include/gc
+# 	rm -rf gc
 
 
-install.lib: $(GCPATH)
+install.lib:# $(GCPATH)
 	@rm -rf $(LIBDIR)
 	@mkdir -p $(LIBDIR)
 	@cp -a lib/* $(LIBDIR)

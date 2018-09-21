@@ -73,6 +73,12 @@ func (c *Compiler) FunctionDefined(fn *ir.Function) bool {
 	return false
 }
 
+// NewComment appends a comment string to the current block
+func (c *Compiler) NewComment(comment string) {
+	c.CurrentBlock().AppendInst(NewLLVMComment(comment))
+
+}
+
 func (c *Compiler) genInBlock(blk *ir.BasicBlock, fn func() error) error {
 	c.PushBlock(blk)
 	err := fn()

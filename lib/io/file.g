@@ -92,7 +92,6 @@ func open(string path, string mode) File* {
 
 
 
-
 # Create external linkages to the C stdlib.h files
 func fopen(string path, string mode) FILE_DESCRIPTOR* ...
 func fseek(FILE_DESCRIPTOR* handle, int offset, int whence) int ...

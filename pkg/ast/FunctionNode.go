@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/geode-lang/geode/llvm/ir"
-	"github.com/geode-lang/geode/llvm/ir/constant"
 	"github.com/geode-lang/geode/llvm/ir/types"
 	"github.com/geode-lang/geode/llvm/ir/value"
 )
@@ -233,18 +232,21 @@ func (n FunctionNode) Codegen(prog *Program) (value.Value, error) {
 			return nil, fmt.Errorf("type assertion to block in function node failed")
 		}
 
+		// if the block we ended on does not return, we need to either error or return a new void
 		if block.Term == nil {
 
-			ty, err := prog.FindType(n.ReturnType.Name)
+			retType, err := prog.FindType(n.ReturnType.Name)
 			if err != nil {
 				return nil, err
+			}
+			if retType.Equal(types.Void) {
+				// Automatically return void from the function
+				// new ret interpets a nil value as returning void
+				block.NewRet(nil)
+			} else {
+				return nil, fmt.Errorf("Function %s does not end in a return statement", namestring)
 			}
 
-			v, err := createTypeCast(prog, constant.NewInt(0, types.I64), ty)
-			if err != nil {
-				return nil, err
-			}
-			block.NewRet(v)
 		}
 		prog.Compiler.PopBlock()
 	}
@@ -255,13 +257,19 @@ func (n FunctionNode) Codegen(prog *Program) (value.Value, error) {
 
 func createInitializationPrelude(prog *Program, n FunctionNode) {
 	if prog.Compiler.CurrentFunc().Name == "main" {
-		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("Runtime prelude"))
+
+		prog.Compiler.NewComment("Runtime Prelude:")
 		prog.NewRuntimeFunctionCall("__initruntime")
-		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("Global Initializations"))
-		for _, init := range prog.Initializations {
-			init.Codegen(prog)
+
+		if len(prog.Initializations) > 0 {
+			prog.Compiler.NewComment("Global Initializations:")
+			for _, init := range prog.Initializations {
+				init.Codegen(prog)
+			}
 		}
-		prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("Userr Code"))
+
+		prog.Compiler.NewComment("")
+		prog.Compiler.NewComment("User Code:")
 	}
 }
 

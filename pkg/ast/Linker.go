@@ -161,7 +161,7 @@ func (l *Linker) Run() {
 		})
 	}
 
-	linkArgs = append(linkArgs, "--std=c99", "-lm", "-lc", "-pthread")
+	linkArgs = append(linkArgs, "--std=c99", "-lm", "-lc", "-lgc", "-pthread")
 
 	if !hadAlternateEmission {
 		for i, obj := range l.objectPaths {

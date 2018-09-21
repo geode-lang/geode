@@ -3,6 +3,8 @@ package ast
 import (
 	"fmt"
 
+	"github.com/geode-lang/geode/pkg/info"
+
 	"github.com/geode-lang/geode/pkg/lexer"
 )
 
@@ -137,6 +139,8 @@ func (p *Parser) parse() {
 		topLevelNode := p.parseTopLevelStmt()
 		if topLevelNode != nil {
 			p.topLevelNodes = append(p.topLevelNodes, topLevelNode)
+
+			info.AddNode(topLevelNode)
 		} else {
 			break
 		}

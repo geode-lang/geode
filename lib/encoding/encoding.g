@@ -15,17 +15,17 @@ func hex(T? val) string {
 	
 	tInfo = info(T)
 
-	charset = "0123456789abcdef";
-	buffer = mem:zero(tInfo.size * 2 + 1);
+	charset = "0123456789abcdef"
+	buffer = mem:zero(tInfo.size * 2 + 1)
 	byte* offset = &val
 	
 	for i = tInfo.size - 1; i >= 0; i -= 1 {
 		
-		b = *(offset + i);
+		b = *(offset + i)
 		
-		o = (tInfo.size - i - 1) * 2;
-		buffer[o] = charset[b >> 4 && 0xf];
-		buffer[o+1] = charset[b && 0xf];
+		o = (tInfo.size - i - 1) * 2
+		buffer[o] = charset[b >> 4 && 0xf]
+		buffer[o+1] = charset[b && 0xf]
 	}
 	return buffer;
 }

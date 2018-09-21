@@ -41,7 +41,7 @@ func Dump() {
 func DumpJSON() {
 	data := make(map[string]interface{})
 
-	data["tokens"] = gic.tokens
+	// data["tokens"] = gic.tokens
 
 	data["nodes"] = gic.nodes
 

@@ -1,4 +1,0 @@
-Name = "geode-lang"
-Repo = "git@github.com:geode-lang/geode.git"
-Packages = []
-Test = 0

@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../include/gc/gc.h"
 #include "../include/xmalloc.h"
+#include <gc/gc.h>
 
 // #define DEBUG_XMALLOC
 

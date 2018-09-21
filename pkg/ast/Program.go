@@ -363,6 +363,12 @@ func (p *Program) FindFunction(searchNames []string, argTypes []types.Type) (*ir
 // GetFunction takes a funciton node, detects if it is already compiled or not
 // if it isnt compiled, it will codegen, otherwise it will return the compiled one
 func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (*ir.Function, error) {
+
+	dopt := NewFunctionDiscoveryOptions(name, p.Package)
+
+	dopt.AddArgs(options.ArgTypes...)
+	NewFunctionDiscoveryWorker(p).Discover(dopt)
+
 	var err error
 
 	// Save the program state
@@ -562,9 +568,6 @@ func ResolveDepPath(base, filename string) string {
 
 	// fmt.Printf("\n\n")
 	searchPaths := append([]string{filepath.Join(base, filename)}, SearchPaths(base)...)
-	// for i, s := range searchPaths {
-	// 	fmt.Printf("%d: %s\n", i, s)
-	// }
 
 	for _, sp := range searchPaths {
 		abs := filepath.Join(sp, filename)
