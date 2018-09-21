@@ -20,7 +20,7 @@ func validTypeInfoTokens(t lexer.Token) bool {
 }
 
 func (p *Parser) atType() bool {
-	if !p.token.Is(lexer.TokIdent) {
+	if !p.token.Is(lexer.TokType) {
 		return false
 	}
 
@@ -39,7 +39,7 @@ func (p *Parser) atType() bool {
 // parseType returns a
 
 func (p *Parser) parseType() (t TypeNode) {
-	p.requires(lexer.TokIdent)
+	p.requires(lexer.TokType)
 
 	t.Name, _ = p.parseName()
 	t.Modifiers = make([]TypeModifier, 0)

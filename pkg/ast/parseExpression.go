@@ -49,7 +49,7 @@ func (p *Parser) parseCompoundExpression(allowdecl bool) (ExpComponent, error) {
 
 	switch p.token.Type {
 
-	case lexer.TokIdent:
+	case lexer.TokIdent, lexer.TokType:
 		err = p.parseIdentifierComponent(chain, allowdecl)
 	case lexer.TokNumber:
 		err = p.parseNumberComponent(chain)
@@ -129,6 +129,7 @@ func (p *Parser) parseIdentifierComponent(base *BaseComponent, allowdecl bool) e
 func (p *Parser) parseIdentDeclComponent(base *BaseComponent) error {
 
 	n := &IdentDeclComponent{}
+
 	n.token = p.token
 
 	if !p.atType() {
@@ -240,10 +241,7 @@ func (p *Parser) parseSubscriptComponent(base *BaseComponent) error {
 
 	p.Next()
 
-	n.Value, err = p.parseCompoundExpression(false)
-	if err != nil {
-		return err
-	}
+	n.Value = p.parseExpression(false)
 
 	if !p.token.Is(lexer.TokRightBrace) {
 		return p.Errorf("malformed array subscript %s", p.token.FileInfo())

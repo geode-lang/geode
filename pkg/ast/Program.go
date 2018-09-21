@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 
 	"path/filepath"
@@ -150,6 +151,12 @@ func (p *Program) ParseFile(path string) {
 		log.Fatal("Unable to decide on namespace for file %q", filepath.Clean(path))
 	}
 
+	r, _ := regexp.Compile("[a-z_]+")
+
+	if !r.MatchString(name) {
+		log.Error("Invalid Namespace name %q. Namespaces can only contain lowercase letters and underscores\n", name)
+	}
+
 	newPkg := NewPackage(name, p)
 	newPkg.Program = p
 	newPkg.Files[path] = src
@@ -278,6 +285,24 @@ type FunctionCompilationOptions struct {
 	ArgTypes []types.Type
 }
 
+func (o FunctionCompilationOptions) String() string {
+	buf := &bytes.Buffer{}
+
+	buf.WriteString("args: [")
+
+	for i, a := range o.ArgTypes {
+		fmt.Fprintf(buf, "%s", a)
+
+		if i < len(o.ArgTypes)-1 {
+			buf.WriteString(", ")
+		}
+	}
+
+	buf.WriteString("]")
+
+	return buf.String()
+}
+
 // RegisterGlobalVariableInitialization -
 func (p *Program) RegisterGlobalVariableInitialization(node *GlobalVariableDeclNode) {
 	p.Initializations = append(p.Initializations, node)
@@ -338,7 +363,14 @@ func (p *Program) FindFunction(searchNames []string, argTypes []types.Type) (*ir
 // GetFunction takes a funciton node, detects if it is already compiled or not
 // if it isnt compiled, it will codegen, otherwise it will return the compiled one
 func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (*ir.Function, error) {
+
+	dopt := NewFunctionDiscoveryOptions(name, p.Package)
+
+	dopt.AddArgs(options.ArgTypes...)
+	NewFunctionDiscoveryWorker(p).Discover(dopt)
+
 	var err error
+
 	// Save the program state
 	previousPackage := p.Package
 	previousScope := p.Scope
@@ -369,27 +401,41 @@ func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (
 		return nil, err
 	}
 
+	if options.ArgTypes != nil && len(rawTypes) != len(options.ArgTypes) {
+
+		// There was an invalid number of arguments passed into the function. We need to check if the funciton is varargs or not.
+		if node.Variadic {
+			if len(rawTypes) > len(options.ArgTypes) {
+				return nil, fmt.Errorf("variadic function %s expects a minimum of %d arguments. given: %d", name, len(rawTypes), len(options.ArgTypes))
+			}
+		} else {
+			// The funciton was not variadic, so we need to error. The user passed in the wrong number of arguments to the function
+			return nil, fmt.Errorf("incorrect number of arguments passed to function %q. Expected %d, given %d", name, len(rawTypes), len(options.ArgTypes))
+		}
+
+	}
+
 	if node.Variants == nil {
 		node.Variants = make(map[string]*ir.Function)
 	}
 
 	correctTypes := make([]types.Type, 0, len(rawTypes))
+
 	if options.ArgTypes != nil && !node.Variadic {
 
 		for i, expected := range rawTypes {
 
-			nodeParamType := node.Args[i].Typ
+			nodeParamType := node.Args[i].Type
 			given := options.ArgTypes[i]
 			unknown := nodeParamType.Unknown
 
 			if (expected != nil && given != nil) && !types.Equal(expected, given) && !typesAreLooselyEqual(given, expected) && !unknown {
-				node.Args[i].SyntaxError()
 				return nil, fmt.Errorf("incorrect type passed into function %s. given: %q, expected: %q", node.Name, given, expected)
 			}
 
 			if unknown {
 				// Handling unknown types's scope definition on call
-				p.Scope.RegisterType(node.Args[i].Typ.Name, given, 0)
+				p.Scope.RegisterType(node.Args[i].Type.Name, given, 0)
 				correctTypes = append(correctTypes, given)
 			} else {
 				correctTypes = append(correctTypes, expected)
@@ -434,6 +480,14 @@ func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (
 	p.Compiler = previousCompiler
 
 	return compiledVal, nil
+}
+
+// GetClassMethods returns the class methods for a class with the given name
+func (p *Program) GetClassMethods(name string) ([]*FunctionNode, error) {
+
+	// p.Functions[name].IsMethod
+
+	return nil, fmt.Errorf("unable to find methods for class '%s'", name)
 }
 
 // NewRuntimeFunctionCall returns an instance of a function call to a runtime funciton
@@ -514,9 +568,6 @@ func ResolveDepPath(base, filename string) string {
 
 	// fmt.Printf("\n\n")
 	searchPaths := append([]string{filepath.Join(base, filename)}, SearchPaths(base)...)
-	// for i, s := range searchPaths {
-	// 	fmt.Printf("%d: %s\n", i, s)
-	// }
 
 	for _, sp := range searchPaths {
 		abs := filepath.Join(sp, filename)

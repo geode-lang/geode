@@ -158,7 +158,7 @@ func (n FunctionCallNode) Load(blk *ir.BasicBlock, prog *Program) *ir.InstLoad {
 }
 
 // GenAssign implement Assignable.GenAssign
-func (n FunctionCallNode) GenAssign(prog *Program, _ value.Value) (value.Value, error) {
+func (n FunctionCallNode) GenAssign(prog *Program, _ value.Value, options ...AssignableOption) (value.Value, error) {
 	return nil, fmt.Errorf("unable to assign to a function call")
 }
 

@@ -62,6 +62,10 @@ var tokenAliasOverrides = map[string]string{
 	"←": "<-",
 }
 
+var defaultTypeNames = [...]string{
+	"bool", "byte", "short", "int", "long", "big", "large", "huge", "float", "string", "void",
+}
+
 func getTokenValueAlias(value string) string {
 	rand.Seed(time.Now().Unix()) // initialize global pseudo random generator
 	if alias, exists := tokenAliasOverrides[value]; exists {
@@ -128,10 +132,18 @@ func (l *Lexer) emit(typ TokenType) {
 
 		tok.Value = getTokenValueAlias(tok.Value)
 
-		// aliasenAliasOverrides[tok.Value]
-		// if hasAlias {
-		// 	tok.Value = alias
-		// }
+		if typ == TokIdent {
+
+			for _, t := range defaultTypeNames {
+				if t == tok.Value {
+					typ = TokType
+					break
+				}
+			}
+			if unicode.IsUpper([]rune(tok.Value)[0]) {
+				typ = TokType
+			}
+		}
 
 		tok.Pos = int(l.start)
 		tok.EndPos = int(l.pos)

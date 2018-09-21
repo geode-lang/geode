@@ -101,7 +101,7 @@ func (n TypeInfoNode) Load(blk *ir.BasicBlock, prog *Program) *ir.InstLoad {
 }
 
 // GenAssign implements Assignable.GenAssign
-func (n TypeInfoNode) GenAssign(prog *Program, val value.Value) (value.Value, error) {
+func (n TypeInfoNode) GenAssign(prog *Program, val value.Value, options ...AssignableOption) (value.Value, error) {
 	return nil, fmt.Errorf("unable to assign to any part of a type info call")
 }
 

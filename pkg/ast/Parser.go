@@ -3,6 +3,8 @@ package ast
 import (
 	"fmt"
 
+	"github.com/geode-lang/geode/pkg/info"
+
 	"github.com/geode-lang/geode/pkg/lexer"
 )
 
@@ -137,6 +139,8 @@ func (p *Parser) parse() {
 		topLevelNode := p.parseTopLevelStmt()
 		if topLevelNode != nil {
 			p.topLevelNodes = append(p.topLevelNodes, topLevelNode)
+
+			info.AddNode(topLevelNode)
 		} else {
 			break
 		}
@@ -204,6 +208,7 @@ func (p *Parser) globTerminator() {
 }
 
 func (p *Parser) parseTopLevelStmt() Node {
+
 	switch p.token.Type {
 	case lexer.TokNamespace:
 		return p.parseNamespace()
@@ -213,7 +218,7 @@ func (p *Parser) parseTopLevelStmt() Node {
 		return p.parseClassDefn()
 	case lexer.TokFuncDefn:
 		return p.parseFunctionNode()
-	case lexer.TokIdent:
+	case lexer.TokType:
 		node := p.parseGlobalVariableDecl()
 		return node
 	}

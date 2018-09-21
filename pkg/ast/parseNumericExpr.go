@@ -51,7 +51,7 @@ func GetNumberNodeFromString(str string) (Node, error) {
 	// Parse Binary Literals
 	if strings.Contains(str, "b") {
 		if !strings.Contains(str, "0b") {
-			fmt.Errorf("binary Literal must be of the following format: 0b___")
+			return nil, fmt.Errorf("binary Literal must be of the following format: 0b___")
 		} else {
 			n := IntNode{}
 			n.NodeType = nodeInt

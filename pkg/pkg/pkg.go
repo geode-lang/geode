@@ -1,4 +1,5 @@
-package geodepkg
+// Package pkg is where the package manager is defined
+package pkg
 
 import (
 	"bytes"
@@ -44,7 +45,7 @@ func HandleCommand() {
 	_, err = util.BashCmd("git --version")
 	if err != nil {
 		fmt.Println(err)
-		fmt.Println("Git not found. Please install git to use geodepkg")
+		fmt.Println("Git not found. Please install git to use 'geode pkg'")
 		os.Exit(1)
 	}
 
@@ -71,12 +72,14 @@ func InitCommand() {
 	os.Exit(0)
 }
 
-var initmessage = `This utility will walk you through creating a geodepkg.toml file.
-`
-
 // Init creates geode.toml if it isn't already setup
 func Init() {
-	fmt.Println(initmessage)
+
+	if _, err := Config(); err == nil {
+		fmt.Println("geodepkg.toml already exists")
+		return
+	}
+	fmt.Println("This utility will walk you through creating a geodepkg.toml file.")
 
 	dir, _ := os.Getwd()
 

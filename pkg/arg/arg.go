@@ -15,7 +15,6 @@ var (
 	StopAfterCompilation  = App.Flag("no-binary", "Stop after compilation").Short('c').Bool()
 	DisableEmission       = App.Flag("no-emission", "Disable emission and only run through the syntax checking process").Bool()
 	DisableStringDataCopy = App.Flag("no-dynamic-strings", "Disable the dynamic string copy and replace with static/constant .data section pointers").Bool()
-	DisableRuntime        = App.Flag("no-runtime", "Disable linking the runtime. This allows more stand-alone code.").Bool()
 	LinkerArgs            = App.Flag("linker-args", "Arguments to pass clang when linking object files").String()
 	EmitASM               = App.Flag("asm", "Emit the asm of the program to the current directory. (will not produce binary)").Bool()
 	EmitLLVM              = App.Flag("llvm", "Emit the llvm of the program to the current directory. (will not produce binary)").Bool()

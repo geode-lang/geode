@@ -108,7 +108,7 @@ func (n VariableDefnNode) Codegen(prog *Program) (value.Value, error) {
 }
 
 // GenAssign implements Assignable.GenAssign
-func (n VariableDefnNode) GenAssign(prog *Program, val value.Value) (value.Value, error) {
+func (n VariableDefnNode) GenAssign(prog *Program, val value.Value, options ...AssignableOption) (value.Value, error) {
 
 	alloc, err := n.Codegen(prog)
 	if err != nil {

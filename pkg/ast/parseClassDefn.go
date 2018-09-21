@@ -1,7 +1,10 @@
 package ast
 
 import (
+	"strings"
+
 	"github.com/geode-lang/geode/pkg/lexer"
+	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 func (p *Parser) parseClassDefn() Node {
@@ -12,7 +15,10 @@ func (p *Parser) parseClassDefn() Node {
 
 	p.Next()
 
-	p.requires(lexer.TokIdent)
+	if !p.token.Is(lexer.TokType) {
+		p.token.SyntaxError()
+		log.Fatal("Class names must be capitalized. Use %q instead\n", strings.Title(p.token.Value))
+	}
 	n.Name = p.token.Value
 
 	p.Context().ClassNames[n.Name] = p.token

@@ -5,11 +5,8 @@
 # Though more platforms may be supported (freebsd/386), they have been removed
 # from the standard ports/downloads and therefore removed from this list.
 #
-PLATFORMS="darwin/amd64" # amd64 only as of go1.5
+PLATFORMS="darwin/amd64"
 PLATFORMS="$PLATFORMS linux/amd64"
-PLATFORMS="$PLATFORMS freebsd/amd64"
-PLATFORMS="$PLATFORMS netbsd/amd64"
-PLATFORMS="$PLATFORMS openbsd/amd64"
 
 
 PLATFORMS_ARM="linux freebsd netbsd"
@@ -39,12 +36,6 @@ WORKDIR="./release" # if no src file given, use current dir name
 WORKDIRABS=`realpath $WORKDIR`
 GODIRABS=`realpath ./pkg/cmd/geode`
 
-README=$(cat << EOF
-Installation instructions:
- - run "sudo make install"
- - run "geode version". Verify it is v$VERSION
-EOF
-)
 
 
 mkdir -p $WORKDIRABS
@@ -60,26 +51,17 @@ for PLATFORM in $PLATFORMS; do
   NAME="geode-$VERSION-$GOOS-$GOARCH"
   
   TARGETDIR="$WORKDIRABS/$NAME"
-  TARGETBINDIR="$TARGETDIR/bin"
+  TARGETBINDIR="$TARGETDIR/usr/local/bin"
 
-  TARNAME="$NAME.tar.xz"
+  TARNAME="$NAME.tar.gz"
 
   mkdir -p $TARGETDIR
   mkdir -p $TARGETBINDIR
   
   BIN_FILENAME="$TARGETBINDIR/geode"
   
-  cp -a "../lib" "$TARGETDIR"
-  cp "../Makefile" "$TARGETDIR"
-  
-  
-  echo "$README" > "$TARGETDIR/README"
-  
-  # Special case for windows - add .exe
-  if [[ "${GOOS}" == "windows" ]]; then
-    BIN_FILENAME="${BIN_FILENAME}.exe";
-  fi
-  
+  mkdir -p "$TARGETDIR/usr/local/lib/geodelib"
+  cp -a "../lib/" "$TARGETDIR/usr/local/lib/geodelib/"
   
   
   cd $GODIRABS
@@ -88,8 +70,24 @@ for PLATFORM in $PLATFORMS; do
   cd $WORKDIRABS
   
   
-  tar -cJf $TARNAME $NAME
+  PKGNAME="geode-$VERSION"
+  
+  tar -czf $TARNAME -C $NAME .
   rm -rf $TARGETDIR
+  
+  if [ $GOOS == "darwin" ]
+  then
+    echo "Building MacOS pkg distributions"
+    fpm -s tar -t osxpkg -p "${PKGNAME}.pkg" $TARNAME 
+  fi
+  
+  
+  if [ $GOOS == "linux" ]
+  then
+    echo "Building Linux pkg distributions"
+    
+    fpm -s tar -t deb -p "${PKGNAME}.deb" $TARNAME
+  fi
   
   printf "%.20s %22s\n" "${GOOS}-${GOARCH}" "`realpath $TARNAME`"
   

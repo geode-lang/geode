@@ -13,13 +13,14 @@ import (
 	"github.com/geode-lang/geode/pkg/arg"
 	"github.com/geode-lang/geode/pkg/ast"
 	"github.com/geode-lang/geode/pkg/info"
+	"github.com/geode-lang/geode/pkg/pkg"
 	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 // Some constants that represent the program in it's current compiled state
 const (
-	VERSION = "0.6.5"
+	VERSION = "0.6.6"
 	AUTHOR  = "Nick Wanninger"
 )
 
@@ -85,9 +86,9 @@ func main() {
 		fmt.Println(VERSION)
 		os.Exit(0)
 
-	// case arg.PkgCMD.FullCommand():
-	// 	geodepkg.HandleCommand()
-	// 	os.Exit(0)
+	case arg.PkgCMD.FullCommand():
+		pkg.HandleCommand()
+		os.Exit(0)
 
 	case arg.InfoCMD.FullCommand():
 		log.Timed("information gathering", func() {
@@ -127,11 +128,7 @@ func NewContext(in string, out string) *Context {
 func (c *Context) Build(buildDir string) {
 
 	program := ast.NewProgram()
-
-	if !*arg.DisableRuntime {
-		program.ParseDep("", "std:runtime")
-	}
-
+	program.ParseDep("", "std:runtime")
 	program.Entry = c.Input
 
 	if _, err := os.Stat(c.Input); os.IsNotExist(err) {

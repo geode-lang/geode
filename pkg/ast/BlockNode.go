@@ -24,9 +24,14 @@ func (n BlockNode) Codegen(prog *Program) (value.Value, error) {
 	prog.Scope = prog.Scope.SpawnChild()
 
 	for _, node := range n.Nodes {
+
 		_, err := node.Codegen(prog)
 		if err != nil {
 			return nil, err
+		}
+
+		if _, isReturn := node.(ReturnNode); isReturn {
+			break
 		}
 	}
 	if prog.Scope.Parent == nil {
