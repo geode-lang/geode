@@ -42,14 +42,14 @@ mkdir -p $WORKDIRABS
 
 
 for PLATFORM in $PLATFORMS; do
-  
+
   cd $WORKDIRABS
-  
+
   GOOS=${PLATFORM%/*}
   GOARCH=${PLATFORM#*/}
-  
+
   NAME="geode-$VERSION-$GOOS-$GOARCH"
-  
+
   TARGETDIR="$WORKDIRABS/$NAME"
   TARGETBINDIR="$TARGETDIR/usr/local/bin"
 
@@ -57,40 +57,48 @@ for PLATFORM in $PLATFORMS; do
 
   mkdir -p $TARGETDIR
   mkdir -p $TARGETBINDIR
-  
+
   BIN_FILENAME="$TARGETBINDIR/geode"
-  
+
   mkdir -p "$TARGETDIR/usr/local/lib/geodelib"
   cp -a "../lib/" "$TARGETDIR/usr/local/lib/geodelib/"
-  
-  
+
+
   cd $GODIRABS
   CMD="GOOS=${GOOS} GOARCH=${GOARCH} go build -o ${BIN_FILENAME} $@"
   eval $CMD || exit 1
   cd $WORKDIRABS
-  
-  
+
+
   PKGNAME="geode-$VERSION"
-  
+
   tar -czf $TARNAME -C $NAME .
   rm -rf $TARGETDIR
-  
+
   if [ $GOOS == "darwin" ]
   then
     echo "Building MacOS pkg distributions"
-    fpm -s tar -t osxpkg -p "${PKGNAME}.pkg" $TARNAME 
+    fpm -s tar -t osxpkg -p "${PKGNAME}.pkg" $TARNAME
   fi
-  
-  
+
+
   if [ $GOOS == "linux" ]
   then
     echo "Building Linux pkg distributions"
-    
-    fpm -s tar -t deb -p "${PKGNAME}.deb" $TARNAME
+    fpm -s tar -t deb -n "geode" -v $VERSION -d "libgc-dev" -d "clang" -p "${PKGNAME}.deb" $TARNAME
   fi
-  
+
   printf "%.20s %22s\n" "${GOOS}-${GOARCH}" "`realpath $TARNAME`"
-  
+
 done
 
-# rm -rf working
+
+
+
+
+
+
+
+
+
+

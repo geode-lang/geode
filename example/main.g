@@ -2,6 +2,7 @@ is main
 
 include "io"
 
-func main {
+func main int {
 	io:print("hello, world\n")
+	return 0
 }
