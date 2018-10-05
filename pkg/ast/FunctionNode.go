@@ -7,6 +7,7 @@ import (
 	"github.com/geode-lang/geode/llvm/ir"
 	"github.com/geode-lang/geode/llvm/ir/types"
 	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/geode-lang/geode/pkg/arg"
 )
 
 // FuncDeclKeywordType lets the compiler keep track of
@@ -46,6 +47,7 @@ type FunctionNode struct {
 	HasUnknownType bool
 	Package        *Package
 	IsMethod       bool
+
 	// A cache so we can remember the name of the function to codegen
 	// This is because between the Program.GetFunction, where we
 	// can compile variants, and the codegen section of the function,
@@ -98,7 +100,7 @@ func (n FunctionNode) Arguments(prog *Program) ([]*types.Param, []types.Type, er
 // in the program for use in calls
 func (n FunctionNode) Declare(prog *Program) (*ir.Function, error) {
 	// Spawn a new scope
-	prog.Scope = prog.Scope.SpawnChild()
+	prog.ScopeDown(n.Token)
 
 	// Check that the funciton is allowed or follows rules set in place
 	// by geode
@@ -130,23 +132,25 @@ func (n FunctionNode) Declare(prog *Program) (*ir.Function, error) {
 	scopeItem.SetMangled(!n.Nomangle)
 	prog.Scope.GetRoot().Add(scopeItem)
 
-	// prog.Compiler.FN = previousFunction
-	prog.Scope = prog.Scope.Parent
+	if err := prog.ScopeUp(); err != nil {
+		return nil, err
+	}
 	return function, nil
 }
 
 // MangledName returns the correctly mangled name for some function
 func (n FunctionNode) MangledName(prog *Program, types []types.Type) string {
 
+	ret, _ := n.ReturnType.GetType(prog)
 	if n.IsMethod {
-		return MangleFunctionName(n.Name.Value, types)
+		return MangleFunctionName(n.Name.Value, types, ret)
 	}
 
 	if n.Name.Value == "main" || (n.Package != nil && n.Package.Name == "runtime") {
 		return n.Name.Value
 	}
 	// _, types := n.Arguments(prog.Scope)
-	return MangleFunctionName(fmt.Sprintf("%s:%s", n.Package.Name, n.Name.Value), types)
+	return MangleFunctionName(fmt.Sprintf("%s:%s", n.Package.Name, n.Name.Value), types, ret)
 }
 
 // Check makes sure a function follows the correct limitations set by the language
@@ -176,7 +180,7 @@ func (n FunctionNode) Check(prog *Program) error {
 
 // Codegen implements Node.Codegen for FunctionNode
 func (n FunctionNode) Codegen(prog *Program) (value.Value, error) {
-	prog.Scope = prog.Scope.SpawnChild()
+	prog.ScopeDown(n.Token)
 
 	checkerr := n.Check(prog)
 	if checkerr != nil {
@@ -198,7 +202,7 @@ func (n FunctionNode) Codegen(prog *Program) (value.Value, error) {
 	// If the function is external (has ... at the end) we don't build a block
 	if !n.External {
 		// Create the entrypoint to the function
-		entryBlock := ir.NewBlock(n.Name.String() + "-entry")
+		entryBlock := ir.NewBlock(n.Name.String() + "_entry")
 
 		prog.Compiler.CurrentFunc().AppendBlock(entryBlock)
 		prog.Compiler.PushBlock(entryBlock)
@@ -251,15 +255,29 @@ func (n FunctionNode) Codegen(prog *Program) (value.Value, error) {
 		prog.Compiler.PopBlock()
 	}
 
-	prog.Scope = prog.Scope.Parent
+	if err := prog.ScopeUp(); err != nil {
+		return nil, err
+	}
 	return function, nil
 }
 
 func createInitializationPrelude(prog *Program, n FunctionNode) {
+
+	// if the user disabled the runtime, we should just not do anything special
+	// with preludes or whatnot.
+	if *arg.DisableRuntime {
+		return
+	}
 	if prog.Compiler.CurrentFunc().Name == "main" {
 
+		prog.NewRuntimeFunctionCall("__init_runtime")
+
+		prog.Compiler.NewComment("User Code:")
+	}
+
+	if prog.Compiler.CurrentFunc().Name == "__init_runtime" {
 		prog.Compiler.NewComment("Runtime Prelude:")
-		prog.NewRuntimeFunctionCall("__initruntime")
+		prog.NewRuntimeFunctionCall("__init_c_runtime")
 
 		if len(prog.Initializations) > 0 {
 			prog.Compiler.NewComment("Global Initializations:")
@@ -267,10 +285,9 @@ func createInitializationPrelude(prog *Program, n FunctionNode) {
 				init.Codegen(prog)
 			}
 		}
-
-		prog.Compiler.NewComment("")
-		prog.Compiler.NewComment("User Code:")
 	}
+
+	// if prog.Compiler.CurrentFunc().Name == "init"
 }
 
 func (n FunctionNode) String() string {

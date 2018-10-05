@@ -60,7 +60,6 @@ func (block *BasicBlock) SetName(name string) {
 func (block *BasicBlock) String() string {
 	buf := &bytes.Buffer{}
 	if isLocalID(block.Name) {
-
 		fmt.Fprintf(buf, "; <label>:%s\n", enc.EscapeIdent(block.Name))
 	} else {
 		fmt.Fprintf(buf, "%s:\n", enc.EscapeIdent(block.Name))
@@ -68,7 +67,12 @@ func (block *BasicBlock) String() string {
 	for _, inst := range block.Insts {
 		fmt.Fprintf(buf, "\t%s\n", inst)
 	}
-	fmt.Fprintf(buf, "\t%s", block.Term)
+	if block.Term != nil {
+		fmt.Fprintf(buf, "\t%s", block.Term)
+	} else {
+		fmt.Fprintf(buf, "\t; Missing Terminator")
+	}
+
 	fmt.Fprintf(buf, "\n")
 	return buf.String()
 }

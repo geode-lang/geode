@@ -1,33 +1,8 @@
 package ast
 
 import (
-	"fmt"
-
 	"github.com/geode-lang/geode/pkg/lexer"
 )
-
-// TestNewParser -
-func TestNewParser() {
-	p := NewQuickParser(`foo.bar[0].zoop().zap[1]`)
-	chain, err := p.parseCompoundExpression(false)
-	if err != nil {
-		fmt.Println("error in parsing:")
-		fmt.Println(err)
-	} else {
-		fmt.Println(chain)
-		fmt.Println()
-		node, err := chain.(*BaseComponent).ConstructNode(nil)
-		if err != nil {
-			fmt.Println("error in construction:")
-			fmt.Println(err)
-		} else {
-			fmt.Println("Node created:")
-			fmt.Println(node)
-		}
-
-	}
-
-}
 
 func (p *Parser) parseExpression(allowdecl bool) Node {
 	lhs := p.parseUnary(allowdecl)
@@ -46,6 +21,7 @@ func (p *Parser) parseExpression(allowdecl bool) Node {
 func (p *Parser) parseCompoundExpression(allowdecl bool) (ExpComponent, error) {
 	var err error
 	chain := &BaseComponent{}
+	chain.token = p.token
 
 	switch p.token.Type {
 
@@ -101,6 +77,7 @@ func (p *Parser) parseOperatorComponent(base *BaseComponent) error {
 func (p *Parser) parseIdentifierComponent(base *BaseComponent, allowdecl bool) error {
 
 	fk := p.Fork()
+
 	if allowdecl && fk.parseIdentDeclComponent(base) == nil {
 		p.Join(fk)
 		return nil
@@ -129,10 +106,9 @@ func (p *Parser) parseIdentifierComponent(base *BaseComponent, allowdecl bool) e
 func (p *Parser) parseIdentDeclComponent(base *BaseComponent) error {
 
 	n := &IdentDeclComponent{}
-
 	n.token = p.token
 
-	if !p.atType() {
+	if !p.token.Is(lexer.TokType) {
 		return p.Errorf("parser not at type")
 	}
 
@@ -237,6 +213,7 @@ func (p *Parser) parseNumberComponent(base *BaseComponent) error {
 
 func (p *Parser) parseSubscriptComponent(base *BaseComponent) error {
 	n := &SubscriptComponent{}
+	n.token = p.token
 	var err error
 
 	p.Next()

@@ -156,10 +156,7 @@ func (n BinaryNode) Codegen(prog *Program) (value.Value, error) {
 	switch n.OP {
 	case "+=", "-=", "*=", "/=":
 		return CodegenCompoundOperator(prog, n.Left, n.Right, n.OP)
-
 	}
-
-	// fmt.Println(n.Left, n.OP, n.Right)
 
 	if n.Left == nil || n.Right == nil {
 		n.SyntaxError()
@@ -173,6 +170,19 @@ func (n BinaryNode) Codegen(prog *Program) (value.Value, error) {
 	r, err := n.Right.Codegen(prog)
 	if err != nil {
 		return nil, err
+	}
+
+	mustCastToPtr := false
+	var finalPointerType types.Type
+
+	if types.IsPointer(l.Type()) {
+		mustCastToPtr = true
+		finalPointerType = l.Type()
+	}
+
+	if types.IsPointer(r.Type()) {
+		mustCastToPtr = true
+		finalPointerType = r.Type()
 	}
 
 	// Attempt to cast them with casting precidence
@@ -202,6 +212,10 @@ func (n BinaryNode) Codegen(prog *Program) (value.Value, error) {
 
 	if resultcast != nil {
 		value, _ = createTypeCast(prog, value, resultcast)
+	}
+
+	if mustCastToPtr {
+		value, _ = createTypeCast(prog, value, finalPointerType)
 	}
 
 	return value, nil

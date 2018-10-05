@@ -6,8 +6,10 @@ import (
 
 	"github.com/geode-lang/geode/llvm/ir"
 	"github.com/geode-lang/geode/llvm/ir/constant"
+	"github.com/geode-lang/geode/llvm/ir/metadata"
 	"github.com/geode-lang/geode/llvm/ir/types"
 	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/geode-lang/geode/pkg/arg"
 )
 
 // A global number to indicate which `name index` we are on. This way,
@@ -102,72 +104,6 @@ func (n IfNode) Codegen(prog *Program) (value.Value, error) {
 	return endBlk, nil
 }
 
-// Codegen implements Node.Codegen for ForNode
-func (n ForNode) Codegen(prog *Program) (value.Value, error) {
-
-	// The name of the blocks is prefixed so we can determine which for loop a block is for.
-	namePrefix := fmt.Sprintf("for.%X.", n.Index)
-	parentBlock := prog.Compiler.CurrentBlock()
-	prog.Scope = prog.Scope.SpawnChild()
-	var err error
-	var predicate value.Value
-	var condBlk *ir.BasicBlock
-	var bodyBlk *ir.BasicBlock
-	var bodyGenBlk *ir.BasicBlock
-	var endBlk *ir.BasicBlock
-	parentFunc := parentBlock.Parent
-
-	condBlk = parentFunc.NewBlock(namePrefix + "cond")
-
-	n.Init.Codegen(prog)
-
-	parentBlock.NewBr(condBlk)
-
-	err = prog.Compiler.genInBlock(condBlk, func() error {
-		predicate, _ = n.Cond.Codegen(prog)
-		one := constant.NewInt(1, types.I1)
-
-		c, err := createTypeCast(prog, predicate, types.I1)
-		if err != nil {
-			return err
-		}
-		predicate = condBlk.NewICmp(ir.IntEQ, one, c)
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	bodyBlk = parentFunc.NewBlock(namePrefix + "body")
-
-	err = prog.Compiler.genInBlock(bodyBlk, func() error {
-		gen, err := n.Body.Codegen(prog)
-		if err != nil {
-			return err
-		}
-		bodyGenBlk = gen.(*ir.BasicBlock)
-		err = prog.Compiler.genInBlock(bodyGenBlk, func() error {
-			_, err := n.Step.Codegen(prog)
-			return err
-		})
-		if err != nil {
-			return err
-		}
-
-		bodyGenBlk.BranchIfNoTerminator(condBlk)
-		bodyBlk.BranchIfNoTerminator(condBlk)
-
-		return nil
-	})
-	endBlk = parentFunc.NewBlock(namePrefix + "end")
-	prog.Compiler.PushBlock(endBlk)
-	condBlk.NewCondBr(predicate, bodyBlk, endBlk)
-
-	prog.Scope = prog.Scope.Parent
-	return endBlk, nil
-}
-
 // Codegen implements Node.Codegen for CharNode
 func (n CharNode) Codegen(prog *Program) (value.Value, error) {
 	return constant.NewInt(int64(n.Value), types.I8), nil
@@ -180,6 +116,18 @@ func (n CharNode) GenAccess(prog *Program) (value.Value, error) {
 
 // Codegen implements Node.Codegen for UnaryNode
 func (n UnaryNode) Codegen(prog *Program) (value.Value, error) {
+
+	// handle reference operation
+	if n.Operator == "&" {
+
+		node, ok := n.Operand.(Reference)
+		if !ok {
+			n.SyntaxError()
+			return nil, fmt.Errorf("'&' operator called on non-addressable operand")
+		}
+
+		return node.Alloca(prog), nil
+	}
 
 	operandValue, err := n.Operand.Codegen(prog)
 	if err != nil {
@@ -201,12 +149,26 @@ func (n UnaryNode) Codegen(prog *Program) (value.Value, error) {
 
 	}
 
-	// handle reference operation
-	if n.Operator == "&" {
-		return operandValue, nil
+	// the not operation is interesting as there is no intrinsic llvm "not" instruction
+	// so what I must do is check if the value is 0 with an icmp. Then I xor that with true
+	// and sign extend it to an i32 - i32 is a safe value, idk
+	if n.Operator == "!" {
+		if !types.IsInt(operandValue.Type()) {
+			return nil, fmt.Errorf("unable to '!' (not) type %q", operandValue.Type())
+		}
+
+		eq := prog.Compiler.CurrentBlock().NewICmp(ir.IntNE, operandValue, constant.False)
+		inv := prog.Compiler.CurrentBlock().NewXor(eq, constant.True)
+		ext := prog.Compiler.CurrentBlock().NewZExt(inv, types.I32)
+
+		return ext, nil
+
 	}
+
 	// handle dereference operation
 	if n.Operator == "*" {
+
+		// fmt.Println(prog.Compiler.CurrentFunc())
 		if types.IsPointer(operandValue.Type()) {
 			return prog.Compiler.CurrentBlock().NewLoad(operandValue), nil
 		}
@@ -415,7 +377,13 @@ func (n ReturnNode) Codegen(prog *Program) (value.Value, error) {
 		}
 	}
 
-	prog.Compiler.CurrentBlock().NewRet(retVal)
+	ret := prog.Compiler.CurrentBlock().NewRet(retVal)
+
+	if *arg.EnableDebug {
+		md := &metadata.Metadata{}
+		md.Add(metadata.NewRaw(n.Token.DILocation(prog.Scope.DebugInfo)))
+		ret.Metadata["dbg"] = md
+	}
 
 	return retVal, nil
 }

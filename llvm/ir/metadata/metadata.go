@@ -77,6 +77,11 @@ func (md *Metadata) Def() string {
 // metadata.Node interface.
 func (*Metadata) MetadataNode() {}
 
+// Add a metadata node to the metadata listing
+func (md *Metadata) Add(n Node) {
+	md.Nodes = append(md.Nodes, n)
+}
+
 // --- [ metadata string ] -----------------------------------------------------
 
 // A String represents an LLVM IR metadata string.
@@ -146,3 +151,37 @@ func (md *Named) Def() string {
 	buf.WriteString("}")
 	return buf.String()
 }
+
+// Ident returns the ident of the metadata node
+func (md *Named) Ident() string {
+	return enc.Metadata(md.Name)
+}
+
+// --- [ metadata raw ] -----------------------------------------------------
+
+// NewRaw constructs a raw metadata value
+func NewRaw(val string) *Raw {
+	r := &Raw{}
+	r.Val = val
+	return r
+}
+
+// A Raw represents raw text to place in the ir
+type Raw struct {
+	// String value.
+	Val string
+}
+
+// Ident returns the identifier associated with the metadata.
+func (md *Raw) Ident() string {
+	return fmt.Sprintf(`!%s`, md.Val)
+}
+
+// Type returns the type of the metadata.
+func (md *Raw) Type() types.Type {
+	return types.Metadata
+}
+
+// MetadataNode ensures that only metadata nodes can be assigned to the
+// metadata.Node interface.
+func (*Raw) MetadataNode() {}

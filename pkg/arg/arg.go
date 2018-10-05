@@ -10,10 +10,11 @@ import (
 var (
 	App                   = kingpin.New("geode", "Compiler for the Geode Programming Language").Author("Nick Wanninger")
 	BuildOutput           = App.Flag("output", "Output binary name.").Short('o').Default("a.out").String()
-	Optimize              = App.Flag("optimize", "Enable full optimization").Short('O').Int()
+	Optimize              = App.Flag("optimize", "Enable full optimization").Short('O').Default("0").Int()
 	PrintVerbose          = App.Flag("verbose", "Enable verbose printing").Short('v').Bool()
 	StopAfterCompilation  = App.Flag("no-binary", "Stop after compilation").Short('c').Bool()
 	DisableEmission       = App.Flag("no-emission", "Disable emission and only run through the syntax checking process").Bool()
+	DisableRuntime        = App.Flag("no-runtime", "Disable calls to the runtime. Warning: garbage collector, etc will be gone. Most standard libraries will not work.").Bool()
 	DisableStringDataCopy = App.Flag("no-dynamic-strings", "Disable the dynamic string copy and replace with static/constant .data section pointers").Bool()
 	LinkerArgs            = App.Flag("linker-args", "Arguments to pass clang when linking object files").String()
 	EmitASM               = App.Flag("asm", "Emit the asm of the program to the current directory. (will not produce binary)").Bool()
@@ -22,6 +23,7 @@ var (
 	EmitObject            = App.Flag("obj", "Emit the object file of the program to the current directory. (will not produce binary)").Bool()
 	DumpScopeTree         = App.Flag("dump-scope-tree", "Dump a tree representation of the scope to stdout").Bool()
 	ClangFlags            = App.Flag("clang-flags", "flags to pass into the clang compiler/linker").String()
+	EnableDebug           = App.Flag("debug", "(NOT WORKING) Enable debug information").Short('g').Bool()
 )
 
 // Global arguments accessable throughout the program

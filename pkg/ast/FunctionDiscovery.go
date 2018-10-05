@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/geode-lang/geode/llvm/ir"
 	"github.com/geode-lang/geode/llvm/ir/types"
 )
@@ -22,8 +24,12 @@ func NewFunctionDiscoveryWorker(prog *Program) *FunctionDiscoveryWorker {
 
 // Discover a function from a worker
 // This function can possibly return a newly generated function from a variant
-// ie: for generics or unknown type arguments
+// ie: for generics, unknown type arguments or overloading
 func (w *FunctionDiscoveryWorker) Discover(opt *FunctionDiscoveryOptions) (res *FunctionDiscoveryResult, err error) {
+
+	// searchpaths := opt.GetSearchpaths()
+
+	// fmt.Println(searchpaths)
 
 	return res, err
 }
@@ -44,6 +50,15 @@ func NewFunctionDiscoveryOptions(searchName string, searchingPkg *Package) *Func
 	opt.searchName = searchName
 	opt.searchingPkg = searchingPkg
 	return opt
+}
+
+// GetSearchpaths returns the searchpaths for the options
+func (opt *FunctionDiscoveryOptions) GetSearchpaths() []string {
+	searchPaths := make([]string, 0)
+	searchPaths = append(searchPaths, opt.searchName)
+	searchPaths = append(searchPaths, fmt.Sprintf("%s:%s", opt.searchingPkg.Name, opt.searchName))
+
+	return searchPaths
 }
 
 // AddArgs appends variadic arguments to the discovery options

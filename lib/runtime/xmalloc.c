@@ -20,12 +20,12 @@ static void xmalloc_unlock() { pthread_mutex_unlock(&mutex); }
 
 static long allocated_before_collect = 0;
 
-long __memoryused = 0;
-int __blocksallocated = 0;
-long __alloc_index = 0;
+static long memoryused = 0;
+static int blocksallocated = 0;
+static long allocationindex = 0;
 
-long bytes_used() { return __memoryused; }
-long blocks_used() { return __blocksallocated; }
+long bytes_used() { return memoryused; }
+long blocks_used() { return blocksallocated; }
 
 static xmalloc_prelude_t *xmalloc_getprelude(void *ptr) {
   return (xmalloc_prelude_t *)(ptr - PRELUDE_SIZE);
@@ -46,13 +46,11 @@ void xfree(void *ptr) {
   if (ptr == NULL) {
     return;
   }
-
   void *new_ptr = ptr - PRELUDE_SIZE;
-
   xmalloc_prelude_t *prelude = xmalloc_getprelude(ptr);
-  __memoryused -= prelude->size;
+  memoryused -= prelude->size;
 
-  __blocksallocated--;
+  blocksallocated--;
   GC_FREE(new_ptr);
 #ifdef DEBUG_XMALLOC
   printf("[DEBUG] xfree(%p) -> %u bytes\n", ptr, prelude->size);
@@ -62,11 +60,13 @@ void xfree(void *ptr) {
 }
 
 static void xfinalizer(GC_PTR obj, GC_PTR x) {
+  xmalloc_lock();
   xmalloc_prelude_t *prelude = (xmalloc_prelude_t *)obj;
 #ifdef DEBUG_XMALLOC
   printf("[DEBUG] gc_xfree(%p) -> %u bytes\n", obj, prelude->size);
 #endif
   allocated_before_collect -= prelude->size;
+  xmalloc_unlock();
 }
 
 void *xmalloc(size_t size) {
@@ -75,15 +75,14 @@ void *xmalloc(size_t size) {
   GC_register_finalizer(realptr, xfinalizer, 0, 0, 0);
 
   xmalloc_lock();
-  // GC_gcollect();
   allocated_before_collect += size;
   if (realptr == NULL) {
     fprintf(stderr, "Fatal: memory exhausted (xmalloc of %zu bytes).\n", size);
     exit(EXIT_FAILURE);
   }
 
-  __memoryused += size;
-  __blocksallocated++;
+  memoryused += size;
+  blocksallocated++;
 #ifdef DEBUG_XMALLOC
   printf("[DEBUG] xmalloc(%u) -> %p\n", size, realptr);
 #endif
@@ -91,9 +90,9 @@ void *xmalloc(size_t size) {
   xmalloc_prelude_t *prelude = realptr;
   prelude->size = size;
   prelude->alloc_count = 1;
-  prelude->alloc_index = __alloc_index;
+  prelude->alloc_index = allocationindex;
 
-  __alloc_index++;
+  allocationindex++;
 
   xmalloc_unlock();
 
@@ -130,7 +129,7 @@ void *xrealloc(void *ptr, size_t newsize) {
 
   // Update the "memory used" value
 
-  __memoryused += newsize - oldsize;
+  memoryused += newsize - oldsize;
   xmalloc_unlock();
 
 #ifdef DEBUG_XMALLOC

@@ -1,8 +1,7 @@
 is main
 
-include "io"
 
 func main int {
-	io:print("hello, world\n")
+	wout("hello\n")
 	return 0
 }

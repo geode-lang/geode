@@ -20,47 +20,49 @@ FILE_DESCRIPTOR* stdin = fopen("/dev/stdin", "r+");
 
 
 
+func fgets(byte* buf, int len, FILE_DESCRIPTOR* fd) ...
+
+
+
 # File is a class wrapper around the FILE_DESCRIPTOR that has more methods
 # that allow you to act on `this` instead of passing around a FILE_DESCRIPTOR
 class File {
-	
+
 	# handle is a pointer to an OS Specific file descriptor
 	# returned by the c bindings for fopen
 	FILE_DESCRIPTOR* handle
-	
-	
+
 	# write some string to the file handle
 	func puts(string msg) {
 		io:fputs(msg, this.handle)
 		this.flush()
 	}
-	
+
 	# wrap around the stdlib io:fflush
 	func flush {
 		io:fflush(this.handle)
 	}
-	
+
 	# wrap around the stdlib io:ftell
 	func pos long {
 		return io:ftell(this.handle)
 	}
-	
+
 	# wrap around the stdlib io:fseek
 	func seek(int off, int loc) long {
 		return io:fseek(this.handle, off, loc)
 	}
-	
+
 	# wrap around the stdlib io:fclose
 	func close {
 		io:fclose(this.handle)
 	}
-	
+
 	# wrap around the stdlib io:fread
 	func read(string where, int size, int nmemb) {
 		io:fread(where, size, nmemb, this.handle)
 	}
-	
-	
+
 	# Return the filesize in bytes
 	func size long {
 		this.seek(0, 2);
@@ -68,7 +70,7 @@ class File {
 		io:rewind(this.handle)
 		return fsize
 	}
-		
+
 	func readall byte* {
 		# get the size of the file
 		fsize = this.size()

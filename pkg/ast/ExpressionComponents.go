@@ -95,7 +95,9 @@ func (c *IdentComponent) Ident() string {
 
 // ConstructNode returns the ast node for the expression component
 func (c *IdentComponent) ConstructNode(prev Node) (Node, error) {
-	return NewIdentNode(c.Value), nil
+	n := NewIdentNode(c.Value)
+	n.Token = c.token
+	return n, nil
 }
 
 // =========================== IdentDeclComponent ===========================

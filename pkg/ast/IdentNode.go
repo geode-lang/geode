@@ -3,7 +3,10 @@ package ast
 import (
 	"fmt"
 
+	"github.com/geode-lang/geode/pkg/arg"
+
 	"github.com/geode-lang/geode/llvm/ir"
+	"github.com/geode-lang/geode/llvm/ir/metadata"
 	"github.com/geode-lang/geode/llvm/ir/types"
 	"github.com/geode-lang/geode/llvm/ir/value"
 	"github.com/geode-lang/geode/pkg/util/log"
@@ -70,6 +73,11 @@ func (n IdentNode) Alloca(prog *Program) value.Value {
 	searchPaths = append(searchPaths, n.Value)
 	searchPaths = append(searchPaths, fmt.Sprintf("%s:%s", prog.Package.Name, n.Value))
 
+	if prog.Scope == nil {
+		n.SyntaxError()
+		fmt.Println(n)
+		return nil
+	}
 	scopeitem, found := prog.Scope.Find(searchPaths)
 
 	var alloc value.Value
@@ -112,7 +120,14 @@ func (n IdentNode) GenAssign(prog *Program, assignment value.Value, options ...A
 		alloca = prog.Compiler.CurrentBlock().NewAlloca(assignment.Type())
 		prog.Scope.Add(NewVariableScopeItem(n.Value, alloca, PublicVisibility))
 	}
-	prog.Compiler.CurrentBlock().NewStore(assignment, alloca)
+	store := prog.Compiler.CurrentBlock().NewStore(assignment, alloca)
+
+	if *arg.EnableDebug {
+		md := &metadata.Metadata{}
+		md.Add(metadata.NewRaw(n.Token.DILocation(prog.Scope.DebugInfo)))
+		store.Metadata["dbg"] = md
+	}
+
 	return assignment, nil
 }
 

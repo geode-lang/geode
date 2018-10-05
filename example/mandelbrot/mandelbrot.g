@@ -10,7 +10,7 @@ func printdensity(int d, int iter) {
 	if d > iter {
 		r = 0
 	}
-	a = io:format("\x1b[48;2;%d;%d;%dm ", r, 0, 0)
+	a = io:format("\x1b[48;2;%d;%d;%dm ", r, r, r)
 	io:fputs(a, io:stdout)
 	io:fputs("\x1b[0m", io:stdout)
 }
@@ -21,7 +21,8 @@ func mandelconverger(float real, float imag, float iters, float creal, float cim
 		return iters
 	} else {
 		return mandelconverger(real * real - imag * imag + creal, 2.0 * real * imag + cimag, iters + 1.0, creal, cimag, iter)
-	}	
+	}
+	return 0.0
 }
 
 
@@ -32,7 +33,6 @@ func mandelconverge(float real, float imag, int iter) float {
 }
 
 func printMandel(float realstart, float imagstart, float zoom, int iter, float width, float height) {
-	io:print("%.40f\n", zoom)
 	# x-values
 	xmin = realstart - zoom * (width / 2.0)
 	xmax = realstart + zoom * (width / 2.0)

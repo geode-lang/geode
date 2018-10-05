@@ -18,6 +18,7 @@ const (
 	NamespaceMangle ManglePartType = iota
 	NameMangle
 	TypeMangle
+	ReturnTypeMangle
 	GenericMangle
 )
 
@@ -58,11 +59,12 @@ func splitMany(s string, splits string) []string {
 // This is the prefix that will prefix all function names.
 // c++ uses _Z, I feel like an equally random value works fine
 // so I will use X
-const functionNamePrefix = "_F"
+const functionNamePrefix = "_X"
 const globalVariableNamePrefix = "_V"
+const separator = `:`
 
 // MangleFunctionName will mangle a function name
-func MangleFunctionName(origName string, types []types.Type) string {
+func MangleFunctionName(origName string, types []types.Type, ret types.Type) string {
 
 	buff := &bytes.Buffer{}
 
@@ -74,12 +76,14 @@ func MangleFunctionName(origName string, types []types.Type) string {
 		if i == 0 {
 			prefix = "M"
 		}
-		fmt.Fprintf(buff, ".%s%s", prefix, p)
+		fmt.Fprintf(buff, separator+"%s%s", prefix, p)
 	}
 
 	for _, t := range types {
-		fmt.Fprintf(buff, ".T%s", t)
+		fmt.Fprintf(buff, separator+"T%s", t)
 	}
+
+	fmt.Fprintf(buff, separator+"R%s", ret)
 
 	return buff.String()
 }
@@ -97,7 +101,7 @@ func MangleVariableName(origName string) string {
 		if i == 0 {
 			prefix = "M"
 		}
-		fmt.Fprintf(buff, ".%s%s", prefix, p)
+		fmt.Fprintf(buff, separator+"%s%s", prefix, p)
 	}
 	return buff.String()
 }
@@ -148,10 +152,11 @@ func GetMangleParts(mangled string) ([]ManglePart, error) {
 		'M': NamespaceMangle,
 		'N': NameMangle,
 		'T': TypeMangle,
+		'R': ReturnTypeMangle,
 		'G': GenericMangle,
 	}
 
-	rawParts := strings.Split(mangled, ".")
+	rawParts := strings.Split(mangled, separator)
 	parts := make([]ManglePart, 0, len(rawParts))
 
 	if rawParts[0] == functionNamePrefix {
@@ -202,7 +207,7 @@ func UnmangleFunctionName(mangled string) (string, error) {
 	buff := &bytes.Buffer{}
 	for _, part := range parsedParts {
 		if part.partType == NamespaceMangle {
-			fmt.Fprintf(buff, "%s:", part.value)
+			fmt.Fprintf(buff, "%s"+separator, part.value)
 		}
 
 		if part.partType == NameMangle {
@@ -216,7 +221,7 @@ func UnmangleFunctionName(mangled string) (string, error) {
 // ParseName returns the namespace and the name of a string
 func ParseName(combined string) (string, string) {
 	var namespace, name string
-	parts := strings.Split(combined, ":")
+	parts := strings.Split(combined, separator)
 	name = parts[len(parts)-1]
 	if len(parts) > 1 {
 		namespace = parts[0]

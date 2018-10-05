@@ -152,8 +152,10 @@ func (l *Linker) Run() {
 		log.Timed("Object File Generation", func() {
 			// Compile each of the objects to a .s file.
 			for _, obj := range l.objectPaths {
+
 				// We only want to leave user generated files in the filesystem
 				if strings.HasSuffix(obj, ".ll") {
+
 					out := path.Base(strings.Replace(obj, path.Ext(obj), ".o", -1))
 					util.RunCommandStr(linker, append(linkArgs, "-c", "-o", out, obj)...)
 				}
@@ -161,7 +163,7 @@ func (l *Linker) Run() {
 		})
 	}
 
-	linkArgs = append(linkArgs, "--std=c99", "-lm", "-lc", "-lgc", "-pthread")
+	linkArgs = append(linkArgs, "--std=c99", "-lm", "-lc", "-lgc", "-pthread", "-DREDIRECT_MALLOC=xmalloc", "-DIGNORE_FREE")
 
 	if !hadAlternateEmission {
 		for i, obj := range l.objectPaths {
@@ -187,6 +189,8 @@ func (l *Linker) Run() {
 				if err != nil || strings.Compare(string(cachedat), hash) != 0 {
 
 					os.MkdirAll(path.Dir(outbase), os.ModePerm)
+
+					// fmt.Printf("\tCC\t%s\n", path.Base(obj))
 					// the file doesnt exist, we need to compile it
 					out, err := util.RunCommand("clang", "-O3", "--std=c99", "-c", "-o", objFile, obj)
 					if err != nil {
@@ -198,8 +202,15 @@ func (l *Linker) Run() {
 			}
 
 		}
+
+		// return
+
 		// Append input files to the end of the command
 		linkArgs = append(linkArgs, l.objectPaths...)
+
+		if *arg.EnableDebug {
+			linkArgs = append(linkArgs, "-g")
+		}
 
 		// set the output filename
 		linkArgs = append(linkArgs, "-o", filename)

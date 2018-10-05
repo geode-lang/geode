@@ -9,23 +9,22 @@ include "mem"
 include "io"
 
 
+
+
+string hex_charset = "0123456789abcdef"
 # hex converts type T (unknown) to a string containing
 # the hex representation of val
 func hex(T? val) string {
-	
+	# get the info of the type T for use later.
 	tInfo = info(T)
-
-	charset = "0123456789abcdef"
 	buffer = mem:zero(tInfo.size * 2 + 1)
 	byte* offset = &val
-	
+
 	for i = tInfo.size - 1; i >= 0; i -= 1 {
-		
-		b = *(offset + i)
-		
+		b = offset[i]
 		o = (tInfo.size - i - 1) * 2
-		buffer[o] = charset[b >> 4 && 0xf]
-		buffer[o+1] = charset[b && 0xf]
+		buffer[o] = hex_charset[b >> 4 && 0xf]
+		buffer[o+1] = hex_charset[b && 0xf]
 	}
 	return buffer;
 }
@@ -35,8 +34,8 @@ func hex(T? val) string {
 # the binary representation of val
 func binary(T? val) string {
 	# the actual string that will be changed to contain the binary string
-	string buffer = "";
-	string bin_buffer = "00000000";
+	buffer = "";
+	bin_buffer = "00000000";
 	byte* offset = &val;
 	for int i = info(T).size - 1; i >= 0; i -= 1 {
 		byte b = offset[i];
@@ -51,6 +50,5 @@ func binary(T? val) string {
 
 func base64(T? val) string {
 	byte* source = &val;
-	
 	return b64_encode(source, info(T).size);
 }

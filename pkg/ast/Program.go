@@ -12,8 +12,10 @@ import (
 	"path/filepath"
 
 	"github.com/geode-lang/geode/llvm/ir"
+	"github.com/geode-lang/geode/llvm/ir/metadata"
 	"github.com/geode-lang/geode/llvm/ir/types"
 	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/geode-lang/geode/pkg/arg"
 	"github.com/geode-lang/geode/pkg/lexer"
 	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/log"
@@ -61,6 +63,30 @@ func NewProgram() *Program {
 	p.TypePrecidences[types.NewPointer(types.I8)] = 0
 	p.TypePrecidences[types.Void] = 0
 	return p
+}
+
+// ScopeUp steps up to the scope's parent
+func (p *Program) ScopeUp() error {
+	if p.Scope.Parent == nil {
+		return fmt.Errorf("scope step up failed. Ask the developer")
+	}
+	p.Scope = p.Scope.Parent
+
+	return nil
+}
+
+// ScopeDown steps down into a new scope based on some token for debug info
+func (p *Program) ScopeDown(tok lexer.Token) {
+
+	p.Scope = p.Scope.SpawnChild()
+
+	if *arg.EnableDebug {
+		md := &metadata.Named{}
+		md.Name = fmt.Sprintf("scope_%d", p.Scope.Index)
+		p.Module.NamedMetadata = append(p.Module.NamedMetadata, md)
+		p.Scope.DebugInfo = md
+		// md.Metadata
+	}
 }
 
 // ParsePath parses from some some path and handles
@@ -132,15 +158,16 @@ func (p *Program) ParseDir(path string) ([]string, error) {
 
 }
 
-// ParseFile will parse the contents of the file at some path into a Package
-func (p *Program) ParseFile(path string) {
+// ParseText takes some code and the path it was located at and
+// adds it to the Program
+func (p *Program) ParseText(code string, path string) {
 	p.ParsedFiles = append(p.ParsedFiles, path)
 	src, err := lexer.NewSourcefile(path)
 	if err != nil {
 		fmt.Println(err)
 		log.Fatal("Error creating Sourcefile context for file at %q\n", path)
 	}
-	src.LoadFile(path)
+	src.LoadString(code)
 
 	tokens := lexer.Lex(src)
 
@@ -180,6 +207,16 @@ func (p *Program) ParseFile(path string) {
 		}
 
 	}
+}
+
+// ParseFile will parse the contents of the file at some path into a Package
+func (p *Program) ParseFile(path string) {
+	bytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		log.Fatal("%s\n", err)
+	}
+
+	p.ParseText(string(bytes), path)
 
 }
 
@@ -364,11 +401,6 @@ func (p *Program) FindFunction(searchNames []string, argTypes []types.Type) (*ir
 // if it isnt compiled, it will codegen, otherwise it will return the compiled one
 func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (*ir.Function, error) {
 
-	dopt := NewFunctionDiscoveryOptions(name, p.Package)
-
-	dopt.AddArgs(options.ArgTypes...)
-	NewFunctionDiscoveryWorker(p).Discover(dopt)
-
 	var err error
 
 	// Save the program state
@@ -391,7 +423,12 @@ func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (
 		p.Scope.PackageName = p.Package.Name
 	}
 
-	p.Scope = p.Scope.SpawnChild()
+	p.ScopeDown(node.Token)
+	// p.Scope = p.Scope.SpawnChild()
+
+	dopt := NewFunctionDiscoveryOptions(name, p.Package)
+	dopt.AddArgs(options.ArgTypes...)
+	NewFunctionDiscoveryWorker(p).Discover(dopt)
 
 	// p.Compiler = NewCompiler(p)
 
@@ -454,11 +491,8 @@ func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (
 	if f, found := node.Variants[node.NameCache]; found {
 		compiledVal = f
 	} else {
-		// if !node.External && node.Name.String() != "main" {
-		// 	node.Name.Value = node.MangledName(p, correctTypes) // MangleFunctionName(fmt.Sprintf("%s:%s", node.Package.Name, node.Name.String()), types)
-		// }
 
-		node.Variants[node.NameCache], err = node.Declare(p) // Declare first to allow recursive calls
+		node.Variants[node.NameCache], err = node.Declare(p)
 		if err != nil {
 			return nil, err
 		}

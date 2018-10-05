@@ -3,10 +3,13 @@ package lexer
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/geode-lang/geode/llvm/ir/metadata"
 	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/geode-lang/geode/pkg/debug"
 	"github.com/geode-lang/geode/pkg/util/color"
 )
 
@@ -44,7 +47,8 @@ func (t Token) String() string {
 
 // FileInfo returns the file address of a token
 func (t Token) FileInfo() string {
-	return fmt.Sprintf("%s:%d", t.source.Path, t.Line)
+	p := filepath.Clean(t.source.Path)
+	return fmt.Sprintf("%s:%d", p, t.Line)
 }
 
 // SyntaxError prints a formatted syntax error
@@ -98,4 +102,20 @@ func (t Token) InferType() (types.Type, interface{}) {
 	}
 
 	return nil, nil
+}
+
+// DebugFileInfo returns the debug.FileInfo for this token
+func (t *Token) DebugFileInfo() *debug.FileInfo {
+	info := &debug.FileInfo{}
+	info.Column = t.Column
+	info.Line = t.Line
+	info.Path = t.source.Path
+	return info
+}
+
+// DILocation returns the string DILocation for debugging of this token
+func (t *Token) DILocation(scope *metadata.Named) string {
+	info := t.DebugFileInfo()
+	info.Scope = scope
+	return debug.DILocation(info)
 }

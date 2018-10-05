@@ -69,12 +69,17 @@ func (m *Module) String() string {
 		if len(buf.Bytes()) > 0 {
 			buf.WriteString("\n")
 		}
+		// title := fmt.Sprintf(" %s ", f.Name)
+
+		// bars := strings.Repeat("-", 20)
+		// title = bars + title + bars
+		// fmt.Fprintf(buf, "; %s\n", title)
 		fmt.Fprintln(buf, f)
 	}
+
+	fmt.Fprintf(buf, "\n")
 	for _, md := range m.NamedMetadata {
-		if len(buf.Bytes()) > 0 {
-			buf.WriteString("\n")
-		}
+
 		name := enc.Metadata(md.Name)
 		fmt.Fprintf(buf, "%s = %s\n", name, md.Def())
 	}

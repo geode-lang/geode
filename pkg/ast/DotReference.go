@@ -47,7 +47,7 @@ func (n DotReference) BaseAddr(prog *Program) value.Value {
 	return val
 }
 
-// GetFunc implemnets Callable.GetFunc
+// GetFunc implements Callable.GetFunc
 func (n DotReference) GetFunc(prog *Program, argTypes []types.Type) (*ir.Function, []value.Value, error) {
 
 	class := n.BaseType(prog)

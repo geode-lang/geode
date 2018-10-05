@@ -7,7 +7,7 @@
 #
 PLATFORMS="darwin/amd64"
 PLATFORMS="$PLATFORMS linux/amd64"
-
+PLATFORMS="$PLATFORMS linux/arm64"
 
 PLATFORMS_ARM="linux freebsd netbsd"
 
@@ -70,10 +70,10 @@ for PLATFORM in $PLATFORMS; do
   cd $WORKDIRABS
 
 
-  PKGNAME="geode-$VERSION"
+  PKGNAME="geode-$VERSION-$GOARCH"
 
   tar -czf $TARNAME -C $NAME .
-  rm -rf $TARGETDIR
+  # rm -rf $TARGETDIR
 
   if [ $GOOS == "darwin" ]
   then

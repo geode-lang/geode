@@ -54,7 +54,6 @@ func (n FunctionCallNode) Codegen(prog *Program) (value.Value, error) {
 	args := []value.Value{}
 	argTypes := []types.Type{}
 
-	// argStrings := []string{}
 	for _, arg := range n.Args {
 
 		if ac, isAccessable := arg.(Accessable); isAccessable {
@@ -93,11 +92,10 @@ func (n FunctionCallNode) Codegen(prog *Program) (value.Value, error) {
 	}
 
 	// Attempt to typecast all the args into the correct type
-	// This is skipped with variadic functions
-	if !callee.Sig.Variadic {
-		for i := range args {
-			args[i], _ = createTypeCast(prog, args[i], callee.Sig.Params[i].Type())
-		}
+	for i, exp := range callee.Sig.Params {
+		t := exp.Type()
+
+		args[i], _ = createTypeCast(prog, args[i], t)
 	}
 
 	// Varargs require type conversion to a standardized type

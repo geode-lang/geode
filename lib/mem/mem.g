@@ -21,6 +21,13 @@ func get(long size) byte* {
 	return xmalloc(size);
 }
 
+func resize(byte* ptr, long size) byte* {
+	if size(ptr) < size {
+		return xrealloc(ptr, size)
+	}
+	return ptr
+}
+
 func set(byte* ptr, int size, byte val) {
 	for i = 0; i < size; i += 1 {
 		ptr[i] = val;

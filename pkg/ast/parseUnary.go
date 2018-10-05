@@ -21,6 +21,7 @@ func (p *Parser) parseUnary(allowdecl bool) Node {
 
 	// _, isBinaryOp := p.binaryOpPrecedence[p.token.Value]
 	_, isPtrOp := validUnaryOps[p.token.Value]
+
 	if !isPtrOp {
 		chain, _ := p.parseCompoundExpression(allowdecl)
 		if chain != nil {
@@ -37,16 +38,22 @@ func (p *Parser) parseUnary(allowdecl bool) Node {
 	p.Next()
 
 	operand := p.parseUnary(allowdecl)
-	if unaryOp == "&" {
-		if operand.Kind() == nodeVariable {
-			// Update operand's RefType if it is a nodeVariable
-			n := (operand).(VariableNode)
-			n.TokenReference.Token = startTok
-			n.RefType = ReferenceAccessStackAddress
-			operand = n
-		}
-	}
+	// if unaryOp == "&" {
+	// 	if operand.Kind() == nodeVariable {
+	// 		// Update operand's RefType if it is a nodeVariable
+	// 		n := (operand).(VariableNode)
+	// 		n.TokenReference.Token = startTok
+	// 		n.RefType = ReferenceAccessStackAddress
+	// 		operand = n
+	// 	}
+	// }
+
+	// if unaryOp == "*" {
+	// 	fmt.Println(operand)
+	// }
+
 	if operand != nil {
+
 		n := UnaryNode{}
 		n.TokenReference.Token = startTok
 		n.NodeType = nodeUnary

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/geode-lang/geode/llvm/ir"
+	"github.com/geode-lang/geode/llvm/ir/metadata"
 	"github.com/geode-lang/geode/llvm/ir/types"
 	"github.com/geode-lang/geode/llvm/ir/value"
 )
@@ -21,6 +22,7 @@ type Scope struct {
 	Vals        map[string]ScopeItem  `json:"values"`
 	Types       map[string]*ScopeType `json:"types"`
 	PackageName string                `json:"package_name"`
+	DebugInfo   *metadata.Named
 }
 
 // Add a value to this specific scope
