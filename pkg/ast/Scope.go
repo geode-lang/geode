@@ -8,6 +8,7 @@ import (
 	"github.com/geode-lang/geode/llvm/ir/metadata"
 	"github.com/geode-lang/geode/llvm/ir/types"
 	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/geode-lang/geode/pkg/util"
 )
 
 func init() {
@@ -43,6 +44,32 @@ func (s *Scope) Find(searchPaths []string) (ScopeItem, bool) {
 		return s.Parent.Find(searchPaths)
 	}
 	return nil, false
+}
+
+// GetSimilarName returns the most similar name in the parent scopes
+func (s *Scope) GetSimilarName(name string) (string, float64) {
+	names := s.GetNames()
+	tmp := s.Parent
+	for tmp != nil {
+		names = append(names, tmp.GetNames()...)
+		tmp = tmp.Parent
+	}
+	type info struct {
+		name string
+		dist float64
+	}
+	closest := info{
+		name: names[0],
+		dist: util.Jaro(names[0], name),
+	}
+	for _, n := range names[1:] {
+		d := util.Jaro(n, name)
+		if d > closest.dist {
+			closest.dist = d
+			closest.name = n
+		}
+	}
+	return closest.name, closest.dist
 }
 
 // AllNames returns a recursive lookup of all names in a scope tree

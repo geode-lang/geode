@@ -75,26 +75,23 @@ func (n ForNode) Codegen(prog *Program) (value.Value, error) {
 	stepBlk := parentFunc.NewBlock(namePrefix + "step")
 
 	err = prog.Compiler.genInBlock(bodyBlk, func() error {
-
 		scp := prog.Scope
 		gen, err := n.Body.Codegen(prog)
 		if err != nil {
 			return err
 		}
 		prog.Scope = scp
-
-		// prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment("branch to the step"))
 		bodyGenBlk = gen.(*ir.BasicBlock)
-
 		if err != nil {
 			return err
 		}
-
 		bodyGenBlk.BranchIfNoTerminator(stepBlk)
 		bodyBlk.BranchIfNoTerminator(stepBlk)
-
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	err = prog.Compiler.genInBlock(stepBlk, func() error {
 		scp := prog.Scope
@@ -102,6 +99,10 @@ func (n ForNode) Codegen(prog *Program) (value.Value, error) {
 		prog.Scope = scp
 		return err
 	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	stepBlk.BranchIfNoTerminator(condBlk)
 	endBlk = parentFunc.NewBlock(namePrefix + "end")

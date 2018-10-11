@@ -1,5 +1,7 @@
 is runtime
 
+include "c"
+
 link "runtime.c"
 link "xmalloc.c"
 
@@ -25,7 +27,7 @@ func write'(int fd, byte* msg) long {
 }
 
 
-func wout(byte* msg) long = write'(1, msg)
+func log(byte* msg) long = write'(1, "%s\n"(msg))
 func werr(byte* msg) int = write'(2, msg)
 
 
@@ -34,6 +36,8 @@ func raw_copy(byte* source, int len) byte* {
 	memcpy(dest, source, len);
 	return dest;
 }
+
+func __runtime_str_format(string format, ...) string ...
 
 
 func __init_runtime() {

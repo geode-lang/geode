@@ -277,7 +277,6 @@ func createInitializationPrelude(prog *Program, n FunctionNode) {
 
 	if prog.Compiler.CurrentFunc().Name == "__init_runtime" {
 		prog.Compiler.NewComment("Runtime Prelude:")
-		prog.NewRuntimeFunctionCall("__init_c_runtime")
 
 		if len(prog.Initializations) > 0 {
 			prog.Compiler.NewComment("Global Initializations:")

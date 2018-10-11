@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/geode-lang/geode/pkg/arg"
@@ -9,6 +10,7 @@ import (
 	"github.com/geode-lang/geode/llvm/ir/metadata"
 	"github.com/geode-lang/geode/llvm/ir/types"
 	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/geode-lang/geode/pkg/util/color"
 	"github.com/geode-lang/geode/pkg/util/log"
 )
 
@@ -140,7 +142,21 @@ func (n IdentNode) Codegen(prog *Program) (value.Value, error) {
 func (n IdentNode) GenAccess(prog *Program) (value.Value, error) {
 	load := n.Load(prog.Compiler.CurrentBlock(), prog)
 	if load == nil {
-		return nil, fmt.Errorf("unable to load/access value for identifier %q", n)
+
+		buff := &bytes.Buffer{}
+		fmt.Fprintf(buff, "* unable to load/access value for identifier %s\n", color.Red(n.Value))
+
+		meant, dist := prog.Scope.GetSimilarName(n.Value)
+		if dist >= 0.2 {
+			fmt.Fprintf(buff, "  Maybe you meant %s", color.Green(meant))
+			if typ, found := prog.Scope.Find([]string{meant}); found {
+				ptr := typ.Value().Type().(*types.PointerType)
+				fmt.Fprintf(buff, " (%s)", ptr.Elem)
+			}
+			buff.WriteString("?\n")
+		}
+
+		return nil, fmt.Errorf("%s", buff)
 	}
 	return load, nil
 }

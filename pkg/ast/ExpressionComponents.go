@@ -158,6 +158,19 @@ func (c *CallComponent) Ident() string {
 // ConstructNode returns the ast node for the expression component
 func (c *CallComponent) ConstructNode(prev Node) (Node, error) {
 
+	switch prev.(type) {
+	case StringNode:
+		n := StringFormatNode{}
+		n.Token = c.token
+		n.NodeType = nodeStringFormat
+		n.Format = prev.(StringNode)
+		for _, argc := range c.Args {
+			n.Args = append(n.Args, argc)
+		}
+		return n, nil
+
+	}
+
 	n := FunctionCallNode{}
 	n.Token = c.token
 	n.NodeType = nodeFunctionCall

@@ -15,6 +15,7 @@ import (
 	"github.com/geode-lang/geode/pkg/info"
 	"github.com/geode-lang/geode/pkg/pkg"
 	"github.com/geode-lang/geode/pkg/util"
+	"github.com/geode-lang/geode/pkg/util/color"
 	"github.com/geode-lang/geode/pkg/util/log"
 )
 
@@ -129,7 +130,7 @@ func (c *Context) Build(buildDir string) {
 	program := ast.NewProgram()
 
 	if !*arg.DisableRuntime {
-		program.ParseDep("", "std:runtime")
+		program.ParseDep("", "runtime")
 	}
 
 	program.Entry = c.Input
@@ -150,7 +151,9 @@ func (c *Context) Build(buildDir string) {
 	options := ast.FunctionCompilationOptions{}
 	main, err := program.GetFunction("main", options)
 	if err != nil {
-		log.Fatal("%s\n", err)
+		fmt.Println(color.Red("Failed to Compile"))
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	if main == nil {
 		log.Fatal("No function `main` found in compilation.\n")

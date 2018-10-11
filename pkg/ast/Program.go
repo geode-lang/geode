@@ -161,6 +161,10 @@ func (p *Program) ParseDir(path string) ([]string, error) {
 // ParseText takes some code and the path it was located at and
 // adds it to the Program
 func (p *Program) ParseText(code string, path string) {
+
+	// pp := preprocessor.New()
+	// code, _ = pp.Run(code)
+
 	p.ParsedFiles = append(p.ParsedFiles, path)
 	src, err := lexer.NewSourcefile(path)
 	if err != nil {
@@ -217,7 +221,6 @@ func (p *Program) ParseFile(path string) {
 	}
 
 	p.ParseText(string(bytes), path)
-
 }
 
 // ParseDep will parse any dependency relative to the current base

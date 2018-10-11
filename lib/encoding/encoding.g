@@ -1,9 +1,5 @@
 is encoding
 
-link "b64_encode.c"
-
-func b64_encode(string src, int len) string ...
-
 include "str"
 include "mem"
 include "io"
@@ -48,7 +44,3 @@ func binary(T? val) string {
 	return buffer;
 }
 
-func base64(T? val) string {
-	byte* source = &val;
-	return b64_encode(source, info(T).size);
-}

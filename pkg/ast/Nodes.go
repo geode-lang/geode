@@ -74,6 +74,7 @@ const (
 	nodeGlobalDecl            = "nodeGlobalDecl"
 	nodeNil                   = "nodeNil"
 	nodeIdent                 = "nodeIdent"
+	nodeStringFormat          = "nodeStringFormat"
 )
 
 //

@@ -72,9 +72,8 @@ func (n ClassNode) VerifyCorrectness(prog *Program) error {
 
 			if contains, _, _ := structContainsTypeAnywhere(structT, base, structT); contains {
 				buff := &bytes.Buffer{}
-				fmt.Fprintf(buff, "\n")
-				fmt.Fprintf(buff, "* Problem: class %s has a field %s of type %s which eventually back references %s (would consume 'infinite' stack memory)\n", color.Green(n.Name), color.Blue(fieldName), color.Red(t), color.Green(n.Name))
-				fmt.Fprintf(buff, "  Solution: Either change %s to a pointer or remove the back-reference from %s\n\n", color.Blue(fieldName), color.Red(t))
+				fmt.Fprintf(buff, "* class %s has a field %s of type %s which eventually back references %s (would consume 'infinite' stack memory)\n", color.Green(n.Name), color.Blue(fieldName), color.Red(t), color.Green(n.Name))
+				fmt.Fprintf(buff, "  Either change %s to a pointer or remove the back-reference from %s\n\n", color.Blue(fieldName), color.Red(t))
 				return fmt.Errorf("%s", buff)
 			}
 		}

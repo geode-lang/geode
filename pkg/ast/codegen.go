@@ -157,7 +157,9 @@ func (n UnaryNode) Codegen(prog *Program) (value.Value, error) {
 			return nil, fmt.Errorf("unable to '!' (not) type %q", operandValue.Type())
 		}
 
-		eq := prog.Compiler.CurrentBlock().NewICmp(ir.IntNE, operandValue, constant.False)
+		opVal, _ := createTypeCast(prog, operandValue, types.I1)
+
+		eq := prog.Compiler.CurrentBlock().NewICmp(ir.IntNE, opVal, constant.False)
 		inv := prog.Compiler.CurrentBlock().NewXor(eq, constant.True)
 		ext := prog.Compiler.CurrentBlock().NewZExt(inv, types.I32)
 
