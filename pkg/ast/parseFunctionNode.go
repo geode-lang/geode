@@ -82,6 +82,7 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 		}
 
 	}
+
 	if p.token.Is(lexer.TokType) {
 		fn.ReturnType = p.parseType()
 	} else {
@@ -90,10 +91,20 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 		fn.ReturnType.PointerLevel = 0
 		fn.ReturnType.Unknown = false
 	}
+	// fmt.Println(p.token.Value)
 
 	if p.token.Is(lexer.TokLeftCurly) {
 		fn.BodyParser = p.forkBlockParser()
-	} else if p.token.Is(lexer.TokRightArrow) {
+	} else if p.token.Is(lexer.TokRightArrow, lexer.TokOper) {
+
+		if p.token.Is(lexer.TokOper) && p.token.Value != "=" {
+			p.token.SyntaxError()
+			log.Fatal("unexpected token %q in function declaration\n", p.token.Value)
+		}
+
+		if p.token.Is(lexer.TokRightArrow) {
+			log.Deprecated("Use of an arrow function will be removed. Replace '->' with '=' (%s)\n", p.token.FileInfo())
+		}
 		fn.Body = BlockNode{}
 		fn.Body.NodeType = nodeBlock
 		fn.Body.Nodes = make([]Node, 0)
@@ -110,6 +121,9 @@ func (p *Parser) parseFunctionNode() FunctionNode {
 		// External functions should not be mangled
 		fn.Nomangle = true
 		p.Next()
+	} else {
+		p.token.SyntaxError()
+		log.Fatal("")
 	}
 
 	for _, arg := range fn.Args {

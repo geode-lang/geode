@@ -21,7 +21,7 @@ func (n BlockNode) NameString() string { return "BlockNode" }
 
 // Codegen implements Node.Codegen for BlockNode
 func (n BlockNode) Codegen(prog *Program) (value.Value, error) {
-	prog.Scope = prog.Scope.SpawnChild()
+	prog.ScopeDown(n.Token)
 
 	for _, node := range n.Nodes {
 
@@ -34,10 +34,10 @@ func (n BlockNode) Codegen(prog *Program) (value.Value, error) {
 			break
 		}
 	}
-	if prog.Scope.Parent == nil {
-		return nil, fmt.Errorf("attempt to step up a scope failed because the parent was nil %q", n.Token.FileInfo())
+
+	if err := prog.ScopeUp(); err != nil {
+		return nil, err
 	}
-	prog.Scope = prog.Scope.Parent
 	return prog.Compiler.CurrentBlock(), nil
 }
 

@@ -156,10 +156,15 @@ func (n BinaryNode) Codegen(prog *Program) (value.Value, error) {
 	switch n.OP {
 	case "+=", "-=", "*=", "/=":
 		return CodegenCompoundOperator(prog, n.Left, n.Right, n.OP)
-
+	case "+", "-":
+		add := AddSubNode{}
+		add.Left = n.Left
+		add.Right = n.Right
+		add.Sub = n.OP == "-"
+		add.TokenReference = n.TokenReference
+		add.NodeType = nodeBinary
+		return add.Codegen(prog)
 	}
-
-	// fmt.Println(n.Left, n.OP, n.Right)
 
 	if n.Left == nil || n.Right == nil {
 		n.SyntaxError()
@@ -173,6 +178,19 @@ func (n BinaryNode) Codegen(prog *Program) (value.Value, error) {
 	r, err := n.Right.Codegen(prog)
 	if err != nil {
 		return nil, err
+	}
+
+	mustCastToPtr := false
+	var finalPointerType types.Type
+
+	if types.IsPointer(l.Type()) {
+		mustCastToPtr = true
+		finalPointerType = l.Type()
+	}
+
+	if types.IsPointer(r.Type()) {
+		mustCastToPtr = true
+		finalPointerType = r.Type()
 	}
 
 	// Attempt to cast them with casting precidence
@@ -202,6 +220,10 @@ func (n BinaryNode) Codegen(prog *Program) (value.Value, error) {
 
 	if resultcast != nil {
 		value, _ = createTypeCast(prog, value, resultcast)
+	}
+
+	if mustCastToPtr {
+		value, _ = createTypeCast(prog, value, finalPointerType)
 	}
 
 	return value, nil
@@ -239,4 +261,79 @@ func binaryCast(prog *Program, left, right value.Value) (value.Value, value.Valu
 		left, _ = createTypeCast(prog, left, rt)
 	}
 	return left, right, casted, resultcast
+}
+
+// ----------------------- Add Node -----------------------
+
+// AddSubNode represents an addition or subtraction operation
+type AddSubNode struct {
+	NodeType
+	TokenReference
+	Accessable
+
+	Sub bool
+
+	Left  Node
+	Right Node
+}
+
+func (n AddSubNode) String() string {
+	buff := &bytes.Buffer{}
+	op := "+"
+	if n.Sub {
+		op = "-"
+	}
+	fmt.Fprintf(buff, "%s %s %s", n.Left, op, n.Right)
+	return buff.String()
+}
+
+// NameString implements Node.NameString
+func (n AddSubNode) NameString() string { return "AddSubNode" }
+
+// GenAccess implements Accessable.GenAccess
+func (n AddSubNode) GenAccess(prog *Program) (value.Value, error) {
+	return n.Codegen(prog)
+}
+
+// Codegen implements Node.Codegen for AddSubNode
+func (n AddSubNode) Codegen(prog *Program) (value.Value, error) {
+
+	opname := "add"
+	if n.Sub {
+		opname = "sub"
+	}
+
+	var result value.Value
+	var err error
+	// Generate the left and right nodes
+	l, err := n.Left.Codegen(prog)
+	if err != nil {
+		return nil, err
+	}
+	r, err := n.Right.Codegen(prog)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: handle unsigned numbers... (maybe)
+	left, right, t, resultcast := binaryCast(prog, l, r)
+
+	// float add/sub operations on numeric types are prefixed with 'f'
+	if types.IsFloat(t) {
+		opname = "f" + opname
+	}
+
+	result = NewGeodeBinaryInstr(opname, left, right)
+
+	prog.Compiler.CurrentBlock().AppendInst(result.(ir.Instruction))
+
+	if resultcast != nil {
+		result, err = createTypeCast(prog, result, resultcast)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// finalType is the resultant type to cast to at the end
+	// var finalType types.Type
+	return result, nil
 }

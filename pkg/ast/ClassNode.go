@@ -72,9 +72,8 @@ func (n ClassNode) VerifyCorrectness(prog *Program) error {
 
 			if contains, _, _ := structContainsTypeAnywhere(structT, base, structT); contains {
 				buff := &bytes.Buffer{}
-				fmt.Fprintf(buff, "\n")
-				fmt.Fprintf(buff, "* Problem: class %s has a field %s of type %s which eventually back references %s (would consume 'infinite' stack memory)\n", color.Green(n.Name), color.Blue(fieldName), color.Red(t), color.Green(n.Name))
-				fmt.Fprintf(buff, "  Solution: Either change %s to a pointer or remove the back-reference from %s\n\n", color.Blue(fieldName), color.Red(t))
+				fmt.Fprintf(buff, "* class %s has a field %s of type %s which eventually back references %s (would consume 'infinite' stack memory)\n", color.Green(n.Name), color.Blue(fieldName), color.Red(t), color.Green(n.Name))
+				fmt.Fprintf(buff, "  Either change %s to a pointer or remove the back-reference from %s\n\n", color.Blue(fieldName), color.Red(t))
 				return fmt.Errorf("%s", buff)
 			}
 		}
@@ -105,8 +104,6 @@ func (n ClassNode) String() string {
 func (n ClassNode) Declare(prog *Program) (value.Value, error) {
 	structDefn := types.NewStruct()
 
-	// prog.Scope = prog.Scope.SpawnChild()
-
 	name := fmt.Sprintf("class.%s:%s", prog.Scope.PackageName, n.Name)
 	structDefn.SetName(name)
 
@@ -117,9 +114,6 @@ func (n ClassNode) Declare(prog *Program) (value.Value, error) {
 		scopeName = fmt.Sprintf("%s:%s", prog.Scope.PackageName, n.Name)
 	}
 	prog.Scope.GetRoot().RegisterType(scopeName, structDefn, -1)
-	// structDefn.Opaque = true
-
-	// prog.Scope = prog.Scope.Parent
 
 	return nil, nil
 }

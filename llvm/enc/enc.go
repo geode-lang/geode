@@ -66,6 +66,25 @@ const (
 	tail = head + decimal
 )
 
+// // EscapeIdent takes a string, and if it contains invalid llvm chars, surrounds
+// // it in quotes
+// func EscapeIdent(s string) string {
+// 	// Check if a replacement is required.
+// 	extra := 0
+// 	for i := 0; i < len(s); i++ {
+// 		if strings.IndexByte(tail, s[i]) == -1 {
+// 			// Two extra bytes are required for each invalid byte; e.g.
+// 			//    "#" -> `\23`
+// 			//    "世" -> `\E4\B8\96`
+// 			extra += 2
+// 		}
+// 	}
+// 	if extra == 0 {
+// 		return s
+// 	}
+// 	// Add surrounding quotes.
+// 	return `"` + s + `"`
+// }
 // EscapeIdent replaces any characters which are not valid in identifiers with
 // corresponding hexadecimal escape sequence (\XX).
 func EscapeIdent(s string) string {

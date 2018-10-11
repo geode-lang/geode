@@ -1,11 +1,16 @@
 package ast
 
 import (
+	"bytes"
 	"fmt"
 
+	"github.com/geode-lang/geode/pkg/arg"
+
 	"github.com/geode-lang/geode/llvm/ir"
+	"github.com/geode-lang/geode/llvm/ir/metadata"
 	"github.com/geode-lang/geode/llvm/ir/types"
 	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/geode-lang/geode/pkg/util/color"
 	"github.com/geode-lang/geode/pkg/util/log"
 )
 
@@ -70,6 +75,11 @@ func (n IdentNode) Alloca(prog *Program) value.Value {
 	searchPaths = append(searchPaths, n.Value)
 	searchPaths = append(searchPaths, fmt.Sprintf("%s:%s", prog.Package.Name, n.Value))
 
+	if prog.Scope == nil {
+		n.SyntaxError()
+		fmt.Println(n)
+		return nil
+	}
 	scopeitem, found := prog.Scope.Find(searchPaths)
 
 	var alloc value.Value
@@ -112,7 +122,14 @@ func (n IdentNode) GenAssign(prog *Program, assignment value.Value, options ...A
 		alloca = prog.Compiler.CurrentBlock().NewAlloca(assignment.Type())
 		prog.Scope.Add(NewVariableScopeItem(n.Value, alloca, PublicVisibility))
 	}
-	prog.Compiler.CurrentBlock().NewStore(assignment, alloca)
+	store := prog.Compiler.CurrentBlock().NewStore(assignment, alloca)
+
+	if *arg.EnableDebug {
+		md := &metadata.Metadata{}
+		md.Add(metadata.NewRaw(n.Token.DILocation(prog.Scope.DebugInfo)))
+		store.Metadata["dbg"] = md
+	}
+
 	return assignment, nil
 }
 
@@ -125,7 +142,21 @@ func (n IdentNode) Codegen(prog *Program) (value.Value, error) {
 func (n IdentNode) GenAccess(prog *Program) (value.Value, error) {
 	load := n.Load(prog.Compiler.CurrentBlock(), prog)
 	if load == nil {
-		return nil, fmt.Errorf("unable to load/access value for identifier %q", n)
+
+		buff := &bytes.Buffer{}
+		fmt.Fprintf(buff, "* unable to load/access value for identifier %s\n", color.Red(n.Value))
+
+		meant, dist := prog.Scope.GetSimilarName(n.Value)
+		if dist >= 0.2 {
+			fmt.Fprintf(buff, "  Maybe you meant %s", color.Green(meant))
+			if typ, found := prog.Scope.Find([]string{meant}); found {
+				ptr := typ.Value().Type().(*types.PointerType)
+				fmt.Fprintf(buff, " (%s)", ptr.Elem)
+			}
+			buff.WriteString("?\n")
+		}
+
+		return nil, fmt.Errorf("%s", buff)
 	}
 	return load, nil
 }

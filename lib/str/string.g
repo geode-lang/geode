@@ -86,6 +86,7 @@ func concat(string a, string b) string {
 func hash(string str) long {
 	long hash = 5381;
 	size = len(str);
+
 	for c = 0; c < size; c += 1 {
 		hash = ((hash << 5) + hash) + c # hash * 33 + c
 	}
@@ -95,8 +96,24 @@ func hash(string str) long {
 
 
 
+# split str by all characters in sset and return
+# a NULL terminated string buffer
+func split(string str, string sset) string* {
+	strSize = info(string).size
+	count = 0
+	splits = mem:get(strSize * count)
 
 
+	string ptr = str;
+	while str[i] {
+		char = str[i]
+
+		# check if the char is in the subset
+		for c = 0; c < len(sset); c += 1 {
+			if 
+		}
+	}
 
 
-
+	return splits
+}

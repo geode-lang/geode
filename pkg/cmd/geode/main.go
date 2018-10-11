@@ -15,24 +15,24 @@ import (
 	"github.com/geode-lang/geode/pkg/info"
 	"github.com/geode-lang/geode/pkg/pkg"
 	"github.com/geode-lang/geode/pkg/util"
+	"github.com/geode-lang/geode/pkg/util/color"
 	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 // Some constants that represent the program in it's current compiled state
 const (
-	VERSION = "0.6.6"
+	VERSION = "0.6.7"
 	AUTHOR  = "Nick Wanninger"
 )
 
 var startTime time.Time
 
 func main() {
+
 	// :^)
 	if runtime.GOOS == "windows" {
 		log.Fatal("The Geode Compiler does not support Windows at this time.")
 	}
-
-	// ast.TestNewParser()
 
 	startTime = time.Now()
 	command := arg.Parse()
@@ -128,7 +128,11 @@ func NewContext(in string, out string) *Context {
 func (c *Context) Build(buildDir string) {
 
 	program := ast.NewProgram()
-	program.ParseDep("", "std:runtime")
+
+	if !*arg.DisableRuntime {
+		program.ParseDep("", "runtime")
+	}
+
 	program.Entry = c.Input
 
 	if _, err := os.Stat(c.Input); os.IsNotExist(err) {
@@ -147,11 +151,17 @@ func (c *Context) Build(buildDir string) {
 	options := ast.FunctionCompilationOptions{}
 	main, err := program.GetFunction("main", options)
 	if err != nil {
-		log.Fatal("%s\n", err)
+		fmt.Println(color.Red("Failed to Compile"))
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	if main == nil {
 		log.Fatal("No function `main` found in compilation.\n")
 	}
+
+	// virt := vm.New(program.Module)
+
+	// virt.RunFunctionName("main")
 
 	if *arg.ShowLLVM {
 		fmt.Println(program)

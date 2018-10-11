@@ -95,7 +95,9 @@ func (c *IdentComponent) Ident() string {
 
 // ConstructNode returns the ast node for the expression component
 func (c *IdentComponent) ConstructNode(prev Node) (Node, error) {
-	return NewIdentNode(c.Value), nil
+	n := NewIdentNode(c.Value)
+	n.Token = c.token
+	return n, nil
 }
 
 // =========================== IdentDeclComponent ===========================
@@ -155,6 +157,19 @@ func (c *CallComponent) Ident() string {
 
 // ConstructNode returns the ast node for the expression component
 func (c *CallComponent) ConstructNode(prev Node) (Node, error) {
+
+	switch prev.(type) {
+	case StringNode:
+		n := StringFormatNode{}
+		n.Token = c.token
+		n.NodeType = nodeStringFormat
+		n.Format = prev.(StringNode)
+		for _, argc := range c.Args {
+			n.Args = append(n.Args, argc)
+		}
+		return n, nil
+
+	}
 
 	n := FunctionCallNode{}
 	n.Token = c.token

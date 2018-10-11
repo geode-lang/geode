@@ -42,6 +42,12 @@ func Info(format string, args ...interface{}) {
 
 }
 
+// Deprecated -
+func Deprecated(format string, args ...interface{}) {
+	tolog := color.Bold("[deprecated] ") + fmt.Sprintf(format, args...)
+	log(tolog)
+}
+
 // Syntax -
 func Syntax(format string, args ...interface{}) {
 	tolog := color.Yellow("[syntax] ") + fmt.Sprintf(format, args...)

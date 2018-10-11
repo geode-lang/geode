@@ -77,6 +77,7 @@ const (
 	TokComma
 
 	TokIdent
+	TokSymbol
 
 	TokComment
 )

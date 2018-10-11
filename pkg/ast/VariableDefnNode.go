@@ -36,8 +36,6 @@ func (n VariableDefnNode) Codegen(prog *Program) (value.Value, error) {
 	var val value.Value
 	var valType types.Type
 
-	scope := prog.Scope
-
 	block := prog.Compiler.CurrentBlock()
 
 	n.Package = prog.Package
@@ -88,7 +86,7 @@ func (n VariableDefnNode) Codegen(prog *Program) (value.Value, error) {
 
 	prog.Compiler.PushType(alloc.Elem)
 	scItem := NewVariableScopeItem(name.String(), alloc, PrivateVisibility)
-	scope.Add(scItem)
+	prog.Scope.Add(scItem)
 
 	if !n.NeedsInference && val != nil {
 		val, err = createTypeCast(prog, val, alloc.Elem)

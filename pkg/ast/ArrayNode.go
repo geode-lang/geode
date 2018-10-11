@@ -65,9 +65,21 @@ func (n ArrayNode) Codegen(prog *Program) (value.Value, error) {
 
 	// arrayLength := int64(itemType.ByteCount() * n.Length)
 	var alloca value.Value
-	alloca = block.NewAlloca(arrayType)
+	// alloca = block.NewAlloca(arrayType)
 
-	// alloca = createTypeCast(prog, alloca, arrayType)
+	length := constant.NewInt(int64(n.Length*arrayType.ByteCount()), types.I32)
+
+	dyn, err := prog.NewRuntimeFunctionCall("xmalloc", length)
+	if err != nil {
+		return nil, err
+	}
+
+	alloca, err = createTypeCast(prog, dyn, typ)
+	if err != nil {
+		return nil, err
+	}
+
+	alloca = block.NewAlloca(arrayType)
 
 	zero := constant.NewInt(int64(0), types.I64)
 	one := constant.NewInt(int64(1), types.I64)

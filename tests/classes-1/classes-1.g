@@ -12,4 +12,4 @@ class Person {
 	Person* father;
 }
 
-func main int -> 0;
+func main int = 0;

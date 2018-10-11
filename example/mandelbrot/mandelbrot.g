@@ -3,6 +3,7 @@ is mandel
 include "io"
 include "str"
 include "math"
+include "c"
 
 
 func printdensity(int d, int iter) {
@@ -10,9 +11,9 @@ func printdensity(int d, int iter) {
 	if d > iter {
 		r = 0
 	}
-	a = io:format("\x1b[48;2;%d;%d;%dm ", r, 0, 0)
-	io:fputs(a, io:stdout)
-	io:fputs("\x1b[0m", io:stdout)
+	a = "\x1b[48;2;%d;%d;%dm "(r, r, r)
+	c:fputs(a, io:stdout)
+	c:fputs("\x1b[0m", io:stdout)
 }
 
 
@@ -21,7 +22,8 @@ func mandelconverger(float real, float imag, float iters, float creal, float cim
 		return iters
 	} else {
 		return mandelconverger(real * real - imag * imag + creal, 2.0 * real * imag + cimag, iters + 1.0, creal, cimag, iter)
-	}	
+	}
+	return 0.0
 }
 
 
@@ -32,7 +34,6 @@ func mandelconverge(float real, float imag, int iter) float {
 }
 
 func printMandel(float realstart, float imagstart, float zoom, int iter, float width, float height) {
-	io:print("%.40f\n", zoom)
 	# x-values
 	xmin = realstart - zoom * (width / 2.0)
 	xmax = realstart + zoom * (width / 2.0)
@@ -53,9 +54,9 @@ func mandelhelp(float xmin, float xmax, float xstep, float ymin, float ymax, flo
 			cov = mandelconverge(x,y, iter)
 			printdensity(cov, iter)
 		}
-		io:fputs("\n", io:stdout)
+		c:fputs("\n", io:stdout)
 	}
-	io:fflush(io:stdout)
+	c:fflush(io:stdout)
 	
 }
 
@@ -82,9 +83,9 @@ func main int {
 		clear()
 		printMandel(x, y, z, iter, width, height)
 
-		io:system("stty raw")
-		input = io:getchar()
-		io:system("stty cooked")
+		c:system("stty raw")
+		input = c:getchar()
+		c:system("stty cooked")
 
 		io:print("\n")
 		

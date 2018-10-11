@@ -5,17 +5,15 @@ import (
 	"github.com/geode-lang/geode/pkg/util/log"
 )
 
+var typeOperators = []string{"*", "?"}
+
 func validTypeInfoTokens(t lexer.Token) bool {
-	allowed := map[string]bool{
-		"*": true,
-		"?": true,
-		":": true,
-		// "[": true,
-		// "]": true,
-		// "]": true,
+	for _, op := range typeOperators {
+		if op == t.Value {
+			return true
+		}
 	}
-	_, ok := allowed[t.Value]
-	return ok
+	return false
 
 }
 
@@ -42,6 +40,7 @@ func (p *Parser) parseType() (t TypeNode) {
 	p.requires(lexer.TokType)
 
 	t.Name, _ = p.parseName()
+
 	t.Modifiers = make([]TypeModifier, 0)
 	// p.Next()
 
@@ -58,7 +57,7 @@ func (p *Parser) parseType() (t TypeNode) {
 			continue
 		}
 
-		if p.token.Is(lexer.TokOper) {
+		if p.token.Is(lexer.TokOper) && validTypeInfoTokens(p.token) {
 			for _, c := range p.token.Value {
 				if c == '*' {
 					t.PointerLevel++

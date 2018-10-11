@@ -4,9 +4,9 @@ package ast
 
 import "strconv"
 
-const _ManglePartType_name = "NamespaceMangleNameMangleTypeMangleGenericMangle"
+const _ManglePartType_name = "NamespaceMangleNameMangleTypeMangleReturnTypeMangleGenericMangle"
 
-var _ManglePartType_index = [...]uint8{0, 15, 25, 35, 48}
+var _ManglePartType_index = [...]uint8{0, 15, 25, 35, 51, 64}
 
 func (i ManglePartType) String() string {
 	if i < 0 || i >= ManglePartType(len(_ManglePartType_index)-1) {

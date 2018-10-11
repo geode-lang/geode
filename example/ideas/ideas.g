@@ -10,8 +10,8 @@ protocol Addable {
 
 class Foo(a) {
 	int a;
-	func add(Addable other) int -> this.value() + other.value();
-	func value int -> this.a;
+	func add(Addable other) int = this.value() + other.value();
+	func value int = this.a;
 }
 
 func add(Addable a, Addable b) int {

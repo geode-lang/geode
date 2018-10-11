@@ -1,2 +1,2 @@
 is main
-func main int -> 0;
+func main int = 0;

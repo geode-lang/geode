@@ -16,6 +16,7 @@ import (
 	"sort"
 	"strings"
 	"syscall"
+	"time"
 	"unicode"
 
 	"github.com/BurntSushi/toml"
@@ -23,6 +24,7 @@ import (
 	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/color"
 	"github.com/geode-lang/geode/pkg/util/log"
+	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
 // TestJob -
@@ -41,6 +43,7 @@ type testResult struct {
 	CompilerStatus int
 	compilerOutput string
 	RunOutput      string
+	timetaken      time.Duration
 }
 
 func parseTestJob(filename string) (TestJob, error) {
@@ -118,6 +121,8 @@ func RunTests(testDirectory string) int {
 
 	go func() {
 		for _, job := range jobs {
+
+			start := time.Now()
 			outBuf := new(bytes.Buffer)
 			outpath := fmt.Sprintf("%s_test", job.sourcefile)
 
@@ -161,6 +166,11 @@ func RunTests(testDirectory string) int {
 				os.Exit(1)
 			}
 
+			t := time.Now()
+
+			elapsed := t.Sub(start)
+
+			res.timetaken = elapsed
 			results <- res
 			testRunCount++
 
@@ -174,55 +184,67 @@ func RunTests(testDirectory string) int {
 	numSucceses := 0
 	numTests := 0
 
+	index := 0
+
 	for res := range results {
+		index++
 		failure := false
 
-		fmt.Printf("%s\n", res.TestJob.Name)
+		errBuf := &bytes.Buffer{}
 
 		// Check build errors
 
 		if (res.TestJob.compilerError == -1 && res.compilerError != res.TestJob.CompilerStatus) || (res.compilerError == res.TestJob.compilerError) {
 		} else {
-			fmt.Printf("  CompilerStatus:\n    ")
-			msg := color.Red("✗")
-			fmt.Printf("%s. Expected %d\n    ", msg, res.TestJob.compilerError)
-			fmt.Printf("Got %d\n", res.TestJob.CompilerStatus)
+			fmt.Fprintf(errBuf, "CompilerStatus:\n")
+			fmt.Fprintf(errBuf, "Expected: %d\n", res.TestJob.compilerError)
+			fmt.Fprintf(errBuf, "Got:      %d\n", res.TestJob.CompilerStatus)
 			failure = true
 		}
 
 		// Check run errors
 		if res.RunStatus == res.TestJob.RunStatus {
 		} else {
-			fmt.Printf("  RunStatus:\n    ")
-			msg := color.Red("✗")
-			fmt.Printf("%s. Expected %d\n    ", msg, res.TestJob.RunStatus)
-			fmt.Printf("Got %d\n", res.RunStatus)
+			fmt.Fprintf(errBuf, "RunStatus:\n")
+			fmt.Fprintf(errBuf, "Expected: %d\n", res.TestJob.RunStatus)
+			fmt.Fprintf(errBuf, "Got:      %d\n", res.RunStatus)
 			failure = true
 		}
 
 		// Check run errors
 		if res.RunOutput == res.TestJob.RunOutput {
 		} else {
-			fmt.Printf("  RunOutput:\n    ")
-			msg := color.Red("✗")
-			fmt.Printf("%s. Expected %s\n    ", msg, res.TestJob.RunOutput)
-			fmt.Printf("Got %s\n", res.RunOutput)
+
+			dmp := diffmatchpatch.New()
+			expected := res.TestJob.RunOutput
+			got := res.RunOutput
+			diffs := dmp.DiffMain(expected, got, false)
+
+			fmt.Fprintf(errBuf, "RunOutput:\n")
+			fmt.Fprintf(errBuf, "Expected: %q\n", expected)
+			fmt.Fprintf(errBuf, "Got:      %q\n", got)
+
+			fmt.Fprintf(errBuf, "diff:\n%s\n", dmp.DiffPrettyText(diffs))
 			failure = true
 		}
 
+		ok := fmt.Sprintf("%sOKAY%s", color.TEXT_GREEN, color.TEXT_RESET)
+
 		// Output result
 		if !failure {
+			fmt.Printf("(%d)\t%s %s\n", index, ok, res.TestJob.Name)
 			numSucceses++
-			fmt.Printf("%sTest Passed%s\n", color.TEXT_GREEN, color.TEXT_RESET)
+			// fmt.Printf("%sTest Passed%s\n", color.TEXT_GREEN, color.TEXT_RESET)
 		} else {
-			fmt.Printf("%sTest Failed%s\n", color.TEXT_RED, color.TEXT_RESET)
+			failed := fmt.Sprintf("%sFAIL%s", color.TEXT_RED, color.TEXT_RESET)
+			fmt.Printf("(%d)\t%s %s\n", index, failed, res.TestJob.Name)
+			fmt.Printf("%s\n", errBuf.String())
 		}
 		numTests++
 
-		fmt.Printf("\n")
 	}
 
-	fmt.Printf("Total: %d / %d tests ran succesfully\n\n", numSucceses, numTests)
+	fmt.Printf("->\t%d/%d (%.0f%%) tests ran succesfully\n\n", numSucceses, numTests, float64(numSucceses)/float64(numTests)*100)
 	if numSucceses < numTests {
 		os.Exit(1)
 		return 1

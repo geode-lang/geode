@@ -24,6 +24,7 @@ type TokenReference struct {
 
 // SyntaxError -
 func (t TokenReference) SyntaxError() {
+
 	t.Token.SyntaxError()
 }
 
@@ -73,6 +74,7 @@ const (
 	nodeGlobalDecl            = "nodeGlobalDecl"
 	nodeNil                   = "nodeNil"
 	nodeIdent                 = "nodeIdent"
+	nodeStringFormat          = "nodeStringFormat"
 )
 
 //
@@ -120,28 +122,6 @@ func (n IfNode) String() string {
 
 // NameString implements Node.NameString
 func (n IfNode) NameString() string { return "IfNode" }
-
-//
-// ForNode is a for loop structure representation
-type ForNode struct {
-	NodeType
-	TokenReference
-
-	Index int
-	Init  Node
-	Cond  Node
-	Step  Node
-	Body  Node
-}
-
-func (n ForNode) String() string {
-	buff := &bytes.Buffer{}
-	fmt.Fprintf(buff, "for %s; %s; %s %s", n.Init, n.Cond, n.Step, n.Body)
-	return buff.String()
-}
-
-// NameString implements Node.NameString
-func (n ForNode) NameString() string { return "ForNode" }
 
 //
 // UnaryNode is a unary operation representation.
