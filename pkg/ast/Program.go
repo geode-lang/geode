@@ -582,7 +582,7 @@ func SearchPaths(base string) []string {
 	sp := make([]string, 0)
 
 	sp = append(sp, base)
-	sp = append(sp, "/usr/local/lib/geodelib")
+	sp = append(sp, util.StdLibDir())
 
 	for base != "/" && base != "." {
 		dir := filepath.Join(base, packagedir)

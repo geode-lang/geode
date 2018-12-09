@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -63,6 +64,12 @@ func StdLibDir() string {
 	libpath := os.Getenv("GEODELIB")
 	if libpath == "" {
 		libpath = "/usr/local/lib/geodelib"
+	} else {
+		absPath, err := filepath.Abs(libpath)
+		if err != nil {
+			panic(fmt.Errorf("unable to locate absolute directory of standard library at %q", libpath))
+		}
+		libpath = absPath
 	}
 	return libpath
 }
