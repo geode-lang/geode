@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/geode-lang/geode/llvm/ir"
-	"github.com/geode-lang/geode/llvm/ir/constant"
-	"github.com/geode-lang/geode/llvm/ir/types"
-	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/geode-lang/geode/pkg/gtypes"
 	"github.com/geode-lang/geode/pkg/util/color"
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 // ClassNode -
@@ -42,7 +43,7 @@ func (n ClassNode) VerifyCorrectness(prog *Program) error {
 		return err
 	}
 
-	base, ok := found.(*types.StructType)
+	base, ok := found.(*gtypes.StructType)
 	if !ok {
 		return fmt.Errorf("unable to cast found type %T to a struct for class %q", found, n.Name)
 	}
@@ -60,7 +61,7 @@ func (n ClassNode) VerifyCorrectness(prog *Program) error {
 			continue
 		}
 
-		if types.IsStruct(ty) {
+		if gtypes.IsStruct(ty) {
 			// If the type is a direct reference back to the base class, it is invalid. It must be a pointer type
 			if types.Equal(base, ty) {
 				return fmt.Errorf("class '%s' has a circular reference in it's fields. Field '%s' should be a pointer to a '%s' instead", n.Name, f.Name, n.Name)
@@ -68,7 +69,7 @@ func (n ClassNode) VerifyCorrectness(prog *Program) error {
 
 			// Now we need to check if the struct has a non-pointer reference back to this class.
 			// that has the same effect.
-			structT := ty.(*types.StructType)
+			structT := ty.(*gtypes.StructType)
 
 			if contains, _, _ := structContainsTypeAnywhere(structT, base, structT); contains {
 				buff := &bytes.Buffer{}
@@ -81,13 +82,13 @@ func (n ClassNode) VerifyCorrectness(prog *Program) error {
 	return nil
 }
 
-func structContainsTypeAnywhere(s *types.StructType, t types.Type, path ...*types.StructType) (bool, int, []*types.StructType) {
+func structContainsTypeAnywhere(s *gtypes.StructType, t types.Type, path ...*gtypes.StructType) (bool, int, []*gtypes.StructType) {
 	for i, field := range s.Fields {
 		if types.Equal(field, t) {
 			return true, i, path
 		}
-		if types.IsStruct(field) {
-			structType := field.(*types.StructType)
+		if gtypes.IsStruct(field) {
+			structType := field.(*gtypes.StructType)
 			if contains, index, p := structContainsTypeAnywhere(structType, t, append(path, structType)...); contains {
 				return true, index, p
 			}
@@ -102,12 +103,12 @@ func (n ClassNode) String() string {
 
 // Declare a class type
 func (n ClassNode) Declare(prog *Program) (value.Value, error) {
-	structDefn := types.NewStruct()
+	structDefn := gtypes.NewStruct()
 
 	name := fmt.Sprintf("class.%s:%s", prog.Scope.PackageName, n.Name)
 	structDefn.SetName(name)
 
-	prog.Module.NewType(n.Name, structDefn)
+	prog.Module.NewTypeDef(n.Name, structDefn)
 
 	scopeName := n.Name
 	if prog.Package.Name != "runtime" {
@@ -126,7 +127,7 @@ func (n ClassNode) Codegen(prog *Program) (value.Value, error) {
 		return nil, err
 	}
 
-	structDefn := found.(*types.StructType)
+	structDefn := found.(*gtypes.StructType)
 
 	fieldnames := make([]string, 0, len(n.Variables))
 	fields := make([]types.Type, 0, len(n.Variables))
@@ -191,7 +192,7 @@ func GenerateClassConstruction(name string, typ types.Type, s *Scope, c *Compile
 
 // NewClassInstance takes the class to generate as well as the fields
 // mapped to their value
-func NewClassInstance(prog *Program, stct *types.StructType, fields map[string]value.Value) value.Value {
+func NewClassInstance(prog *Program, stct *gtypes.StructType, fields map[string]value.Value) value.Value {
 
 	alloc := prog.Compiler.CurrentBlock().NewAlloca(stct)
 
@@ -212,27 +213,29 @@ func GetStructFieldAlloc(prog *Program, alloc *ir.InstAlloca, field string) valu
 	baseType := GetBaseType(base)
 
 	ptr := alloc.Type().(*types.PointerType)
-	elemType := ptr.Elem
+	elemType := ptr.ElemType
 
 	// If the type that the alloca points to is a pointer, we need to load from the pointer
 	if types.IsPointer(elemType) {
 		base = prog.Compiler.CurrentBlock().NewLoad(base)
 	}
 
-	structType := baseType.(*types.StructType)
+	structType := baseType.(*gtypes.StructType)
 
 	index := structType.FieldIndex(field)
 
-	zero := constant.NewInt(0, types.I32)
-	fieldOffset := constant.NewInt(int64(index), types.I32)
-	gen := prog.Compiler.CurrentBlock().NewGetElementPtr(base, zero, fieldOffset)
-	return gen
+	zero := constant.NewInt(types.I32, 0)
+	fieldOffset := constant.NewInt(types.I32, int64(index))
+	curBlock := prog.Compiler.CurrentBlock()
+	inst := gep(base, zero, fieldOffset)
+	curBlock.Insts = append(curBlock.Insts, inst)
+	return inst
 }
 
 // GenStructFieldAssignment takes some allocation and assigns the value to a field given some name
 func GenStructFieldAssignment(prog *Program, alloc *ir.InstAlloca, field string, val value.Value) {
 	gen := GetStructFieldAlloc(prog, alloc, field)
-	elem := gen.Type().(*types.PointerType).Elem
+	elem := gen.Type().(*types.PointerType).ElemType
 	val, _ = createTypeCast(prog, val, elem)
 	prog.Compiler.CurrentBlock().NewStore(val, gen)
 }
@@ -240,9 +243,9 @@ func GenStructFieldAssignment(prog *Program, alloc *ir.InstAlloca, field string,
 // GetBaseType returns the base type of some alloca
 func GetBaseType(v value.Value) types.Type {
 	base := v.(*ir.InstAlloca)
-	baseType := base.Elem
+	baseType := base.ElemType
 	for types.IsPointer(baseType) {
-		baseType = baseType.(*types.PointerType).Elem
+		baseType = baseType.(*types.PointerType).ElemType
 	}
 	return baseType
 }

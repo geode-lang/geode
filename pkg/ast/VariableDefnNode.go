@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/geode-lang/geode/llvm/ir"
-	"github.com/geode-lang/geode/llvm/ir/constant"
-	"github.com/geode-lang/geode/llvm/ir/types"
-	"github.com/geode-lang/geode/llvm/ir/value"
 	"github.com/geode-lang/geode/pkg/util/log"
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 // VariableDefnNode -
@@ -84,12 +84,12 @@ func (n VariableDefnNode) Codegen(prog *Program) (value.Value, error) {
 		}
 	}
 
-	prog.Compiler.PushType(alloc.Elem)
+	prog.Compiler.PushType(alloc.ElemType)
 	scItem := NewVariableScopeItem(name.String(), alloc, PrivateVisibility)
 	prog.Scope.Add(scItem)
 
 	if !n.NeedsInference && val != nil {
-		val, err = createTypeCast(prog, val, alloc.Elem)
+		val, err = createTypeCast(prog, val, alloc.ElemType)
 		if err != nil {
 			return nil, err
 		}
@@ -97,7 +97,7 @@ func (n VariableDefnNode) Codegen(prog *Program) (value.Value, error) {
 
 	// If the value is nil, we need to pull the default value for a given type.
 	if val == nil {
-		val = constant.NewZeroInitializer(alloc.Elem)
+		val = constant.NewZeroInitializer(alloc.ElemType)
 	}
 
 	block.NewStore(val, alloc)

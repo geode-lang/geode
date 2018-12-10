@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/geode-lang/geode/llvm/ir"
-	"github.com/geode-lang/geode/llvm/ir/types"
-	"github.com/geode-lang/geode/llvm/ir/value"
 	"github.com/geode-lang/geode/pkg/arg"
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 // FuncDeclKeywordType lets the compiler keep track of
@@ -68,8 +68,8 @@ type FunctionNode struct {
 func (n FunctionNode) NameString() string { return "FunctionNode" }
 
 // Arguments returns some FunctionNode's arguments
-func (n FunctionNode) Arguments(prog *Program) ([]*types.Param, []types.Type, error) {
-	funcArgs := make([]*types.Param, 0)
+func (n FunctionNode) Arguments(prog *Program) ([]*ir.Param, []types.Type, error) {
+	funcArgs := make([]*ir.Param, 0)
 	argTypes := make([]types.Type, 0)
 	for _, arg := range n.Args {
 		found, _ := prog.FindType(arg.Type.Name)
@@ -120,7 +120,7 @@ func (n FunctionNode) Declare(prog *Program) (*ir.Function, error) {
 		return nil, err
 	}
 
-	function := prog.Compiler.Module.NewFunction(namestring, ty, funcArgs...)
+	function := prog.Compiler.Module.NewFunc(namestring, ty, funcArgs...)
 
 	prog.Compiler.PushFunc(function)
 	defer prog.Compiler.PopFunc()
@@ -202,23 +202,22 @@ func (n FunctionNode) Codegen(prog *Program) (value.Value, error) {
 	// If the function is external (has ... at the end) we don't build a block
 	if !n.External {
 		// Create the entrypoint to the function
-		entryBlock := ir.NewBlock(n.Name.String() + "_entry")
-
-		prog.Compiler.CurrentFunc().AppendBlock(entryBlock)
+		curFunc := prog.Compiler.CurrentFunc()
+		entryBlock := curFunc.NewBlock(n.Name.String() + "_entry")
 		prog.Compiler.PushBlock(entryBlock)
 
 		// Construct the prelude of this function
 		// The prelude contains information about
 		// initializing the runtime.
 		createInitializationPrelude(prog, n)
-		if len(function.Params()) > 0 {
+		if len(function.Params) > 0 {
 			// prog.Compiler.CurrentBlock().AppendInst(NewLLVMComment(n.Name.String() + " arguments:"))
 		}
-		for _, arg := range function.Params() {
+		for _, arg := range function.Params {
 			alloc := prog.Compiler.CurrentBlock().NewAlloca(arg.Type())
 			prog.Compiler.CurrentBlock().NewStore(arg, alloc)
 			// Set the scope item
-			scItem := NewVariableScopeItem(arg.Name, alloc, PrivateVisibility)
+			scItem := NewVariableScopeItem(arg.Name(), alloc, PrivateVisibility)
 			prog.Scope.Add(scItem)
 		}
 		// Gen the body of the function
@@ -268,14 +267,14 @@ func createInitializationPrelude(prog *Program, n FunctionNode) {
 	if *arg.DisableRuntime {
 		return
 	}
-	if prog.Compiler.CurrentFunc().Name == "main" {
+	if prog.Compiler.CurrentFunc().Name() == "main" {
 
 		prog.NewRuntimeFunctionCall("__init_runtime")
 
 		prog.Compiler.NewComment("User Code:")
 	}
 
-	if prog.Compiler.CurrentFunc().Name == "__init_runtime" {
+	if prog.Compiler.CurrentFunc().Name() == "__init_runtime" {
 		prog.Compiler.NewComment("Runtime Prelude:")
 
 		if len(prog.Initializations) > 0 {

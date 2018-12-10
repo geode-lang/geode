@@ -3,11 +3,11 @@ package ast
 import (
 	"fmt"
 
-	"github.com/geode-lang/geode/llvm/ir"
-	"github.com/geode-lang/geode/llvm/ir/constant"
-	"github.com/geode-lang/geode/llvm/ir/types"
-	"github.com/geode-lang/geode/llvm/ir/value"
 	"github.com/geode-lang/geode/pkg/arg"
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 // StringNode -
@@ -34,17 +34,16 @@ func (n StringNode) Codegen(prog *Program) (value.Value, error) {
 		name := fmt.Sprintf(".str.%X", strIndex)
 		strIndex++
 		str = prog.Compiler.Module.NewGlobalDef(name, newCharArray(n.Value))
-		str.IsConst = true
-		str.Immutable()
+		str.Immutable = true
 		prog.StringDefs[n.Value] = str
 	}
 
 	var val value.Value
-	zero := constant.NewInt(0, types.I32)
+	zero := constant.NewInt(types.I32, 0)
 	val = constant.NewGetElementPtr(str, zero, zero)
 
 	if !*arg.DisableStringDataCopy {
-		length := constant.NewInt(int64(len([]byte(n.Value))+1), types.I32)
+		length := constant.NewInt(types.I32, int64(len([]byte(n.Value))+1))
 		v, err := prog.NewRuntimeFunctionCall("raw_copy", val, length)
 		if err != nil {
 			return nil, err

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/llir/llvm/ir/value"
 )
 
 // BlockNode is a block statement. A block statement is just an array of Nodes

@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/geode-lang/geode/llvm/ir"
-	"github.com/geode-lang/geode/llvm/ir/types"
-	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/enum"
+	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
-func createCmp(blk *ir.BasicBlock, i ir.IntPred, f ir.FloatPred, t types.Type, left, right value.Value) value.Value {
+func createCmp(blk *ir.BasicBlock, i enum.IPred, f enum.FPred, t types.Type, left, right value.Value) value.Value {
 
 	var val value.Value
 
@@ -26,14 +27,14 @@ func createCmp(blk *ir.BasicBlock, i ir.IntPred, f ir.FloatPred, t types.Type, l
 // CreateBinaryOp produces a geode binary op (just a wrapper around geode-lang/geode/llvm's binary instructions)
 func CreateBinaryOp(intstr, fltstr string, blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
 
-	var val *GeodeBinaryInstr
+	var val BinaryInstruction
 	if types.IsInt(t) {
 		val = NewGeodeBinaryInstr(intstr, left, right)
 	} else {
 		val = NewGeodeBinaryInstr(fltstr, left, right)
 	}
 
-	blk.AppendInst(val)
+	blk.Insts = append(blk.Insts, val)
 
 	return val
 }
@@ -44,8 +45,8 @@ type numericalBinaryOperator struct {
 }
 
 type comparisonOperation struct {
-	I ir.IntPred
-	F ir.FloatPred
+	I enum.IPred
+	F enum.FPred
 }
 
 var binaryOperatorTypeMap = map[string]numericalBinaryOperator{
@@ -62,12 +63,12 @@ var binaryOperatorTypeMap = map[string]numericalBinaryOperator{
 }
 
 var booleanComparisonOperatorMap = map[string]comparisonOperation{
-	"==": {ir.IntEQ, ir.FloatOEQ},
-	"!=": {ir.IntNE, ir.FloatONE},
-	">":  {ir.IntSGT, ir.FloatOGT},
-	">=": {ir.IntSGE, ir.FloatOGE},
-	"<":  {ir.IntSLT, ir.FloatOLT},
-	"<=": {ir.IntSLE, ir.FloatOLE},
+	"==": {enum.IPredEQ, enum.FPredOEQ},
+	"!=": {enum.IPredNE, enum.FPredONE},
+	">":  {enum.IPredSGT, enum.FPredOGT},
+	">=": {enum.IPredSGE, enum.FPredOGE},
+	"<":  {enum.IPredSLT, enum.FPredOLT},
+	"<=": {enum.IPredSLE, enum.FPredOLE},
 }
 
 // BinaryNode is a representation of a binary operation
@@ -322,9 +323,10 @@ func (n AddSubNode) Codegen(prog *Program) (value.Value, error) {
 		opname = "f" + opname
 	}
 
-	result = NewGeodeBinaryInstr(opname, left, right)
-
-	prog.Compiler.CurrentBlock().AppendInst(result.(ir.Instruction))
+	inst := NewGeodeBinaryInstr(opname, left, right)
+	result = inst
+	curBlock := prog.Compiler.CurrentBlock()
+	curBlock.Insts = append(curBlock.Insts, inst)
 
 	if resultcast != nil {
 		result, err = createTypeCast(prog, result, resultcast)

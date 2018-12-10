@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/geode-lang/geode/llvm/ir"
-	"github.com/geode-lang/geode/llvm/ir/types"
-	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 // FunctionCallNode is a function call, example: `foo(a, b, c)`. This would be:
@@ -92,10 +92,8 @@ func (n FunctionCallNode) Codegen(prog *Program) (value.Value, error) {
 	}
 
 	// Attempt to typecast all the args into the correct type
-	for i, exp := range callee.Sig.Params {
-		t := exp.Type()
-
-		args[i], _ = createTypeCast(prog, args[i], t)
+	for i, paramType := range callee.Sig.Params {
+		args[i], _ = createTypeCast(prog, args[i], paramType)
 	}
 
 	// Varargs require type conversion to a standardized type
@@ -106,7 +104,7 @@ func (n FunctionCallNode) Codegen(prog *Program) (value.Value, error) {
 
 	for i, arg := range args {
 
-		if callee.Sig.Variadic && i >= len(callee.Params()) {
+		if callee.Sig.Variadic && i >= len(callee.Params) {
 			if types.IsInt(arg.Type()) {
 				if !types.Equal(arg.Type(), types.I32) {
 					c, err := createTypeCast(prog, arg, types.I32)

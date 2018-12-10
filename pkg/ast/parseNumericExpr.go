@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/llir/llvm/ir/types"
 )
 
 func (p *Parser) parseNumericExpr() Node {

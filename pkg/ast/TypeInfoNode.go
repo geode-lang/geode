@@ -3,10 +3,11 @@ package ast
 import (
 	"fmt"
 
-	"github.com/geode-lang/geode/llvm/ir"
-	"github.com/geode-lang/geode/llvm/ir/constant"
-	"github.com/geode-lang/geode/llvm/ir/types"
-	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/geode-lang/geode/pkg/gtypes"
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 // TypeInfoDeclaration is what will be used in the program to keep track of globals
@@ -41,7 +42,7 @@ func (n TypeInfoNode) Codegen(prog *Program) (value.Value, error) {
 	// allocation was not found, so we make a new global one.
 	typ, _ := n.Type(prog)
 
-	sct := typ.(*types.StructType)
+	sct := typ.(*gtypes.StructType)
 	globl := prog.Module.NewGlobalDecl(fmt.Sprintf("type_info_%s", n.T), sct)
 
 	globl.Init = constant.NewZeroInitializer(sct)
@@ -52,7 +53,7 @@ func (n TypeInfoNode) Codegen(prog *Program) (value.Value, error) {
 	}
 
 	// https://stackoverflow.com/a/30830445
-	elemptr := constant.NewGetElementPtr(constant.NewNull(types.NewPointer(analyzeType)), constant.NewInt(1, types.I32))
+	elemptr := constant.NewGetElementPtr(constant.NewNull(types.NewPointer(analyzeType)), constant.NewInt(types.I32, 1))
 
 	size := prog.Compiler.CurrentBlock().NewPtrToInt(elemptr, types.I64)
 

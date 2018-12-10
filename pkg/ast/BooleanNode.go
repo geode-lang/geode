@@ -1,9 +1,8 @@
 package ast
 
 import (
-	"github.com/geode-lang/geode/llvm/ir/constant"
-	"github.com/geode-lang/geode/llvm/ir/types"
-	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/value"
 )
 
 // BooleanNode is an integer literal
@@ -20,11 +19,11 @@ func (n BooleanNode) NameString() string { return "BooleanNode" }
 
 // Codegen implements Node.Codegen for BooleanNode
 func (n BooleanNode) Codegen(prog *Program) (value.Value, error) {
-	options := map[string]int64{
-		"true":  1,
-		"false": 0,
+	options := map[string]bool{
+		"true":  true,
+		"false": false,
 	}
-	return constant.NewInt(options[n.Value], types.I1), nil
+	return constant.NewBool(options[n.Value]), nil
 }
 
 func (n BooleanNode) String() string {

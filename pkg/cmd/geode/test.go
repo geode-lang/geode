@@ -244,7 +244,7 @@ func RunTests(testDirectory string) int {
 
 	}
 
-	fmt.Printf("->\t%d/%d (%.0f%%) tests ran succesfully\n\n", numSucceses, numTests, float64(numSucceses)/float64(numTests)*100)
+	fmt.Printf("->\t%d/%d (%.0f%%) tests ran successfully\n\n", numSucceses, numTests, float64(numSucceses)/float64(numTests)*100)
 	if numSucceses < numTests {
 		os.Exit(1)
 		return 1

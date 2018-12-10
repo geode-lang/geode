@@ -3,8 +3,8 @@ package ast
 import (
 	"sync"
 
-	"github.com/geode-lang/geode/llvm/ir"
-	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/types"
 )
 
 // Compiler contains all information to
@@ -75,7 +75,8 @@ func (c *Compiler) FunctionDefined(fn *ir.Function) bool {
 
 // NewComment appends a comment string to the current block
 func (c *Compiler) NewComment(comment string) {
-	c.CurrentBlock().AppendInst(NewLLVMComment(comment))
+	curBlock := c.CurrentBlock()
+	curBlock.Insts = append(curBlock.Insts, NewLLVMComment(comment))
 
 }
 

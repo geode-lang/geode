@@ -3,9 +3,9 @@ package ast
 import (
 	"fmt"
 
-	"github.com/geode-lang/geode/llvm/ir/constant"
-	"github.com/geode-lang/geode/llvm/ir/types"
-	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 // FloatNode is a float literla
@@ -21,7 +21,7 @@ func (n FloatNode) NameString() string { return "FloatNode" }
 
 // Codegen implements Node.Codegen for FloatNode
 func (n FloatNode) Codegen(prog *Program) (value.Value, error) {
-	return constant.NewFloat(n.Value, types.Double), nil
+	return constant.NewFloat(types.Double, n.Value), nil
 }
 
 // GenAccess implements Accessable.GenAccess

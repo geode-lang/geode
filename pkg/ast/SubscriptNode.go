@@ -3,10 +3,11 @@ package ast
 import (
 	"fmt"
 
-	"github.com/geode-lang/geode/llvm/ir"
-	"github.com/geode-lang/geode/llvm/ir/constant"
-	"github.com/geode-lang/geode/llvm/ir/types"
-	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/geode-lang/geode/pkg/gtypes"
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 // SubscriptNode is a recursive subscript operation
@@ -37,12 +38,18 @@ func (n SubscriptNode) GenElementPtr(prog *Program) (*ir.InstGetElementPtr, erro
 		return nil, err
 	}
 
-	if types.IsSlice(src.Type()) {
+	if gtypes.IsSlice(src.Type()) {
 		fmt.Println(src.Type())
-		zero := constant.NewInt(int64(0), types.I64)
-		src = prog.Compiler.CurrentBlock().NewGetElementPtr(src, zero)
+		zero := constant.NewInt(types.I64, 0)
+		curBlock := prog.Compiler.CurrentBlock()
+		inst := gep(src, zero)
+		src = inst
+		curBlock.Insts = append(curBlock.Insts, inst)
 	}
-	return prog.Compiler.CurrentBlock().NewGetElementPtr(src, idx), nil
+	curBlock := prog.Compiler.CurrentBlock()
+	inst := gep(src, idx)
+	curBlock.Insts = append(curBlock.Insts, inst)
+	return inst, nil
 }
 
 // Codegen implements Node.Codegen for SubscriptNode

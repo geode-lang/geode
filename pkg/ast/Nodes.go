@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/geode-lang/geode/llvm/ir/types"
-	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/geode-lang/geode/pkg/gtypes"
 	"github.com/geode-lang/geode/pkg/lexer"
+	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 // NodeType -
@@ -305,7 +306,7 @@ func (n TypeNode) GetType(prog *Program) (types.Type, error) {
 			case ModifierPointer:
 				ty = types.NewPointer(ty)
 			case ModifierSlice:
-				ty = types.NewSlice(ty)
+				ty = gtypes.NewSlice(ty)
 			case ModifierUnknown:
 				//
 			default:

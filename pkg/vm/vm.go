@@ -3,8 +3,8 @@ package vm
 import (
 	"fmt"
 
-	"github.com/geode-lang/geode/llvm/ir"
-	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/value"
 )
 
 // VirtualMachine is a structure that can run a *ir.Module
@@ -31,7 +31,7 @@ func (v *VirtualMachine) RunFunctionName(fnName string, args ...Value) (Value, e
 	var function *ir.Function
 
 	for _, fn := range v.Module.Funcs {
-		if fn.Name == fnName {
+		if fn.Name() == fnName {
 			function = fn
 		}
 	}

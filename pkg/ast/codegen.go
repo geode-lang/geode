@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/geode-lang/geode/llvm/ir"
-	"github.com/geode-lang/geode/llvm/ir/constant"
-	"github.com/geode-lang/geode/llvm/ir/metadata"
-	"github.com/geode-lang/geode/llvm/ir/types"
-	"github.com/geode-lang/geode/llvm/ir/value"
 	"github.com/geode-lang/geode/pkg/arg"
+	"github.com/geode-lang/geode/pkg/gtypes"
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/enum"
+	"github.com/llir/llvm/ir/metadata"
+	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 // A global number to indicate which `name index` we are on. This way,
@@ -46,7 +48,7 @@ func (n IfNode) Codegen(prog *Program) (value.Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	zero := constant.NewInt(0, types.I32)
+	zero := constant.NewInt(types.I32, 0)
 	// The name of the blocks is prefixed because
 	namePrefix := fmt.Sprintf("if.%d.", n.Index)
 	parentBlock := prog.Compiler.CurrentBlock()
@@ -54,7 +56,7 @@ func (n IfNode) Codegen(prog *Program) (value.Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	predicate = parentBlock.NewICmp(ir.IntNE, zero, c)
+	predicate = parentBlock.NewICmp(enum.IPredNE, zero, c)
 	parentFunc := parentBlock.Parent
 
 	var thenGenBlk *ir.BasicBlock
@@ -91,12 +93,12 @@ func (n IfNode) Codegen(prog *Program) (value.Value, error) {
 	// We need to make sure these blocks have terminators.
 	// in order to do that, we branch to the end block
 
-	thenBlk.BranchIfNoTerminator(endBlk)
-	thenGenBlk.BranchIfNoTerminator(endBlk)
-	elseBlk.BranchIfNoTerminator(endBlk)
+	BranchIfNoTerminator(thenBlk, endBlk)
+	BranchIfNoTerminator(thenGenBlk, endBlk)
+	BranchIfNoTerminator(elseBlk, endBlk)
 
 	if elseGenBlk != nil {
-		elseGenBlk.BranchIfNoTerminator(endBlk)
+		BranchIfNoTerminator(elseGenBlk, endBlk)
 	}
 
 	parentBlock.NewCondBr(predicate, thenBlk, elseBlk)
@@ -106,7 +108,7 @@ func (n IfNode) Codegen(prog *Program) (value.Value, error) {
 
 // Codegen implements Node.Codegen for CharNode
 func (n CharNode) Codegen(prog *Program) (value.Value, error) {
-	return constant.NewInt(int64(n.Value), types.I8), nil
+	return constant.NewInt(types.I8, int64(n.Value)), nil
 }
 
 // GenAccess returns the value from a given CharNode
@@ -141,9 +143,9 @@ func (n UnaryNode) Codegen(prog *Program) (value.Value, error) {
 	if n.Operator == "-" {
 
 		if types.IsFloat(operandValue.Type()) {
-			return prog.Compiler.CurrentBlock().NewFSub(constant.NewFloat(0, types.Double), operandValue), nil
+			return prog.Compiler.CurrentBlock().NewFSub(constant.NewFloat(types.Double, 0), operandValue), nil
 		} else if types.IsInt(operandValue.Type()) {
-			return prog.Compiler.CurrentBlock().NewSub(constant.NewInt(0, types.I64), operandValue), nil
+			return prog.Compiler.CurrentBlock().NewSub(constant.NewInt(types.I64, 0), operandValue), nil
 		}
 		return nil, fmt.Errorf("Unable to make a non integer/float into a negative")
 
@@ -159,7 +161,7 @@ func (n UnaryNode) Codegen(prog *Program) (value.Value, error) {
 
 		opVal, _ := createTypeCast(prog, operandValue, types.I1)
 
-		eq := prog.Compiler.CurrentBlock().NewICmp(ir.IntNE, opVal, constant.False)
+		eq := prog.Compiler.CurrentBlock().NewICmp(enum.IPredNE, opVal, constant.False)
 		inv := prog.Compiler.CurrentBlock().NewXor(eq, constant.True)
 		ext := prog.Compiler.CurrentBlock().NewZExt(inv, types.I32)
 
@@ -200,14 +202,14 @@ func (n WhileNode) Codegen(prog *Program) (value.Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	one := constant.NewInt(1, types.I1)
+	one := constant.NewInt(types.I1, 1)
 	prog.Compiler.PopBlock()
-	parentBlock.BranchIfNoTerminator(startblock)
+	BranchIfNoTerminator(parentBlock, startblock)
 	c, err := createTypeCast(prog, predicate, types.I1)
 	if err != nil {
 		return nil, err
 	}
-	predicate = startblock.NewICmp(ir.IntEQ, one, c)
+	predicate = startblock.NewICmp(enum.IPredEQ, one, c)
 
 	var endBlk *ir.BasicBlock
 
@@ -226,8 +228,8 @@ func (n WhileNode) Codegen(prog *Program) (value.Value, error) {
 	endBlk = parentFunc.NewBlock(mangleName(namePrefix + "merge"))
 	prog.Compiler.PushBlock(endBlk)
 
-	bodyBlk.BranchIfNoTerminator(startblock)
-	bodyGenBlk.BranchIfNoTerminator(startblock)
+	BranchIfNoTerminator(bodyBlk, startblock)
+	BranchIfNoTerminator(bodyGenBlk, startblock)
 
 	startblock.NewCondBr(predicate, bodyBlk, endBlk)
 
@@ -237,18 +239,18 @@ func (n WhileNode) Codegen(prog *Program) (value.Value, error) {
 }
 
 func typeSize(t types.Type) int {
-	if types.IsInt(t) {
-		return t.(*types.IntType).Size
-	}
-	if types.IsFloat(t) {
-		return int(t.(*types.FloatType).Kind)
+	switch t := t.(type) {
+	case *types.IntType:
+		return int(t.BitSize)
+	case *types.FloatType:
+		return gtypes.FloatBitSize(t)
 	}
 
 	return -1
 }
 
 func typesAreLooselyEqual(a, b types.Type) bool {
-	return types.IsNumber(a) && types.IsNumber(b)
+	return gtypes.IsNumber(a) && gtypes.IsNumber(b)
 }
 
 // createTypeCast is where most, if not all, type casting happens in the language.
@@ -337,7 +339,7 @@ func (n ReturnNode) Codegen(prog *Program) (value.Value, error) {
 	var retVal value.Value
 	var err error
 
-	if prog.Compiler.CurrentFunc().Sig.Ret != types.Void {
+	if !prog.Compiler.CurrentFunc().Sig.RetType.Equal(types.Void) {
 		if n.Value != nil {
 			retVal, err = n.Value.Codegen(prog)
 			if err != nil {
@@ -345,11 +347,11 @@ func (n ReturnNode) Codegen(prog *Program) (value.Value, error) {
 				return nil, err
 			}
 			given := retVal.Type()
-			expected := prog.Compiler.CurrentFunc().Sig.Ret
+			expected := prog.Compiler.CurrentFunc().Sig.RetType
 			if !types.Equal(given, expected) {
 				if !(types.IsInt(given) && types.IsInt(expected)) {
 					n.SyntaxError()
-					fnName, err := UnmangleFunctionName(prog.Compiler.CurrentFunc().Name)
+					fnName, err := UnmangleFunctionName(prog.Compiler.CurrentFunc().Name())
 					if err != nil {
 
 						return nil, err
@@ -367,7 +369,7 @@ func (n ReturnNode) Codegen(prog *Program) (value.Value, error) {
 
 					return nil, fmt.Errorf("incorrect return value for function %s. expected: %s (%s). given: %s (%s)", fnName, expectedName, expected, givenName, given)
 				}
-				retVal, err = createTypeCast(prog, retVal, prog.Compiler.CurrentFunc().Sig.Ret)
+				retVal, err = createTypeCast(prog, retVal, prog.Compiler.CurrentFunc().Sig.RetType)
 				if err != nil {
 
 					return nil, err
@@ -382,24 +384,23 @@ func (n ReturnNode) Codegen(prog *Program) (value.Value, error) {
 	ret := prog.Compiler.CurrentBlock().NewRet(retVal)
 
 	if *arg.EnableDebug {
-		md := &metadata.Metadata{}
-		md.Add(metadata.NewRaw(n.Token.DILocation(prog.Scope.DebugInfo)))
-		ret.Metadata["dbg"] = md
+		mdNode := n.Token.DILocation(prog.Scope.DebugInfo)
+		md := &metadata.Attachment{
+			Name: "dbg",
+			Node: mdNode,
+		}
+		ret.Metadata = append(ret.Metadata, md)
 	}
 
 	return retVal, nil
 }
 
-func newCharArray(s string) *constant.Array {
-	var bs []constant.Constant
-	for i := 0; i < len(s); i++ {
-		b := constant.NewInt(int64(s[i]), types.I8)
-		bs = append(bs, b)
-	}
-	bs = append(bs, constant.NewInt(0, types.I8))
-	c := constant.NewArray(bs...)
-	c.CharArray = true
-	return c
+// newCharArray returns a NULL-terminated character array constant based on the
+// given string.
+func newCharArray(s string) *constant.CharArray {
+	// Add NULL-byte.
+	buf := append([]byte(s), 0)
+	return constant.NewCharArray(buf)
 }
 
 // CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
@@ -416,4 +417,54 @@ func createBlockAlloca(f *ir.Function, elemType types.Type, name string) *ir.Ins
 func codegenError(str string, args ...interface{}) value.Value {
 	fmt.Fprintf(os.Stderr, "Error: %s\n", fmt.Sprintf(str, args...))
 	return nil
+}
+
+// BranchIfNoTerminator checks if the block has a terminator, and if it doesn't,
+// set it to a branch instead.
+func BranchIfNoTerminator(block, target *ir.BasicBlock) {
+	if block.Term == nil {
+		block.NewBr(target)
+	}
+}
+
+// gep returns a new getelementptr instruction based on the given source address
+// and element indices. It handles Geode specific types of which
+// ir.NewGetElementPtr is unaware.
+func gep(src value.Value, indices ...value.Value) *ir.InstGetElementPtr {
+	// Locate element type of src.
+	var (
+		// Pointer to element type of src.
+		elemPtr *types.Type
+		// Geode element type.
+		elem gtypes.Type
+	)
+	switch typ := src.Type().(type) {
+	case *types.PointerType:
+		if e, ok := typ.ElemType.(gtypes.Type); ok {
+			elemPtr = &typ.ElemType
+			elem = e
+		}
+	case *types.VectorType:
+		t, ok := typ.ElemType.(*types.PointerType)
+		if !ok {
+			panic(fmt.Errorf("invalid vector element type; expected *types.Pointer, got %T", typ.ElemType))
+		}
+		if e, ok := t.ElemType.(gtypes.Type); ok {
+			elemPtr = &typ.ElemType
+			elem = e
+		}
+	default:
+		panic(fmt.Errorf("support for souce type %T not yet implemented", typ))
+	}
+	// Set element type of src to underlying LLVM IR type of Geode type, prior to
+	// calling ir.NewGetElementPtr since it is not aware of Geode types.
+	if elemPtr != nil {
+		*elemPtr = elem.Underlying()
+	}
+	inst := ir.NewGetElementPtr(src, indices...)
+	// Restore original Geode type.
+	if elemPtr != nil {
+		*elemPtr = elem
+	}
+	return inst
 }

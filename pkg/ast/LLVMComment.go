@@ -2,66 +2,37 @@ package ast
 
 import (
 	"fmt"
+	"strings"
 
-	"github.com/geode-lang/geode/llvm/ir"
-	"github.com/geode-lang/geode/llvm/ir/metadata"
-	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/types"
 )
 
-// LLVMComment implements ir.Instruction
-// This will be easier than doing individual work
-// per operation
+// LLVMComment is a Geode pseud-comment instruction. It implements the
+// ir.Instruction interface by embedding a NOP add instruction.
 type LLVMComment struct {
-	// Parent basic block.
-	Parent *ir.BasicBlock
-
+	// Comment; may contain multiple lines.
 	data string
 
-	// Map from metadata identifier (e.g. !dbg) to metadata associated with the
-	// instruction.
-	Metadata map[string]*metadata.Metadata
+	// LLVMComment implements ir.Instruction by embedding a NOP add instruction.
+	*ir.InstAdd
 }
 
-// NewLLVMComment returns a new geode binary instruction
+// NewLLVMComment returns a new Geode comment pseudo-instruction.
 func NewLLVMComment(format string, args ...interface{}) *LLVMComment {
+	zero := constant.NewInt(types.I64, 0)
+	nop := ir.NewAdd(zero, zero)
+	nop.SetName("nop")
 	return &LLVMComment{
-		data:     fmt.Sprintf(format, args...),
-		Metadata: make(map[string]*metadata.Metadata),
+		data:    fmt.Sprintf(format, args...),
+		InstAdd: nop,
 	}
 }
 
-// Type returns the type of the instruction.
-func (inst *LLVMComment) Type() types.Type {
-	return types.Void
-}
-
-// Ident returns the identifier associated with the instruction.
-func (inst *LLVMComment) Ident() string {
-	return "COMMENT"
-}
-
-// GetName returns the name of the local variable associated with the
-// instruction.
-func (inst *LLVMComment) GetName() string {
-	return "COMMENT"
-}
-
-// SetName sets the name of the local variable associated with the instruction.
-func (inst *LLVMComment) SetName(name string) {
-
-}
-
-// String returns the LLVM syntax representation of the instruction.
-func (inst *LLVMComment) String() string {
-	return fmt.Sprintf("; %s", inst.data)
-}
-
-// GetParent returns the parent basic block of the instruction.
-func (inst *LLVMComment) GetParent() *ir.BasicBlock {
-	return inst.Parent
-}
-
-// SetParent sets the parent basic block of the instruction.
-func (inst *LLVMComment) SetParent(parent *ir.BasicBlock) {
-	inst.Parent = parent
+// Def returns the LLVM syntax representation of the instruction.
+func (inst *LLVMComment) Def() string {
+	// Handle multi-line comments.
+	data := strings.Replace(inst.data, "\n", "; ", -1)
+	return fmt.Sprintf("; %s", data)
 }
