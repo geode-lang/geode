@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/geode-lang/geode/llvm/ir/metadata"
-	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/llir/llvm/ir/metadata"
+	"github.com/llir/llvm/ir/types"
 	"github.com/geode-lang/geode/pkg/debug"
 	"github.com/geode-lang/geode/pkg/util/color"
 )

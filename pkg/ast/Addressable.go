@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/geode-lang/geode/llvm/ir"
+	"github.com/llir/llvm/ir"
 )
 
 // Addressable is an interface implementable by

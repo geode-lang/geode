@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/llir/llvm/ir/types"
 )
 
 //go:generate stringer -type=ManglePartType

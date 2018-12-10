@@ -3,8 +3,8 @@ package ast
 import (
 	"sync"
 
-	"github.com/geode-lang/geode/llvm/ir"
-	"github.com/geode-lang/geode/llvm/ir/types"
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/types"
 )
 
 // Compiler contains all information to

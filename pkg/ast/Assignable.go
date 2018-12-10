@@ -1,8 +1,8 @@
 package ast
 
 import (
-	"github.com/geode-lang/geode/llvm/ir/types"
-	"github.com/geode-lang/geode/llvm/ir/value"
+	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 // Assignable is an interface that a node can implement that
