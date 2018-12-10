@@ -23,6 +23,7 @@ type LLVMComment struct {
 func NewLLVMComment(format string, args ...interface{}) *LLVMComment {
 	zero := constant.NewInt(types.I64, 0)
 	nop := ir.NewAdd(zero, zero)
+	nop.SetName("nop")
 	return &LLVMComment{
 		data:    fmt.Sprintf(format, args...),
 		InstAdd: nop,

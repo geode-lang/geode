@@ -43,7 +43,7 @@ func (n ClassNode) VerifyCorrectness(prog *Program) error {
 		return err
 	}
 
-	base, ok := found.(*types.StructType)
+	base, ok := found.(*gtypes.StructType)
 	if !ok {
 		return fmt.Errorf("unable to cast found type %T to a struct for class %q", found, n.Name)
 	}
