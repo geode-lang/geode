@@ -226,8 +226,10 @@ func GetStructFieldAlloc(prog *Program, alloc *ir.InstAlloca, field string) valu
 
 	zero := constant.NewInt(types.I32, 0)
 	fieldOffset := constant.NewInt(types.I32, int64(index))
-	gen := prog.Compiler.CurrentBlock().NewGetElementPtr(base, zero, fieldOffset)
-	return gen
+	curBlock := prog.Compiler.CurrentBlock()
+	inst := gep(base, zero, fieldOffset)
+	curBlock.Insts = append(curBlock.Insts, inst)
+	return inst
 }
 
 // GenStructFieldAssignment takes some allocation and assigns the value to a field given some name

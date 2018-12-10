@@ -41,9 +41,15 @@ func (n SubscriptNode) GenElementPtr(prog *Program) (*ir.InstGetElementPtr, erro
 	if gtypes.IsSlice(src.Type()) {
 		fmt.Println(src.Type())
 		zero := constant.NewInt(types.I64, 0)
-		src = prog.Compiler.CurrentBlock().NewGetElementPtr(src, zero)
+		curBlock := prog.Compiler.CurrentBlock()
+		inst := gep(src, zero)
+		src = inst
+		curBlock.Insts = append(curBlock.Insts, inst)
 	}
-	return prog.Compiler.CurrentBlock().NewGetElementPtr(src, idx), nil
+	curBlock := prog.Compiler.CurrentBlock()
+	inst := gep(src, idx)
+	curBlock.Insts = append(curBlock.Insts, inst)
+	return inst, nil
 }
 
 // Codegen implements Node.Codegen for SubscriptNode

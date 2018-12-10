@@ -21,6 +21,11 @@ func NewStruct(fields ...types.Type) *StructType {
 	}
 }
 
+// Underlying returns the underlying LLVM IR type of the Geode struct type.
+func (t *StructType) Underlying() types.Type {
+	return t.StructType
+}
+
 // FieldIndex returns the index of some field in the struct, or -1 if not
 // present.
 func (t *StructType) FieldIndex(name string) int {

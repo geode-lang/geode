@@ -108,9 +108,10 @@ func (n DotReference) Alloca(prog *Program) value.Value {
 
 	zero := constant.NewInt(types.I32, 0)
 	fieldOffset := constant.NewInt(types.I32, int64(index))
-	gen := prog.Compiler.CurrentBlock().NewGetElementPtr(base, zero, fieldOffset)
-
-	return gen
+	curBlock := prog.Compiler.CurrentBlock()
+	inst := gep(base, zero, fieldOffset)
+	curBlock.Insts = append(curBlock.Insts, inst)
+	return inst
 }
 
 // NameString implements Node.NameString

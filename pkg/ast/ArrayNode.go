@@ -84,12 +84,14 @@ func (n ArrayNode) Codegen(prog *Program) (value.Value, error) {
 
 	zero := constant.NewInt(types.I64, 0)
 	one := constant.NewInt(types.I64, 1)
-	arrayStart := block.NewGetElementPtr(alloca, zero, zero)
+	arrayStart := gep(alloca, zero, zero)
+	block.Insts = append(block.Insts, arrayStart)
 	offset := arrayStart
 
 	for i, val := range values {
 		if i > 0 {
-			offset = block.NewGetElementPtr(offset, one)
+			offset = gep(offset, one)
+			block.Insts = append(block.Insts, offset)
 		}
 
 		c, err := createTypeCast(prog, val, itemType)

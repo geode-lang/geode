@@ -395,6 +395,7 @@ func (n ReturnNode) Codegen(prog *Program) (value.Value, error) {
 	return retVal, nil
 }
 
+// newCharArray returns a character array constant based on the given string.
 func newCharArray(s string) *constant.CharArray {
 	return constant.NewCharArray([]byte(s))
 }
@@ -421,4 +422,46 @@ func BranchIfNoTerminator(block, target *ir.BasicBlock) {
 	if block.Term == nil {
 		block.NewBr(target)
 	}
+}
+
+// gep returns a new getelementptr instruction based on the given source address
+// and element indices. It handles Geode specific types of which
+// ir.NewGetElementPtr is unaware.
+func gep(src value.Value, indices ...value.Value) *ir.InstGetElementPtr {
+	// Locate element type of src.
+	var (
+		// Pointer to element type of src.
+		elemPtr *types.Type
+		// Geode element type.
+		elem gtypes.Type
+	)
+	switch typ := src.Type().(type) {
+	case *types.PointerType:
+		if e, ok := typ.ElemType.(gtypes.Type); ok {
+			elemPtr = &typ.ElemType
+			elem = e
+		}
+	case *types.VectorType:
+		t, ok := typ.ElemType.(*types.PointerType)
+		if !ok {
+			panic(fmt.Errorf("invalid vector element type; expected *types.Pointer, got %T", typ.ElemType))
+		}
+		if e, ok := t.ElemType.(gtypes.Type); ok {
+			elemPtr = &typ.ElemType
+			elem = e
+		}
+	default:
+		panic(fmt.Errorf("support for souce type %T not yet implemented", typ))
+	}
+	// Set element type of src to underlying LLVM IR type of Geode type, prior to
+	// calling ir.NewGetElementPtr since it is not aware of Geode types.
+	if elemPtr != nil {
+		*elemPtr = elem.Underlying()
+	}
+	inst := ir.NewGetElementPtr(src, indices...)
+	// Restore original Geode type.
+	if elemPtr != nil {
+		*elemPtr = elem
+	}
+	return inst
 }

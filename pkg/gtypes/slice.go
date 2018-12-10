@@ -24,8 +24,7 @@ func NewSlice(elem types.Type) *SliceType {
 	}
 }
 
-// IsSlice reports whether the given type is a Geode slice type.
-func IsSlice(t types.Type) bool {
-	_, ok := t.(*SliceType)
-	return ok
+// Underlying returns the underlying LLVM IR type of the Geode slice type.
+func (t *SliceType) Underlying() types.Type {
+	return t.StructType
 }
