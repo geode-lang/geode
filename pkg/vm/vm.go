@@ -31,7 +31,7 @@ func (v *VirtualMachine) RunFunctionName(fnName string, args ...Value) (Value, e
 	var function *ir.Function
 
 	for _, fn := range v.Module.Funcs {
-		if fn.Name == fnName {
+		if fn.Name() == fnName {
 			function = fn
 		}
 	}
