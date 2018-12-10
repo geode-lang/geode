@@ -114,8 +114,11 @@ func (t *Token) DebugFileInfo() *debug.FileInfo {
 }
 
 // DILocation returns the string DILocation for debugging of this token
-func (t *Token) DILocation(scope *metadata.NamedDef) string {
-	info := t.DebugFileInfo()
-	info.Scope = scope
-	return debug.DILocation(info)
+func (t *Token) DILocation(scope *metadata.NamedDef) *metadata.DILocation {
+	return &metadata.DILocation{
+		// TODO: add t.source.Path?
+		Scope:  scope,
+		Line:   int64(t.Line),
+		Column: int64(t.Column),
+	}
 }
