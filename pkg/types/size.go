@@ -1,4 +1,3 @@
-// Package types declares the data types of Geode.
 package types
 
 import (
@@ -111,4 +110,24 @@ func SliceByteCount(t *SliceType) int {
 	size := ByteCount(t.ElemType)
 	size += ByteCount(types.I64)
 	return size
+}
+
+// FloatBitSize returns the bit size of the given floating-point type.
+func FloatBitSize(t *types.FloatType) int {
+	switch t.Kind {
+	case types.FloatKindHalf:
+		return 16
+	case types.FloatKindFloat:
+		return 32
+	case types.FloatKindDouble:
+		return 64
+	case types.FloatKindFP128:
+		return 128
+	case types.FloatKindX86FP80:
+		return 80
+	case types.FloatKindPPCFP128:
+		return 128
+	default:
+		panic(fmt.Errorf("support for floating-point kind %q not yet implemented", t.Kind))
+	}
 }
