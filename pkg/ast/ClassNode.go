@@ -61,7 +61,7 @@ func (n ClassNode) VerifyCorrectness(prog *Program) error {
 			continue
 		}
 
-		if types.IsStruct(ty) {
+		if gtypes.IsStruct(ty) {
 			// If the type is a direct reference back to the base class, it is invalid. It must be a pointer type
 			if types.Equal(base, ty) {
 				return fmt.Errorf("class '%s' has a circular reference in it's fields. Field '%s' should be a pointer to a '%s' instead", n.Name, f.Name, n.Name)
@@ -69,7 +69,7 @@ func (n ClassNode) VerifyCorrectness(prog *Program) error {
 
 			// Now we need to check if the struct has a non-pointer reference back to this class.
 			// that has the same effect.
-			structT := ty.(*types.StructType)
+			structT := ty.(*gtypes.StructType)
 
 			if contains, _, _ := structContainsTypeAnywhere(structT, base, structT); contains {
 				buff := &bytes.Buffer{}
@@ -82,13 +82,13 @@ func (n ClassNode) VerifyCorrectness(prog *Program) error {
 	return nil
 }
 
-func structContainsTypeAnywhere(s *types.StructType, t types.Type, path ...*types.StructType) (bool, int, []*types.StructType) {
+func structContainsTypeAnywhere(s *gtypes.StructType, t types.Type, path ...*gtypes.StructType) (bool, int, []*gtypes.StructType) {
 	for i, field := range s.Fields {
 		if types.Equal(field, t) {
 			return true, i, path
 		}
-		if types.IsStruct(field) {
-			structType := field.(*types.StructType)
+		if gtypes.IsStruct(field) {
+			structType := field.(*gtypes.StructType)
 			if contains, index, p := structContainsTypeAnywhere(structType, t, append(path, structType)...); contains {
 				return true, index, p
 			}
@@ -192,7 +192,7 @@ func GenerateClassConstruction(name string, typ types.Type, s *Scope, c *Compile
 
 // NewClassInstance takes the class to generate as well as the fields
 // mapped to their value
-func NewClassInstance(prog *Program, stct *types.StructType, fields map[string]value.Value) value.Value {
+func NewClassInstance(prog *Program, stct *gtypes.StructType, fields map[string]value.Value) value.Value {
 
 	alloc := prog.Compiler.CurrentBlock().NewAlloca(stct)
 

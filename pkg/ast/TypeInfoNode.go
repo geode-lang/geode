@@ -3,6 +3,7 @@ package ast
 import (
 	"fmt"
 
+	"github.com/geode-lang/geode/pkg/gtypes"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
@@ -41,7 +42,7 @@ func (n TypeInfoNode) Codegen(prog *Program) (value.Value, error) {
 	// allocation was not found, so we make a new global one.
 	typ, _ := n.Type(prog)
 
-	sct := typ.(*types.StructType)
+	sct := typ.(*gtypes.StructType)
 	globl := prog.Module.NewGlobalDecl(fmt.Sprintf("type_info_%s", n.T), sct)
 
 	globl.Init = constant.NewZeroInitializer(sct)
