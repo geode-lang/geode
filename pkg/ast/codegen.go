@@ -395,9 +395,12 @@ func (n ReturnNode) Codegen(prog *Program) (value.Value, error) {
 	return retVal, nil
 }
 
-// newCharArray returns a character array constant based on the given string.
+// newCharArray returns a NULL-terminated character array constant based on the
+// given string.
 func newCharArray(s string) *constant.CharArray {
-	return constant.NewCharArray([]byte(s))
+	// Add NULL-byte.
+	buf := append([]byte(s), 0)
+	return constant.NewCharArray(buf)
 }
 
 // CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
