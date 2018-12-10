@@ -3,6 +3,7 @@ package ast
 import (
 	"fmt"
 
+	gtypes "github.com/geode-lang/geode/pkg/types"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
@@ -37,9 +38,9 @@ func (n SubscriptNode) GenElementPtr(prog *Program) (*ir.InstGetElementPtr, erro
 		return nil, err
 	}
 
-	if types.IsSlice(src.Type()) {
+	if gtypes.IsSlice(src.Type()) {
 		fmt.Println(src.Type())
-		zero := constant.NewInt(int64(0), types.I64)
+		zero := constant.NewInt(types.I64, 0)
 		src = prog.Compiler.CurrentBlock().NewGetElementPtr(src, zero)
 	}
 	return prog.Compiler.CurrentBlock().NewGetElementPtr(src, idx), nil

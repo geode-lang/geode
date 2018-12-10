@@ -46,7 +46,7 @@ func (n GlobalVariableDeclNode) Declare(prog *Program) (value.Value, error) {
 	decl := prog.Module.NewGlobalDef(name, init)
 
 	if !n.External {
-		decl.Name = MangleVariableName(name)
+		decl.SetName(MangleVariableName(name))
 	}
 
 	n.GlobalDecl = decl

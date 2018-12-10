@@ -3,6 +3,7 @@ package ast
 import (
 	"fmt"
 
+	gtypes "github.com/geode-lang/geode/pkg/types"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
@@ -26,7 +27,7 @@ func (n DotReference) BaseType(prog *Program) types.Type {
 	base := n.Base.Alloca(prog)
 	baseType := base.Type()
 	for types.IsPointer(baseType) {
-		baseType = baseType.(*types.PointerType).Elem
+		baseType = baseType.(*types.PointerType).ElemType
 	}
 	return baseType
 }
@@ -38,7 +39,8 @@ func (n DotReference) BaseAddr(prog *Program) value.Value {
 	for {
 		load := ir.NewLoad(val)
 		if types.IsPointer(load.Type()) {
-			prog.Compiler.CurrentBlock().AppendInst(load)
+			curBlock := prog.Compiler.CurrentBlock()
+			curBlock.Insts = append(curBlock.Insts, load)
 			val = load
 		} else {
 			break
@@ -95,17 +97,17 @@ func (n DotReference) Alloca(prog *Program) value.Value {
 	//      %_1 = alloca i8
 	//                   ^^
 	ptr := base.Type().(*types.PointerType)
-	elemType := ptr.Elem
+	elemType := ptr.ElemType
 
 	// If the type that the alloca points to is a pointer, we need to load from the pointer
 	if types.IsPointer(elemType) {
 		base = prog.Compiler.CurrentBlock().NewLoad(base)
 	}
-	structType := baseType.(*types.StructType)
+	structType := baseType.(*gtypes.StructType)
 	index = structType.FieldIndex(n.Field.String())
 
-	zero := constant.NewInt(0, types.I32)
-	fieldOffset := constant.NewInt(int64(index), types.I32)
+	zero := constant.NewInt(types.I32, 0)
+	fieldOffset := constant.NewInt(types.I32, int64(index))
 	gen := prog.Compiler.CurrentBlock().NewGetElementPtr(base, zero, fieldOffset)
 
 	return gen
@@ -141,7 +143,7 @@ func (n DotReference) GenAccess(prog *Program) (value.Value, error) {
 
 // Type implements Assignable.Type
 func (n DotReference) Type(prog *Program) (types.Type, error) {
-	baseType := n.BaseType(prog).(*types.StructType)
+	baseType := n.BaseType(prog).(*gtypes.StructType)
 	index := baseType.FieldIndex(n.Field.String())
 	return baseType.Fields[index], nil
 }

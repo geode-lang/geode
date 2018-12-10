@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/geode-lang/geode/pkg/util"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/metadata"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	"github.com/geode-lang/geode/pkg/util"
 )
 
 func init() {
@@ -23,7 +23,7 @@ type Scope struct {
 	Vals        map[string]ScopeItem  `json:"values"`
 	Types       map[string]*ScopeType `json:"types"`
 	PackageName string                `json:"package_name"`
-	DebugInfo   *metadata.Named
+	DebugInfo   *metadata.NamedDef
 }
 
 // Add a value to this specific scope
@@ -365,7 +365,7 @@ func (item FunctionScopeItem) Node() Node {
 // NewFunctionScopeItem constructs a function scope item
 func NewFunctionScopeItem(name string, node FunctionNode, function *ir.Function, vis Visibility) FunctionScopeItem {
 	item := FunctionScopeItem{}
-	item.name = function.Name
+	item.name = function.Name()
 	item.function = function
 	item.vis = vis
 	item.node = node

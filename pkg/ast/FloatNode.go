@@ -21,7 +21,7 @@ func (n FloatNode) NameString() string { return "FloatNode" }
 
 // Codegen implements Node.Codegen for FloatNode
 func (n FloatNode) Codegen(prog *Program) (value.Value, error) {
-	return constant.NewFloat(n.Value, types.Double), nil
+	return constant.NewFloat(types.Double, n.Value), nil
 }
 
 // GenAccess implements Accessable.GenAccess

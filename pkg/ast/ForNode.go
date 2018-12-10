@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 )
@@ -56,13 +55,12 @@ func (n ForNode) Codegen(prog *Program) (value.Value, error) {
 
 	err = prog.Compiler.genInBlock(condBlk, func() error {
 		predicate, _ = n.Cond.Codegen(prog)
-		one := constant.NewInt(1, types.I1)
 
 		c, err := createTypeCast(prog, predicate, types.I1)
 		if err != nil {
 			return err
 		}
-		predicate = condBlk.NewICmp(ir.IntEQ, one, c)
+		predicate = c
 		return nil
 	})
 
@@ -85,8 +83,8 @@ func (n ForNode) Codegen(prog *Program) (value.Value, error) {
 		if err != nil {
 			return err
 		}
-		bodyGenBlk.BranchIfNoTerminator(stepBlk)
-		bodyBlk.BranchIfNoTerminator(stepBlk)
+		BranchIfNoTerminator(bodyGenBlk, stepBlk)
+		BranchIfNoTerminator(bodyBlk, stepBlk)
 		return nil
 	})
 	if err != nil {
@@ -104,7 +102,7 @@ func (n ForNode) Codegen(prog *Program) (value.Value, error) {
 		return nil, err
 	}
 
-	stepBlk.BranchIfNoTerminator(condBlk)
+	BranchIfNoTerminator(stepBlk, condBlk)
 	endBlk = parentFunc.NewBlock(namePrefix + "end")
 	prog.Compiler.PushBlock(endBlk)
 	condBlk.NewCondBr(predicate, bodyBlk, endBlk)

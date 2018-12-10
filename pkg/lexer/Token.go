@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/geode-lang/geode/pkg/debug"
 	"github.com/geode-lang/geode/pkg/util/color"
 	"github.com/llir/llvm/ir/metadata"
 	"github.com/llir/llvm/ir/types"
@@ -102,15 +101,6 @@ func (t Token) InferType() (types.Type, interface{}) {
 	}
 
 	return nil, nil
-}
-
-// DebugFileInfo returns the debug.FileInfo for this token
-func (t *Token) DebugFileInfo() *debug.FileInfo {
-	info := &debug.FileInfo{}
-	info.Column = t.Column
-	info.Line = t.Line
-	info.Path = t.source.Path
-	return info
 }
 
 // DILocation returns the string DILocation for debugging of this token

@@ -23,7 +23,7 @@ func (n IntNode) NameString() string { return "IntNode" }
 // Codegen implements Node.Codegen for IntNode
 func (n IntNode) Codegen(prog *Program) (value.Value, error) {
 	// return llvm.ConstInt(llvm.Int64Type(), , true)
-	return constant.NewInt(n.Value, types.I64), nil
+	return constant.NewInt(types.I64, n.Value), nil
 }
 
 func (n IntNode) String() string {

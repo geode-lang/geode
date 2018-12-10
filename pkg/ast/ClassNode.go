@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"fmt"
 
+	gtypes "github.com/geode-lang/geode/pkg/types"
+	"github.com/geode-lang/geode/pkg/util/color"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	"github.com/geode-lang/geode/pkg/util/color"
 )
 
 // ClassNode -
@@ -102,12 +103,12 @@ func (n ClassNode) String() string {
 
 // Declare a class type
 func (n ClassNode) Declare(prog *Program) (value.Value, error) {
-	structDefn := types.NewStruct()
+	structDefn := gtypes.NewStruct(nil)
 
 	name := fmt.Sprintf("class.%s:%s", prog.Scope.PackageName, n.Name)
 	structDefn.SetName(name)
 
-	prog.Module.NewType(n.Name, structDefn)
+	prog.Module.NewTypeDef(n.Name, structDefn)
 
 	scopeName := n.Name
 	if prog.Package.Name != "runtime" {
@@ -126,7 +127,7 @@ func (n ClassNode) Codegen(prog *Program) (value.Value, error) {
 		return nil, err
 	}
 
-	structDefn := found.(*types.StructType)
+	structDefn := found.(*gtypes.StructType)
 
 	fieldnames := make([]string, 0, len(n.Variables))
 	fields := make([]types.Type, 0, len(n.Variables))
@@ -212,19 +213,19 @@ func GetStructFieldAlloc(prog *Program, alloc *ir.InstAlloca, field string) valu
 	baseType := GetBaseType(base)
 
 	ptr := alloc.Type().(*types.PointerType)
-	elemType := ptr.Elem
+	elemType := ptr.ElemType
 
 	// If the type that the alloca points to is a pointer, we need to load from the pointer
 	if types.IsPointer(elemType) {
 		base = prog.Compiler.CurrentBlock().NewLoad(base)
 	}
 
-	structType := baseType.(*types.StructType)
+	structType := baseType.(*gtypes.StructType)
 
 	index := structType.FieldIndex(field)
 
-	zero := constant.NewInt(0, types.I32)
-	fieldOffset := constant.NewInt(int64(index), types.I32)
+	zero := constant.NewInt(types.I32, 0)
+	fieldOffset := constant.NewInt(types.I32, int64(index))
 	gen := prog.Compiler.CurrentBlock().NewGetElementPtr(base, zero, fieldOffset)
 	return gen
 }
@@ -232,7 +233,7 @@ func GetStructFieldAlloc(prog *Program, alloc *ir.InstAlloca, field string) valu
 // GenStructFieldAssignment takes some allocation and assigns the value to a field given some name
 func GenStructFieldAssignment(prog *Program, alloc *ir.InstAlloca, field string, val value.Value) {
 	gen := GetStructFieldAlloc(prog, alloc, field)
-	elem := gen.Type().(*types.PointerType).Elem
+	elem := gen.Type().(*types.PointerType).ElemType
 	val, _ = createTypeCast(prog, val, elem)
 	prog.Compiler.CurrentBlock().NewStore(val, gen)
 }
@@ -240,9 +241,9 @@ func GenStructFieldAssignment(prog *Program, alloc *ir.InstAlloca, field string,
 // GetBaseType returns the base type of some alloca
 func GetBaseType(v value.Value) types.Type {
 	base := v.(*ir.InstAlloca)
-	baseType := base.Elem
+	baseType := base.ElemType
 	for types.IsPointer(baseType) {
-		baseType = baseType.(*types.PointerType).Elem
+		baseType = baseType.(*types.PointerType).ElemType
 	}
 	return baseType
 }

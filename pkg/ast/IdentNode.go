@@ -6,12 +6,12 @@ import (
 
 	"github.com/geode-lang/geode/pkg/arg"
 
+	"github.com/geode-lang/geode/pkg/util/color"
+	"github.com/geode-lang/geode/pkg/util/log"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/metadata"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	"github.com/geode-lang/geode/pkg/util/color"
-	"github.com/geode-lang/geode/pkg/util/log"
 )
 
 // NameType is a type to notate what kind of name a IdentNode is
@@ -125,9 +125,12 @@ func (n IdentNode) GenAssign(prog *Program, assignment value.Value, options ...A
 	store := prog.Compiler.CurrentBlock().NewStore(assignment, alloca)
 
 	if *arg.EnableDebug {
-		md := &metadata.Metadata{}
-		md.Add(metadata.NewRaw(n.Token.DILocation(prog.Scope.DebugInfo)))
-		store.Metadata["dbg"] = md
+		mdNode := n.Token.DILocation(prog.Scope.DebugInfo)
+		md := &metadata.Attachment{
+			Name: "dbg",
+			Node: mdNode,
+		}
+		store.Metadata = append(store.Metadata, md)
 	}
 
 	return assignment, nil
@@ -151,7 +154,7 @@ func (n IdentNode) GenAccess(prog *Program) (value.Value, error) {
 			fmt.Fprintf(buff, "  Maybe you meant %s", color.Green(meant))
 			if typ, found := prog.Scope.Find([]string{meant}); found {
 				ptr := typ.Value().Type().(*types.PointerType)
-				fmt.Fprintf(buff, " (%s)", ptr.Elem)
+				fmt.Fprintf(buff, " (%s)", ptr.ElemType)
 			}
 			buff.WriteString("?\n")
 		}
@@ -166,11 +169,11 @@ func (n IdentNode) Type(prog *Program) (types.Type, error) {
 	ref := n.Alloca(prog)
 
 	if alloca, success := ref.(*ir.InstAlloca); success {
-		return alloca.Elem, nil
+		return alloca.ElemType, nil
 	}
 
 	if global, success := ref.(*ir.Global); success {
-		return global.Type().(*types.PointerType).Elem, nil
+		return global.Type().(*types.PointerType).ElemType, nil
 	}
 	return nil, nil
 }

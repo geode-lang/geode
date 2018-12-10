@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf // indirect
 	github.com/inspirer/textmapper v0.0.0-20181209132054-5280caf89d64 // indirect
 	github.com/kr/pretty v0.1.0
-	github.com/llir/llvm v0.3.0-pre4.0.20181210010959-63a2856a6873
+	github.com/llir/llvm v0.3.0-pre4.0.20181210021817-cba86447c61e
 	github.com/pkg/errors v0.8.0
 	github.com/sergi/go-diff v1.0.0
 	github.com/shibukawa/configdir v0.0.0-20170330084843-e180dbdc8da0

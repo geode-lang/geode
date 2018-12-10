@@ -75,7 +75,8 @@ func (c *Compiler) FunctionDefined(fn *ir.Function) bool {
 
 // NewComment appends a comment string to the current block
 func (c *Compiler) NewComment(comment string) {
-	c.CurrentBlock().AppendInst(NewLLVMComment(comment))
+	curBlock := c.CurrentBlock()
+	curBlock.Insts = append(curBlock.Insts, NewLLVMComment(comment))
 
 }
 

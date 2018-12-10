@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
+	gtypes "github.com/geode-lang/geode/pkg/types"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
@@ -59,15 +60,15 @@ func (n ArrayNode) Codegen(prog *Program) (value.Value, error) {
 		typ = types.NewPointer(values[0].Type())
 	}
 
-	itemType := typ.(*types.PointerType).Elem
+	itemType := typ.(*types.PointerType).ElemType
 
-	arrayType := types.NewArray(itemType, int64(n.Length))
+	arrayType := types.NewArray(uint64(n.Length), itemType)
 
 	// arrayLength := int64(itemType.ByteCount() * n.Length)
 	var alloca value.Value
 	// alloca = block.NewAlloca(arrayType)
 
-	length := constant.NewInt(int64(n.Length*arrayType.ByteCount()), types.I32)
+	length := constant.NewInt(types.I32, int64(n.Length*gtypes.ByteCount(arrayType)))
 
 	dyn, err := prog.NewRuntimeFunctionCall("xmalloc", length)
 	if err != nil {
@@ -81,8 +82,8 @@ func (n ArrayNode) Codegen(prog *Program) (value.Value, error) {
 
 	alloca = block.NewAlloca(arrayType)
 
-	zero := constant.NewInt(int64(0), types.I64)
-	one := constant.NewInt(int64(1), types.I64)
+	zero := constant.NewInt(types.I64, 0)
+	one := constant.NewInt(types.I64, 1)
 	arrayStart := block.NewGetElementPtr(alloca, zero, zero)
 	offset := arrayStart
 

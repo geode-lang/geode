@@ -52,7 +52,7 @@ func (n TypeInfoNode) Codegen(prog *Program) (value.Value, error) {
 	}
 
 	// https://stackoverflow.com/a/30830445
-	elemptr := constant.NewGetElementPtr(constant.NewNull(types.NewPointer(analyzeType)), constant.NewInt(1, types.I32))
+	elemptr := constant.NewGetElementPtr(constant.NewNull(types.NewPointer(analyzeType)), constant.NewInt(types.I32, 1))
 
 	size := prog.Compiler.CurrentBlock().NewPtrToInt(elemptr, types.I64)
 

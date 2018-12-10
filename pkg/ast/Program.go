@@ -11,14 +11,14 @@ import (
 
 	"path/filepath"
 
-	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/metadata"
-	"github.com/llir/llvm/ir/types"
-	"github.com/llir/llvm/ir/value"
 	"github.com/geode-lang/geode/pkg/arg"
 	"github.com/geode-lang/geode/pkg/lexer"
 	"github.com/geode-lang/geode/pkg/util"
 	"github.com/geode-lang/geode/pkg/util/log"
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/metadata"
+	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 // Program is a wrapper for information used
@@ -81,9 +81,9 @@ func (p *Program) ScopeDown(tok lexer.Token) {
 	p.Scope = p.Scope.SpawnChild()
 
 	if *arg.EnableDebug {
-		md := &metadata.Named{}
+		md := &metadata.NamedDef{}
 		md.Name = fmt.Sprintf("scope_%d", p.Scope.Index)
-		p.Module.NamedMetadata = append(p.Module.NamedMetadata, md)
+		p.Module.NamedMetadataDefs = append(p.Module.NamedMetadataDefs, md)
 		p.Scope.DebugInfo = md
 		// md.Metadata
 	}
