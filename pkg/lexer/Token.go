@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/llir/llvm/ir/metadata"
-	"github.com/llir/llvm/ir/types"
 	"github.com/geode-lang/geode/pkg/debug"
 	"github.com/geode-lang/geode/pkg/util/color"
+	"github.com/llir/llvm/ir/metadata"
+	"github.com/llir/llvm/ir/types"
 )
 
 // TokenIsOperator will return if a given token is an operator or not
@@ -114,7 +114,7 @@ func (t *Token) DebugFileInfo() *debug.FileInfo {
 }
 
 // DILocation returns the string DILocation for debugging of this token
-func (t *Token) DILocation(scope *metadata.Named) string {
+func (t *Token) DILocation(scope *metadata.NamedDef) string {
 	info := t.DebugFileInfo()
 	info.Scope = scope
 	return debug.DILocation(info)
