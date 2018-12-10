@@ -1,5 +1,5 @@
-// Package types declares the data types of Geode.
-package types
+// Package gtypes declares the data types of Geode.
+package gtypes
 
 import "github.com/llir/llvm/ir/types"
 

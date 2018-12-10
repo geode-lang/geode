@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	gtypes "github.com/geode-lang/geode/pkg/types"
+	"github.com/geode-lang/geode/pkg/gtypes"
 	"github.com/geode-lang/geode/pkg/util/color"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
@@ -103,7 +103,7 @@ func (n ClassNode) String() string {
 
 // Declare a class type
 func (n ClassNode) Declare(prog *Program) (value.Value, error) {
-	structDefn := gtypes.NewStruct(nil)
+	structDefn := gtypes.NewStruct()
 
 	name := fmt.Sprintf("class.%s:%s", prog.Scope.PackageName, n.Name)
 	structDefn.SetName(name)

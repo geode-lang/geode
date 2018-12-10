@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	gtypes "github.com/geode-lang/geode/pkg/types"
+	"github.com/geode-lang/geode/pkg/gtypes"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"

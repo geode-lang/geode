@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/geode-lang/geode/pkg/gtypes"
 	"github.com/geode-lang/geode/pkg/lexer"
-	gtypes "github.com/geode-lang/geode/pkg/types"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 )

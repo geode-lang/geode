@@ -1,4 +1,4 @@
-package types
+package gtypes
 
 import (
 	"fmt"

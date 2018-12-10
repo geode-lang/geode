@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/geode-lang/geode/pkg/arg"
-	gtypes "github.com/geode-lang/geode/pkg/types"
+	"github.com/geode-lang/geode/pkg/gtypes"
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
