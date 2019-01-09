@@ -15,5 +15,5 @@ type Reference interface {
 	Assignable
 
 	Alloca(*Program) value.Value
-	Load(*ir.BasicBlock, *Program) *ir.InstLoad
+	Load(*ir.Block, *Program) *ir.InstLoad
 }

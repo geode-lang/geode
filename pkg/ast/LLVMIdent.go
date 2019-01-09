@@ -13,7 +13,7 @@ import (
 // per operation
 type LLVMIdent struct {
 	// Parent basic block.
-	Parent *ir.BasicBlock
+	Parent *ir.Block
 
 	data string
 
@@ -60,11 +60,11 @@ func (inst *LLVMIdent) String() string {
 }
 
 // GetParent returns the parent basic block of the instruction.
-func (inst *LLVMIdent) GetParent() *ir.BasicBlock {
+func (inst *LLVMIdent) GetParent() *ir.Block {
 	return inst.Parent
 }
 
 // SetParent sets the parent basic block of the instruction.
-func (inst *LLVMIdent) SetParent(parent *ir.BasicBlock) {
+func (inst *LLVMIdent) SetParent(parent *ir.Block) {
 	inst.Parent = parent
 }

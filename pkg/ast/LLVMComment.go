@@ -30,8 +30,8 @@ func NewLLVMComment(format string, args ...interface{}) *LLVMComment {
 	}
 }
 
-// Def returns the LLVM syntax representation of the instruction.
-func (inst *LLVMComment) Def() string {
+// LLString returns the LLVM syntax representation of the instruction.
+func (inst *LLVMComment) LLString() string {
 	// Handle multi-line comments.
 	data := strings.Replace(inst.data, "\n", "; ", -1)
 	return fmt.Sprintf("; %s", data)

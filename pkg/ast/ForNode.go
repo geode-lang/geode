@@ -41,10 +41,10 @@ func (n ForNode) Codegen(prog *Program) (value.Value, error) {
 	prog.ScopeDown(n.Token)
 	var err error
 	var predicate value.Value
-	var condBlk *ir.BasicBlock
-	var bodyBlk *ir.BasicBlock
-	var bodyGenBlk *ir.BasicBlock
-	var endBlk *ir.BasicBlock
+	var condBlk *ir.Block
+	var bodyBlk *ir.Block
+	var bodyGenBlk *ir.Block
+	var endBlk *ir.Block
 	parentFunc := parentBlock.Parent
 
 	condBlk = parentFunc.NewBlock(namePrefix + "cond")
@@ -79,7 +79,7 @@ func (n ForNode) Codegen(prog *Program) (value.Value, error) {
 			return err
 		}
 		prog.Scope = scp
-		bodyGenBlk = gen.(*ir.BasicBlock)
+		bodyGenBlk = gen.(*ir.Block)
 		if err != nil {
 			return err
 		}

@@ -43,7 +43,7 @@ func (n TypeInfoNode) Codegen(prog *Program) (value.Value, error) {
 	typ, _ := n.Type(prog)
 
 	sct := typ.(*gtypes.StructType)
-	globl := prog.Module.NewGlobalDecl(fmt.Sprintf("type_info_%s", n.T), sct)
+	globl := prog.Module.NewGlobal(fmt.Sprintf("type_info_%s", n.T), sct)
 
 	globl.Init = constant.NewZeroInitializer(sct)
 
@@ -97,7 +97,7 @@ func (n TypeInfoNode) Alloca(prog *Program) value.Value {
 }
 
 // Load implements Reference.Load
-func (n TypeInfoNode) Load(blk *ir.BasicBlock, prog *Program) *ir.InstLoad {
+func (n TypeInfoNode) Load(blk *ir.Block, prog *Program) *ir.InstLoad {
 	return blk.NewLoad(n.Alloca(prog))
 }
 

@@ -81,9 +81,13 @@ func (p *Program) ScopeDown(tok lexer.Token) {
 	p.Scope = p.Scope.SpawnChild()
 
 	if *arg.EnableDebug {
-		md := &metadata.NamedDef{}
-		md.Name = fmt.Sprintf("scope_%d", p.Scope.Index)
-		p.Module.NamedMetadataDefs = append(p.Module.NamedMetadataDefs, md)
+		name := fmt.Sprintf("scope_%d", p.Scope.Index)
+		md := &metadata.DISubprogram{
+			MetadataID: -1, // let the llir package assign a unique ID.
+			Distinct:   true,
+			Name:       name,
+		}
+		p.Module.MetadataDefs = append(p.Module.MetadataDefs, md)
 		p.Scope.DebugInfo = md
 		// md.Metadata
 	}
@@ -382,7 +386,7 @@ func (p *Program) GetTypeSearchPaths(base string) []string {
 }
 
 // FindFunction searches for a function with a searchName searchpath and the types it is being called with
-func (p *Program) FindFunction(searchNames []string, argTypes []types.Type) (*ir.Function, error) {
+func (p *Program) FindFunction(searchNames []string, argTypes []types.Type) (*ir.Func, error) {
 	// var err error
 	for _, name := range searchNames {
 		compOpts := FunctionCompilationOptions{}
@@ -402,7 +406,7 @@ func (p *Program) FindFunction(searchNames []string, argTypes []types.Type) (*ir
 
 // GetFunction takes a funciton node, detects if it is already compiled or not
 // if it isnt compiled, it will codegen, otherwise it will return the compiled one
-func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (*ir.Function, error) {
+func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (*ir.Func, error) {
 
 	var err error
 
@@ -456,7 +460,7 @@ func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (
 	}
 
 	if node.Variants == nil {
-		node.Variants = make(map[string]*ir.Function)
+		node.Variants = make(map[string]*ir.Func)
 	}
 
 	correctTypes := make([]types.Type, 0, len(rawTypes))
@@ -483,7 +487,7 @@ func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (
 		}
 	}
 
-	var compiledVal *ir.Function
+	var compiledVal *ir.Func
 
 	if node.Nomangle {
 		node.NameCache = node.Name.Value
@@ -506,7 +510,7 @@ func (p *Program) GetFunction(name string, options FunctionCompilationOptions) (
 				return nil, err
 			}
 
-			node.Variants[node.NameCache] = gen.(*ir.Function)
+			node.Variants[node.NameCache] = gen.(*ir.Func)
 		}
 
 		compiledVal = node.Variants[node.NameCache]

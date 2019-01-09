@@ -14,17 +14,17 @@ type Compiler struct {
 	// A reference to the scope in the package for easier access
 	Package *Package
 	Module  *ir.Module
-	blocks  []*ir.BasicBlock
-	// FN            *ir.Function // current funciton being compiled
+	blocks  []*ir.Block
+	// FN            *ir.Func // current funciton being compiled
 	typeStack     []types.Type
 	typestacklock sync.RWMutex
 
-	fnStack     []*ir.Function
+	fnStack     []*ir.Func
 	fnstacklock sync.RWMutex
 }
 
 // CurrentBlock -
-func (c *Compiler) CurrentBlock() *ir.BasicBlock {
+func (c *Compiler) CurrentBlock() *ir.Block {
 	l := len(c.blocks)
 	if l == 0 {
 		return nil
@@ -45,13 +45,13 @@ func (c *Compiler) Copy() *Compiler {
 }
 
 // PushBlock -
-func (c *Compiler) PushBlock(blk *ir.BasicBlock) {
+func (c *Compiler) PushBlock(blk *ir.Block) {
 
 	c.blocks = append(c.blocks, blk)
 }
 
 // PopBlock -
-func (c *Compiler) PopBlock() *ir.BasicBlock {
+func (c *Compiler) PopBlock() *ir.Block {
 	l := len(c.blocks)
 	if l == 0 {
 		return nil
@@ -64,7 +64,7 @@ func (c *Compiler) PopBlock() *ir.BasicBlock {
 
 // FunctionDefined returns whether or not a function
 // with a name has been defined in the module's scope
-func (c *Compiler) FunctionDefined(fn *ir.Function) bool {
+func (c *Compiler) FunctionDefined(fn *ir.Func) bool {
 	for _, defined := range c.Module.Funcs {
 		if defined == fn {
 			return true
@@ -80,7 +80,7 @@ func (c *Compiler) NewComment(comment string) {
 
 }
 
-func (c *Compiler) genInBlock(blk *ir.BasicBlock, fn func() error) error {
+func (c *Compiler) genInBlock(blk *ir.Block, fn func() error) error {
 	c.PushBlock(blk)
 	err := fn()
 	c.PopBlock()
@@ -115,13 +115,13 @@ func NewCompiler(prog *Program) *Compiler {
 	// Initialize the module for this compiler.
 	comp.Module = prog.Module
 
-	comp.blocks = make([]*ir.BasicBlock, 0)
+	comp.blocks = make([]*ir.Block, 0)
 	comp.typeStack = make([]types.Type, 0)
 	return comp
 }
 
 // PushFunc appends a Func to the compiler's Func stack
-func (c *Compiler) PushFunc(fn *ir.Function) {
+func (c *Compiler) PushFunc(fn *ir.Func) {
 	// fmt.Println("pushing", fn.Name)
 	c.fnstacklock.Lock()
 	c.fnStack = append(c.fnStack, fn)
@@ -129,7 +129,7 @@ func (c *Compiler) PushFunc(fn *ir.Function) {
 }
 
 // PopFunc removes an Item from the top of the stack of functions
-func (c *Compiler) PopFunc() (fn *ir.Function) {
+func (c *Compiler) PopFunc() (fn *ir.Func) {
 	c.fnstacklock.Lock()
 	if len(c.fnStack) >= 1 {
 		fn = c.fnStack[len(c.fnStack)-1]
@@ -141,6 +141,6 @@ func (c *Compiler) PopFunc() (fn *ir.Function) {
 }
 
 // CurrentFunc returns the top of the function stack
-func (c *Compiler) CurrentFunc() *ir.Function {
+func (c *Compiler) CurrentFunc() *ir.Func {
 	return c.fnStack[len(c.fnStack)-1]
 }

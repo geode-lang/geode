@@ -11,7 +11,7 @@ import (
 // per operation
 type LLVMRaw struct {
 	// Parent basic block.
-	Parent *ir.BasicBlock
+	Parent *ir.Block
 
 	data string
 
@@ -58,11 +58,11 @@ func (inst *LLVMRaw) String() string {
 }
 
 // GetParent returns the parent basic block of the instruction.
-func (inst *LLVMRaw) GetParent() *ir.BasicBlock {
+func (inst *LLVMRaw) GetParent() *ir.Block {
 	return inst.Parent
 }
 
 // SetParent sets the parent basic block of the instruction.
-func (inst *LLVMRaw) SetParent(parent *ir.BasicBlock) {
+func (inst *LLVMRaw) SetParent(parent *ir.Block) {
 	inst.Parent = parent
 }

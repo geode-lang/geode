@@ -28,7 +28,7 @@ func (v *VirtualMachine) String() string {
 // RunFunctionName runs a function in the virtual machine with arguments
 func (v *VirtualMachine) RunFunctionName(fnName string, args ...Value) (Value, error) {
 
-	var function *ir.Function
+	var function *ir.Func
 
 	for _, fn := range v.Module.Funcs {
 		if fn.Name() == fnName {
@@ -53,7 +53,7 @@ func (v *VirtualMachine) EvalInst(i ir.Instruction) {
 }
 
 // RunFunction runs a single function in the virtual machine's context
-func (v *VirtualMachine) RunFunction(fn *ir.Function, args ...Value) (Value, error) {
+func (v *VirtualMachine) RunFunction(fn *ir.Func, args ...Value) (Value, error) {
 
 	// go into a child scope for this function
 	v.Scope = v.Scope.SpawnChild()

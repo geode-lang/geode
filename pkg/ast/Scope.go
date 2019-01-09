@@ -23,7 +23,7 @@ type Scope struct {
 	Vals        map[string]ScopeItem  `json:"values"`
 	Types       map[string]*ScopeType `json:"types"`
 	PackageName string                `json:"package_name"`
-	DebugInfo   *metadata.NamedDef
+	DebugInfo   *metadata.DISubprogram
 }
 
 // Add a value to this specific scope
@@ -266,7 +266,7 @@ const (
 // GenericTemplateScopeItem implements ScopeItem.
 // This is used so we can store functions in the scope (mainly in the root scope)
 type GenericTemplateScopeItem struct {
-	function *ir.Function
+	function *ir.Func
 	vis      Visibility
 	name     string
 	types    []TypeNode
@@ -320,7 +320,7 @@ func NewGenericTemplateScopeItem(name string) GenericTemplateScopeItem {
 // FunctionScopeItem implements ScopeItem.
 // This is used so we can store functions in the scope (mainly in the root scope)
 type FunctionScopeItem struct {
-	function *ir.Function
+	function *ir.Func
 	vis      Visibility
 	name     string
 	mangled  bool
@@ -363,7 +363,7 @@ func (item FunctionScopeItem) Node() Node {
 }
 
 // NewFunctionScopeItem constructs a function scope item
-func NewFunctionScopeItem(name string, node FunctionNode, function *ir.Function, vis Visibility) FunctionScopeItem {
+func NewFunctionScopeItem(name string, node FunctionNode, function *ir.Func, vis Visibility) FunctionScopeItem {
 	item := FunctionScopeItem{}
 	item.name = function.Name()
 	item.function = function

@@ -97,7 +97,7 @@ func (n SubscriptNode) Alloca(prog *Program) value.Value {
 }
 
 // Load implements Reference.Load
-func (n SubscriptNode) Load(blk *ir.BasicBlock, prog *Program) *ir.InstLoad {
+func (n SubscriptNode) Load(blk *ir.Block, prog *Program) *ir.InstLoad {
 	ld, _ := n.Codegen(prog)
 	return ld.(*ir.InstLoad)
 }
