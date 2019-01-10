@@ -75,5 +75,5 @@ type FunctionDiscoveryResult struct {
 	name     string
 	pkg      *Package
 	prog     *Program
-	Func     *ir.Function
+	Func     *ir.Func
 }

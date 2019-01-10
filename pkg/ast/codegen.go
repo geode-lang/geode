@@ -23,7 +23,7 @@ func mangleName(name string) string {
 	return fmt.Sprintf("%s_%d", name, nameNumber)
 }
 
-// func branchIfNoTerminator(blk *ir.BasicBlock, to *ir.BasicBlock) {
+// func branchIfNoTerminator(blk *ir.Block, to *ir.Block) {
 // 	if blk.Term == nil {
 // 		blk.NewBr(to)
 // 	}
@@ -59,8 +59,8 @@ func (n IfNode) Codegen(prog *Program) (value.Value, error) {
 	predicate = parentBlock.NewICmp(enum.IPredNE, zero, c)
 	parentFunc := parentBlock.Parent
 
-	var thenGenBlk *ir.BasicBlock
-	var endBlk *ir.BasicBlock
+	var thenGenBlk *ir.Block
+	var endBlk *ir.Block
 
 	thenBlk := parentFunc.NewBlock(mangleName(namePrefix + "then"))
 
@@ -69,12 +69,12 @@ func (n IfNode) Codegen(prog *Program) (value.Value, error) {
 		if gerr != nil {
 			return gerr
 		}
-		thenGenBlk = gen.(*ir.BasicBlock)
+		thenGenBlk = gen.(*ir.Block)
 		return nil
 	})
 
 	elseBlk := parentFunc.NewBlock(mangleName(namePrefix + "else"))
-	var elseGenBlk *ir.BasicBlock
+	var elseGenBlk *ir.Block
 
 	prog.Compiler.genInBlock(elseBlk, func() error {
 		// We only want to construct the else block if there is one.
@@ -83,7 +83,7 @@ func (n IfNode) Codegen(prog *Program) (value.Value, error) {
 			if gerr != nil {
 				return gerr
 			}
-			elseGenBlk, _ = gen.(*ir.BasicBlock)
+			elseGenBlk, _ = gen.(*ir.Block)
 		}
 		return nil
 	})
@@ -211,7 +211,7 @@ func (n WhileNode) Codegen(prog *Program) (value.Value, error) {
 	}
 	predicate = startblock.NewICmp(enum.IPredEQ, one, c)
 
-	var endBlk *ir.BasicBlock
+	var endBlk *ir.Block
 
 	bodyBlk := parentFunc.NewBlock(mangleName(namePrefix + "body"))
 	prog.Compiler.PushBlock(bodyBlk)
@@ -220,7 +220,7 @@ func (n WhileNode) Codegen(prog *Program) (value.Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	bodyGenBlk := v.(*ir.BasicBlock)
+	bodyGenBlk := v.(*ir.Block)
 
 	// If there is no terminator for the block, IE: no return
 	// branch to the merge block
@@ -405,7 +405,7 @@ func newCharArray(s string) *constant.CharArray {
 
 // CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 // the function.  This is used for mutable variables etc.
-func createBlockAlloca(f *ir.Function, elemType types.Type, name string) *ir.InstAlloca {
+func createBlockAlloca(f *ir.Func, elemType types.Type, name string) *ir.InstAlloca {
 	// Create a new allocation in the root of the function
 	alloca := f.Blocks[0].NewAlloca(elemType)
 	// Set the name of the allocation (the variable name)
@@ -421,7 +421,7 @@ func codegenError(str string, args ...interface{}) value.Value {
 
 // BranchIfNoTerminator checks if the block has a terminator, and if it doesn't,
 // set it to a branch instead.
-func BranchIfNoTerminator(block, target *ir.BasicBlock) {
+func BranchIfNoTerminator(block, target *ir.Block) {
 	if block.Term == nil {
 		block.NewBr(target)
 	}

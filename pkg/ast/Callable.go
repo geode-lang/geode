@@ -8,5 +8,5 @@ import (
 
 // Callable is for the left side of a function call. It has functions for getting the function that it points to, etc...
 type Callable interface {
-	GetFunc(*Program, []types.Type) (*ir.Function, []value.Value, error)
+	GetFunc(*Program, []types.Type) (*ir.Func, []value.Value, error)
 }

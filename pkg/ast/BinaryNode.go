@@ -10,7 +10,7 @@ import (
 	"github.com/llir/llvm/ir/value"
 )
 
-func createCmp(blk *ir.BasicBlock, i enum.IPred, f enum.FPred, t types.Type, left, right value.Value) value.Value {
+func createCmp(blk *ir.Block, i enum.IPred, f enum.FPred, t types.Type, left, right value.Value) value.Value {
 
 	var val value.Value
 
@@ -25,7 +25,7 @@ func createCmp(blk *ir.BasicBlock, i enum.IPred, f enum.FPred, t types.Type, lef
 }
 
 // CreateBinaryOp produces a geode binary op (just a wrapper around geode-lang/geode/llvm's binary instructions)
-func CreateBinaryOp(intstr, fltstr string, blk *ir.BasicBlock, t types.Type, left, right value.Value) value.Value {
+func CreateBinaryOp(intstr, fltstr string, blk *ir.Block, t types.Type, left, right value.Value) value.Value {
 
 	var val BinaryInstruction
 	if types.IsInt(t) {

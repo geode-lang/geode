@@ -55,10 +55,10 @@ type FunctionNode struct {
 	// itself and just reach into the Variants map to get the correct
 	// value for the function
 	NameCache string
-	Variants  map[string]*ir.Function // A mapping from mangled names to llvm functions
+	Variants  map[string]*ir.Func // A mapping from mangled names to llvm functions
 
 	Compiled bool
-	// CompiledValue  *ir.Function
+	// CompiledValue  *ir.Func
 
 	line   int
 	column int
@@ -98,7 +98,7 @@ func (n FunctionNode) Arguments(prog *Program) ([]*ir.Param, []types.Type, error
 // as external functions only need a declaration for their signature.
 // This function will generate the function object and push it to the map of other functions
 // in the program for use in calls
-func (n FunctionNode) Declare(prog *Program) (*ir.Function, error) {
+func (n FunctionNode) Declare(prog *Program) (*ir.Func, error) {
 	// Spawn a new scope
 	prog.ScopeDown(n.Token)
 
@@ -224,14 +224,14 @@ func (n FunctionNode) Codegen(prog *Program) (value.Value, error) {
 		if n.BodyParser != nil {
 			n.Body = n.BodyParser.parseBlockStmt()
 		}
-		var block *ir.BasicBlock
+		var block *ir.Block
 		var ok bool
 		gen, err := n.Body.Codegen(prog)
 		if err != nil {
 			return nil, err
 		}
 
-		if block, ok = gen.(*ir.BasicBlock); !ok {
+		if block, ok = gen.(*ir.Block); !ok {
 			return nil, fmt.Errorf("type assertion to block in function node failed")
 		}
 

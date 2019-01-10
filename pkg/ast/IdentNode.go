@@ -47,7 +47,7 @@ func NewIdentNode(name string) IdentNode {
 func (n IdentNode) NameString() string { return "IdentNode" }
 
 // GetFunc implements Callable.GetFunc
-func (n IdentNode) GetFunc(prog *Program, argTypes []types.Type) (*ir.Function, []value.Value, error) {
+func (n IdentNode) GetFunc(prog *Program, argTypes []types.Type) (*ir.Func, []value.Value, error) {
 
 	ns, nm := ParseName(n.String())
 	if ns == "" {
@@ -106,7 +106,7 @@ func (n IdentNode) Alloca(prog *Program) value.Value {
 }
 
 // Load returns a load instruction on a named reference with the given name
-func (n IdentNode) Load(block *ir.BasicBlock, prog *Program) *ir.InstLoad {
+func (n IdentNode) Load(block *ir.Block, prog *Program) *ir.InstLoad {
 	alloc := n.Alloca(prog)
 	if alloc == nil {
 		return nil

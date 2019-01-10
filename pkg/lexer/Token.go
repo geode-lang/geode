@@ -104,8 +104,9 @@ func (t Token) InferType() (types.Type, interface{}) {
 }
 
 // DILocation returns the string DILocation for debugging of this token
-func (t *Token) DILocation(scope *metadata.NamedDef) *metadata.DILocation {
+func (t *Token) DILocation(scope *metadata.DISubprogram) *metadata.DILocation {
 	return &metadata.DILocation{
+		MetadataID: -1, // unnamed. use as metadata literal.
 		// TODO: add t.source.Path?
 		Scope:  scope,
 		Line:   int64(t.Line),

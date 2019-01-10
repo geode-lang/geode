@@ -50,7 +50,7 @@ func (n DotReference) BaseAddr(prog *Program) value.Value {
 }
 
 // GetFunc implements Callable.GetFunc
-func (n DotReference) GetFunc(prog *Program, argTypes []types.Type) (*ir.Function, []value.Value, error) {
+func (n DotReference) GetFunc(prog *Program, argTypes []types.Type) (*ir.Func, []value.Value, error) {
 
 	class := n.BaseType(prog)
 
@@ -123,7 +123,7 @@ func (n DotReference) Codegen(prog *Program) (value.Value, error) {
 }
 
 // Load returns a load instruction on a named reference with the given name
-func (n DotReference) Load(block *ir.BasicBlock, prog *Program) *ir.InstLoad {
+func (n DotReference) Load(block *ir.Block, prog *Program) *ir.InstLoad {
 	target := n.Alloca(prog).(*ir.InstGetElementPtr)
 	t, _ := n.Type(prog)
 	target.Typ = types.NewPointer(t)
