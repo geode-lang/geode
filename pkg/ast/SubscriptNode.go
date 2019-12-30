@@ -58,7 +58,8 @@ func (n SubscriptNode) Codegen(prog *Program) (value.Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	return prog.Compiler.CurrentBlock().NewLoad(ptr), nil
+	elemType := ptr.Type().(*types.PointerType).ElemType
+	return prog.Compiler.CurrentBlock().NewLoad(elemType, ptr), nil
 }
 
 // GenAccess implements Accessable.GenAccess
@@ -86,7 +87,8 @@ func (n SubscriptNode) Type(prog *Program) (types.Type, error) {
 		return nil, err
 	}
 
-	load := tmpBlock.NewLoad(ptr)
+	elemType := ptr.Type().(*types.PointerType).ElemType
+	load := tmpBlock.NewLoad(elemType, ptr)
 	return load.Type(), nil
 }
 

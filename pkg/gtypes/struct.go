@@ -36,3 +36,19 @@ func (t *StructType) FieldIndex(name string) int {
 	}
 	return -1
 }
+
+// Equal reports whether t and u are of equal type.
+func (t *StructType) Equal(u types.Type) bool {
+	if u, ok := u.(*StructType); ok {
+		if len(t.Names) != len(u.Names) {
+			return false
+		}
+		for i := range t.Names {
+			if t.Names[i] != u.Names[i] {
+				return false
+			}
+		}
+		return t.StructType.Equal(u.StructType)
+	}
+	return u.Equal(t.StructType)
+}

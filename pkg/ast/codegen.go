@@ -174,7 +174,8 @@ func (n UnaryNode) Codegen(prog *Program) (value.Value, error) {
 
 		// fmt.Println(prog.Compiler.CurrentFunc())
 		if types.IsPointer(operandValue.Type()) {
-			return prog.Compiler.CurrentBlock().NewLoad(operandValue), nil
+			elemType := operandValue.Type().(*types.PointerType).ElemType
+			return prog.Compiler.CurrentBlock().NewLoad(elemType, operandValue), nil
 		}
 		n.SyntaxError()
 		return nil, fmt.Errorf("attempt to dereference a non-pointer variable")
@@ -437,14 +438,18 @@ func gep(src value.Value, indices ...value.Value) *ir.InstGetElementPtr {
 		elemPtr *types.Type
 		// Geode element type.
 		elem gtypes.Type
+		// Element type for first argument of ir.NewGetElementPtr.
+		elemType types.Type
 	)
 	switch typ := src.Type().(type) {
 	case *types.PointerType:
+		elemType = typ.ElemType
 		if e, ok := typ.ElemType.(gtypes.Type); ok {
 			elemPtr = &typ.ElemType
 			elem = e
 		}
 	case *types.VectorType:
+		elemType = typ.ElemType
 		t, ok := typ.ElemType.(*types.PointerType)
 		if !ok {
 			panic(fmt.Errorf("invalid vector element type; expected *types.Pointer, got %T", typ.ElemType))
@@ -461,7 +466,10 @@ func gep(src value.Value, indices ...value.Value) *ir.InstGetElementPtr {
 	if elemPtr != nil {
 		*elemPtr = elem.Underlying()
 	}
-	inst := ir.NewGetElementPtr(src, indices...)
+	if e, ok := elemType.(gtypes.Type); ok {
+		elemType = e.Underlying()
+	}
+	inst := ir.NewGetElementPtr(elemType, src, indices...)
 	// Restore original Geode type.
 	if elemPtr != nil {
 		*elemPtr = elem

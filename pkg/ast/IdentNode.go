@@ -111,7 +111,8 @@ func (n IdentNode) Load(block *ir.Block, prog *Program) *ir.InstLoad {
 	if alloc == nil {
 		return nil
 	}
-	return block.NewLoad(alloc)
+	elemType := alloc.Type().(*types.PointerType).ElemType
+	return block.NewLoad(elemType, alloc)
 }
 
 // GenAssign implements Assignable.GenAssign

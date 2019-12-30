@@ -186,7 +186,7 @@ func (n ClassNode) Codegen(prog *Program) (value.Value, error) {
 func GenerateClassConstruction(name string, typ types.Type, s *Scope, c *Compiler, args []value.Value) value.Value {
 	alloc := c.CurrentBlock().NewAlloca(typ)
 
-	load := c.CurrentBlock().NewLoad(alloc)
+	load := c.CurrentBlock().NewLoad(typ, alloc)
 	return load
 }
 
@@ -200,7 +200,7 @@ func NewClassInstance(prog *Program, stct *gtypes.StructType, fields map[string]
 		GenStructFieldAssignment(prog, alloc, field, value)
 	}
 
-	load := prog.Compiler.CurrentBlock().NewLoad(alloc)
+	load := prog.Compiler.CurrentBlock().NewLoad(stct, alloc)
 
 	return load
 }
@@ -217,7 +217,7 @@ func GetStructFieldAlloc(prog *Program, alloc *ir.InstAlloca, field string) valu
 
 	// If the type that the alloca points to is a pointer, we need to load from the pointer
 	if types.IsPointer(elemType) {
-		base = prog.Compiler.CurrentBlock().NewLoad(base)
+		base = prog.Compiler.CurrentBlock().NewLoad(elemType, base)
 	}
 
 	structType := baseType.(*gtypes.StructType)
