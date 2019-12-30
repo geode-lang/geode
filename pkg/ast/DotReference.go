@@ -37,7 +37,8 @@ func (n DotReference) BaseAddr(prog *Program) value.Value {
 	var val value.Value
 	val = n.Base.Alloca(prog)
 	for {
-		load := ir.NewLoad(val)
+		elemType := val.Type().(*types.PointerType).ElemType
+		load := ir.NewLoad(elemType, val)
 		if types.IsPointer(load.Type()) {
 			curBlock := prog.Compiler.CurrentBlock()
 			curBlock.Insts = append(curBlock.Insts, load)
@@ -101,7 +102,7 @@ func (n DotReference) Alloca(prog *Program) value.Value {
 
 	// If the type that the alloca points to is a pointer, we need to load from the pointer
 	if types.IsPointer(elemType) {
-		base = prog.Compiler.CurrentBlock().NewLoad(base)
+		base = prog.Compiler.CurrentBlock().NewLoad(elemType, base)
 	}
 	structType := baseType.(*gtypes.StructType)
 	index = structType.FieldIndex(n.Field.String())
@@ -127,7 +128,7 @@ func (n DotReference) Load(block *ir.Block, prog *Program) *ir.InstLoad {
 	target := n.Alloca(prog).(*ir.InstGetElementPtr)
 	t, _ := n.Type(prog)
 	target.Typ = types.NewPointer(t)
-	return block.NewLoad(target)
+	return block.NewLoad(t, target)
 }
 
 // GenAssign implements Assignable.GenAssign

@@ -40,7 +40,7 @@ func (n StringNode) Codegen(prog *Program) (value.Value, error) {
 
 	var val value.Value
 	zero := constant.NewInt(types.I32, 0)
-	val = constant.NewGetElementPtr(str, zero, zero)
+	val = constant.NewGetElementPtr(str.ContentType, str, zero, zero)
 
 	if !*arg.DisableStringDataCopy {
 		length := constant.NewInt(types.I32, int64(len([]byte(n.Value))+1))

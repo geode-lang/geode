@@ -28,3 +28,11 @@ func NewSlice(elem types.Type) *SliceType {
 func (t *SliceType) Underlying() types.Type {
 	return t.StructType
 }
+
+// Equal reports whether t and u are of equal type.
+func (t *SliceType) Equal(u types.Type) bool {
+	if u, ok := u.(*SliceType); ok {
+		return t.StructType.Equal(u.StructType)
+	}
+	return u.Equal(t.StructType)
+}

@@ -53,7 +53,7 @@ func (n TypeInfoNode) Codegen(prog *Program) (value.Value, error) {
 	}
 
 	// https://stackoverflow.com/a/30830445
-	elemptr := constant.NewGetElementPtr(constant.NewNull(types.NewPointer(analyzeType)), constant.NewInt(types.I32, 1))
+	elemptr := constant.NewGetElementPtr(analyzeType, constant.NewNull(types.NewPointer(analyzeType)), constant.NewInt(types.I32, 1))
 
 	size := prog.Compiler.CurrentBlock().NewPtrToInt(elemptr, types.I64)
 
@@ -98,7 +98,9 @@ func (n TypeInfoNode) Alloca(prog *Program) value.Value {
 
 // Load implements Reference.Load
 func (n TypeInfoNode) Load(blk *ir.Block, prog *Program) *ir.InstLoad {
-	return blk.NewLoad(n.Alloca(prog))
+	alloc := n.Alloca(prog)
+	elemType := alloc.Type().(*types.PointerType).ElemType
+	return blk.NewLoad(elemType, alloc)
 }
 
 // GenAssign implements Assignable.GenAssign
